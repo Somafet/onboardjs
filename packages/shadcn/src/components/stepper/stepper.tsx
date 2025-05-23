@@ -1,3 +1,5 @@
+"use client";
+
 import { useStepper } from "@onboardjs/core";
 import { Button } from "../ui/button";
 
