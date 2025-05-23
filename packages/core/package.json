@@ -1,0 +1,30 @@
+{
+  "name": "@onboardjs/core",
+  "version": "0.1.0",
+  "description": "Headless onboarding logic for onboardjs",
+  "author": {
+    "name": "Soma Somorjai",
+    "email": "somafet@gmail.com",
+    "url": "https://somafet.com"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  },
+  "license": "MIT"
+}
