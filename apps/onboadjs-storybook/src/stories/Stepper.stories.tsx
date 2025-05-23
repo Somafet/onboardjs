@@ -10,8 +10,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
-  args: {
-    steps: 5,
-  },
-};
+export const Primary: Story = {};

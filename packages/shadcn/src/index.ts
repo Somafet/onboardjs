@@ -2,5 +2,4 @@
 import "./index.css";
 
 // Components
-export * from "./components/ui"
-export * from "./components/stepper";
+export * from "./components";

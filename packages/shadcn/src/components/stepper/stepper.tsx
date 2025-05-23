@@ -3,12 +3,8 @@
 import { useStepper } from "@onboardjs/core";
 import { Button } from "../ui/button";
 
-export type StepperProps = {
-  steps: number;
-};
-
-export function Stepper({ steps }: StepperProps) {
-  const { currentStep, next, prev, isFirst, isLast } = useStepper({ steps });
+export function Stepper() {
+  const { currentStep, next, prev, isFirst, isLast, steps } = useStepper();
 
   return (
     <div>
