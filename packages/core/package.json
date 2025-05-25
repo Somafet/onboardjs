@@ -1,12 +1,18 @@
 {
   "name": "@onboardjs/core",
   "version": "0.1.0",
-  "description": "Headless onboarding logic for onboardjs",
+  "description": "Headless core logic for dynamic onboarding flows.",
   "author": {
     "name": "Soma Somorjai",
     "email": "somafet@gmail.com",
     "url": "https://somafet.com"
   },
+  "keywords": [
+    "onboarding",
+    "core",
+    "headless",
+    "typescript"
+  ],
   "files": [
     "dist"
   ],
@@ -25,14 +31,8 @@
     "build": "vite build && tsc --emitDeclarationOnly true",
     "test": "vitest"
   },
-  "dependencies": {
-    "react": "^19.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "jsdom": "^26.1.0",
-    "rollup-plugin-preserve-use-client": "^3.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   },
