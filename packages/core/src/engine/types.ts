@@ -10,6 +10,10 @@ export interface EngineState {
   canGoNext: boolean; // Considers if nextStep exists and current step is valid (validity handled by UI)
   canGoPrevious: boolean; // Considers if previousStep exists
   isSkippable: boolean;
+  /**
+   * Indicates if the engine is currently hydrating or restoring state.
+   */
+  isHydrating: boolean;
   isLoading: boolean; // For async operations within the engine
   error: Error | null;
   isCompleted: boolean;
@@ -28,6 +32,8 @@ export interface OnboardingEngineConfig {
     oldStep: OnboardingStep | null,
     context: OnboardingContext
   ) => void;
+  onDataLoad?: DataLoadListener;
+  onDataPersist?: DataPersistListener;
 }
 
 /**
@@ -65,4 +71,32 @@ export interface BeforeStepChangeEvent {
  */
 export type BeforeStepChangeListener = (
   event: BeforeStepChangeEvent
+) => Promise<void> | void;
+
+export interface LoadedData {
+  flowData?: Record<string, any>;
+  currentStepId?: string | null;
+  /** Optional: Any other context fields the user wants to restore */
+  [key: string]: any;
+}
+
+/**
+ * A function type that asynchronously loads data and returns a promise
+ * resolving to a {@link LoadedData} object, or `null`/`undefined` if no data is loaded.
+ *
+ * @returns {Promise<LoadedData | null | undefined>} A promise that resolves with the loaded data,
+ *          or `null`/`undefined` if no data is available.
+ */
+export type DataLoadListener = () => Promise<LoadedData | null | undefined>;
+
+/**
+ * A callback function that is invoked to persist onboarding data.
+ *
+ * @param context - The current onboarding context containing relevant state and data.
+ * @param currentStepId - The identifier of the current onboarding step, or `null` if not applicable.
+ * @returns A promise that resolves when persistence is complete, or void for synchronous operations.
+ */
+export type DataPersistListener = (
+  context: OnboardingContext,
+  currentStepId: string | null
 ) => Promise<void> | void;

@@ -2,8 +2,15 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { OnboardingEngineConfig } from "@onboardjs/core";
-import { OnboardingProvider } from "./context/OnboardingProvider";
+import {
+  DataLoadListener,
+  DataPersistListener,
+  OnboardingEngineConfig,
+} from "@onboardjs/core";
+import {
+  LocalStoragePersistenceOptions,
+  OnboardingProvider,
+} from "./context/OnboardingProvider";
 import StepRenderer from "./components/StepRenderer";
 import { StepComponentRegistry } from "./types";
 
@@ -20,6 +27,23 @@ interface OnboardingFlowProps extends OnboardingEngineConfig {
   ErrorComponent?: React.ComponentType<{ error: Error }>;
   /** Optional: A wrapper component for the entire flow UI. */
   WrapperComponent?: React.ComponentType<{ children: ReactNode }>;
+
+  /**
+   * Configuration for enabling localStorage persistence.
+   * If provided, the flow's progress will be saved to and loaded from localStorage.
+   */
+  localStoragePersistence?: LocalStoragePersistenceOptions;
+
+  /**
+   * For advanced scenarios: Directly provide your own onDataLoad function.
+   * If provided, this will be used INSTEAD of localStoragePersistence.
+   */
+  customOnDataLoad?: DataLoadListener;
+  /**
+   * For advanced scenarios: Directly provide your own onDataPersist function.
+   * If provided, this will be used INSTEAD of localStoragePersistence.
+   */
+  customOnDataPersist?: DataPersistListener;
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
@@ -33,6 +57,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   EmptyStateComponent,
   ErrorComponent,
   WrapperComponent,
+  localStoragePersistence,
+  customOnDataLoad,
+  customOnDataPersist,
 }) => {
   const content = (
     <StepRenderer
@@ -50,6 +77,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       initialContext={initialContext}
       onFlowComplete={onFlowComplete}
       onStepChange={onStepChange}
+      localStoragePersistence={localStoragePersistence}
+      customOnDataLoad={customOnDataLoad}
+      customOnDataPersist={customOnDataPersist}
     >
       {WrapperComponent ? (
         <WrapperComponent>{content}</WrapperComponent>
