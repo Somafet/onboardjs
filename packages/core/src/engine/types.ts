@@ -52,7 +52,7 @@ export interface OnboardingEngineConfig {
  */
 export interface BeforeStepChangeEvent {
   currentStep: OnboardingStep | null;
-  targetStepId: string | null | undefined;
+  targetStepId: string | number | null | undefined;
   direction: "next" | "previous" | "skip" | "goto" | "initial";
   /** Call this function to prevent the navigation. */
   cancel: () => void;
@@ -98,5 +98,5 @@ export type DataLoadListener = () => Promise<LoadedData | null | undefined>;
  */
 export type DataPersistListener = (
   context: OnboardingContext,
-  currentStepId: string | null
+  currentStepId: string | number | null
 ) => Promise<void> | void;

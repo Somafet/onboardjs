@@ -2,12 +2,9 @@
 
 import { OnboardingContext } from "./common";
 
-// --- Example: Welcome Step ---
-export interface WelcomeStepPayload {
+export interface InformationStepPayload {
   mainText: string;
   subText?: string;
-  imageUrl?: string;
-  imageAlt?: string;
 }
 
 // --- Example: Form Input Step ---
@@ -45,11 +42,6 @@ export interface FormField {
   options?: FormFieldOption[];
   validation?: FormFieldValidation;
   helperText?: string;
-}
-
-export interface FormInputStepPayload {
-  fields: FormField[];
-  submitButtonText?: string;
 }
 
 // --- Example: Multiple Choice Selection Step ---
@@ -111,23 +103,6 @@ export interface ChecklistItemState {
   isCompleted: boolean;
 }
 
-// --- Example: Feature Highlight Step ---
-export interface FeatureHighlightStepPayload {
-  elementSelector?: string;
-  highlightPosition?: "top" | "bottom" | "left" | "right" | "center" | "auto";
-  text: string;
-  imageUrl?: string;
-  beacon?: boolean;
-}
-
-// --- Example: Video Tutorial Step ---
-export interface VideoTutorialStepPayload {
-  videoUrl: string;
-  caption?: string;
-  autoPlay?: boolean;
-  showControls?: boolean;
-}
-
 // --- Example: Confirmation Step ---
 export interface ConfirmationStepPayload {
   confirmationTitle?: string;
@@ -140,30 +115,4 @@ export interface ConfirmationStepPayload {
 export interface CustomComponentStepPayload {
   componentKey: string;
   [key: string]: any;
-}
-
-// --- Welcome Step with Input Fields ---
-export interface WelcomeInputFormStepPayload {
-  mainHeading: string;
-  introductionText?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  nameField: {
-    label: string;
-    placeholder?: string;
-    dataKey: string;
-    validation?: {
-      required?: boolean | string;
-      minLength?: { value: number; message: string };
-    };
-  };
-  companyField: {
-    label: string;
-    placeholder?: string;
-    dataKey: string;
-    validation?: {
-      required?: boolean | string;
-      minLength?: { value: number; message: string };
-    };
-  };
 }

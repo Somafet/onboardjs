@@ -29,16 +29,16 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
-        title: "Welcome Step 1", // Added title
+        type: "INFORMATION",
+        title: "Welcome Step 1",
         payload: { mainText: "Hi" },
-        nextStep: "step2",
+        nextStep: 2,
       },
       {
-        id: "step2",
-        type: "FORM_INPUT",
-        title: "Input Form Step 2", // Added title
-        payload: { fields: [] },
+        id: 2,
+        type: "INFORMATION",
+        title: "Input Form Step 2",
+        payload: { mainText: "Please enter your details" },
         previousStep: "step1",
       },
     ];
@@ -74,7 +74,11 @@ describe("validateFlow", () => {
   it("should return an error for a step missing an ID", () => {
     const steps: any[] = [
       // Use any to simulate missing properties
-      { type: "WELCOME", title: "Missing ID Step", payload: { mainText: "Hi" } },
+      {
+        type: "INFORMATION",
+        title: "Missing ID Step",
+        payload: { mainText: "Hi" },
+      },
     ];
     const issues = validateFlow(steps as OnboardingStep[]);
     expect(issues.length).toBe(1);
@@ -83,8 +87,18 @@ describe("validateFlow", () => {
 
   it("should return an error for duplicate step IDs", () => {
     const steps: OnboardingStep[] = [
-      { id: "step1", type: "WELCOME", title: "Welcome", payload: { mainText: "Hi" } },
-      { id: "step1", type: "FORM_INPUT", title: "Input Form", payload: { fields: [] } },
+      {
+        id: "step1",
+        type: "INFORMATION",
+        title: "Welcome",
+        payload: { mainText: "Hi" },
+      },
+      {
+        id: "step1",
+        type: "INFORMATION",
+        title: "Input Form",
+        payload: { mainText: "Please enter your details" },
+      },
     ];
     const issues = validateFlow(steps);
     expect(issues.length).toBe(1);
@@ -92,7 +106,9 @@ describe("validateFlow", () => {
   });
 
   it("should return an error for a step missing a type", () => {
-    const steps: any[] = [{ id: "step1", title: "Missing Type Step", payload: { mainText: "Hi" } }];
+    const steps: any[] = [
+      { id: "step1", title: "Missing Type Step", payload: { mainText: "Hi" } },
+    ];
     const issues = validateFlow(steps as OnboardingStep[]);
     expect(issues.length).toBe(1);
     expectIssueWithMessage(issues, "Step 'step1' is missing a 'type'");
@@ -117,7 +133,12 @@ describe("validateFlow", () => {
 
   it("should return an error for CUSTOM_COMPONENT with null payload", () => {
     const steps: OnboardingStep[] = [
-      { id: "custom1", type: "CUSTOM_COMPONENT", title: "Custom Null Payload", payload: null as any },
+      {
+        id: "custom1",
+        type: "CUSTOM_COMPONENT",
+        title: "Custom Null Payload",
+        payload: null as any,
+      },
     ];
     const issues = validateFlow(steps);
     expect(issues.length).toBe(1);
@@ -131,7 +152,7 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Broken Next Step", // Added title
         payload: { mainText: "Hi" },
         nextStep: "nonExistentStep",
@@ -151,7 +172,7 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Broken Skip Step", // Added title
         payload: { mainText: "Hi" },
         isSkippable: true,
@@ -171,7 +192,7 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Null Next Step", // Added title
         payload: { mainText: "Hi" },
         nextStep: null,
@@ -183,7 +204,12 @@ describe("validateFlow", () => {
 
   it("should NOT return a warning for an undefined nextStep (end of flow)", () => {
     const steps: OnboardingStep[] = [
-      { id: "step1", type: "WELCOME", title: "Undefined Next Step", payload: { mainText: "Hi" } }, // nextStep is undefined
+      {
+        id: "step1",
+        type: "INFORMATION",
+        title: "Undefined Next Step",
+        payload: { mainText: "Hi" },
+      }, // nextStep is undefined
     ];
     const issues = validateFlow(steps);
     expect(issues).toEqual([]);
@@ -193,12 +219,17 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Functional Next Step 1", // Added title
         payload: { mainText: "Hi" },
         nextStep: () => "step2",
       },
-      { id: "step2", type: "WELCOME", title: "Functional Next Step 2", payload: { mainText: "There" } }, // Added title
+      {
+        id: "step2",
+        type: "INFORMATION",
+        title: "Functional Next Step 2",
+        payload: { mainText: "There" },
+      }, // Added title
     ];
     const issues = validateFlow(steps);
     // We don't expect an error for the functional link because static analysis can't resolve it.
@@ -211,17 +242,32 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "s1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Step S1",
         payload: { mainText: "1" },
         nextStep: "s_non_existent",
       },
-      { id: "s2", type: "CUSTOM_COMPONENT", title: "Step S2", payload: {} as any }, // Missing componentKey
-      { id: "s1", type: "WELCOME", title: "Step S1 Duplicate", payload: { mainText: "1-dup" } }, // Duplicate ID
-      { id: "s3", type: null as any, title: "Step S3", payload: { mainText: "3" } }, // Missing type
+      {
+        id: "s2",
+        type: "CUSTOM_COMPONENT",
+        title: "Step S2",
+        payload: {} as any,
+      }, // Missing componentKey
+      {
+        id: "s1",
+        type: "INFORMATION",
+        title: "Step S1 Duplicate",
+        payload: { mainText: "1-dup" },
+      }, // Duplicate ID
+      {
+        id: "s3",
+        type: null as any,
+        title: "Step S3",
+        payload: { mainText: "3" },
+      }, // Missing type
       {
         id: "s4",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Step S4",
         payload: { mainText: "4" },
         isSkippable: true,
@@ -252,16 +298,16 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Valid Previous Step 1", // Added title
         payload: { mainText: "Hi" },
         nextStep: "step2",
       },
       {
         id: "step2",
-        type: "FORM_INPUT",
+        type: "INFORMATION",
         title: "Valid Previous Step 2", // Added title
-        payload: { fields: [] },
+        payload: { mainText: "Please enter your details" },
         previousStep: "step1",
       },
     ];
@@ -273,12 +319,17 @@ describe("validateFlow", () => {
     const steps: OnboardingStep[] = [
       {
         id: "step1",
-        type: "WELCOME",
+        type: "INFORMATION",
         title: "Null Previous Step", // Added title
         payload: { mainText: "Hi" },
         previousStep: null,
       },
-      { id: "step2", type: "WELCOME", title: "Undefined Previous Step", payload: { mainText: "Hi" } }, // undefined previousStep
+      {
+        id: "step2",
+        type: "INFORMATION",
+        title: "Undefined Previous Step",
+        payload: { mainText: "Hi" },
+      }, // undefined previousStep
     ];
     const issues = validateFlow(steps);
     expect(issues).toEqual([]);

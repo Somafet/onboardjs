@@ -20,7 +20,7 @@ export interface OnboardingContext {
  */
 export interface BaseOnboardingStep {
   /** A unique identifier for this step. */
-  id: string;
+  id: string | number;
   /** The title displayed for the step (e.g., in a header). */
   title: string;
   /** An optional, more detailed description or instructions for the step. */
@@ -31,6 +31,7 @@ export interface BaseOnboardingStep {
   // --- Navigation Logic ---
   nextStep?:
     | string
+    | number
     | null
     | ((context: OnboardingContext) => string | null | undefined)
     | undefined;
@@ -40,6 +41,7 @@ export interface BaseOnboardingStep {
    */
   previousStep?:
     | string
+    | number
     | null
     | ((context: OnboardingContext) => string | null | undefined)
     | undefined;
@@ -52,6 +54,7 @@ export interface BaseOnboardingStep {
    */
   skipToStep?:
     | string
+    | number
     | null
     | ((context: OnboardingContext) => string | null | undefined)
     | undefined;

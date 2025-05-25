@@ -3,7 +3,6 @@
 import {
   OnboardingStep,
   OnboardingContext,
-  BaseOnboardingStep,
   ChecklistStepPayload,
   ChecklistItemState,
 } from "../types";
@@ -197,7 +196,7 @@ export class OnboardingEngine {
   }
 
   private async navigateToStep(
-    requestedTargetStepId: string | null | undefined,
+    requestedTargetStepId: string | number | null | undefined,
     direction: "next" | "previous" | "skip" | "goto" | "initial" = "goto"
   ): Promise<void> {
     let isCancelled = false;
@@ -251,7 +250,7 @@ export class OnboardingEngine {
       nextCandidateStep.condition &&
       !nextCandidateStep.condition(this.contextInternal)
     ) {
-      let skipToId: string | null | undefined;
+      let skipToId: string | number | null | undefined;
       // ... (conditional skipping logic as before, using finalTargetStepId for context)
       const effectiveDirection = redirected ? "goto" : direction; // If redirected, treat as 'goto' for skipping logic
       if (effectiveDirection === "previous") {
@@ -293,7 +292,7 @@ export class OnboardingEngine {
         oldStep.id !== this.currentStepInternal.id
       ) {
         if (this.history[this.history.length - 1] !== oldStep.id) {
-          this.history.push(oldStep.id);
+          this.history.push(String(oldStep.id));
         }
       } else if (
         direction === "previous" &&
@@ -344,7 +343,7 @@ export class OnboardingEngine {
   public getState(): EngineState {
     const currentStep = this.currentStepInternal;
     const context = this.contextInternal;
-    let nextPossibleStepId: string | null | undefined;
+    let nextPossibleStepId: string | number | null | undefined;
     if (currentStep) {
       nextPossibleStepId = evaluateStepId(currentStep.nextStep, context);
     }
@@ -623,7 +622,7 @@ export class OnboardingEngine {
   public async previous(): Promise<void> {
     if (this.isLoadingInternal) return;
     const current = this.currentStepInternal;
-    let prevStepId: string | null | undefined;
+    let prevStepId: string | number | null | undefined;
 
     if (current && current.previousStep) {
       prevStepId = evaluateStepId(current.previousStep, this.contextInternal);

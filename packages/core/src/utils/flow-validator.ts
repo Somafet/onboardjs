@@ -10,7 +10,7 @@ import { findStepById } from "./step-utils"; // Assuming step-utils is in the sa
 export interface ValidationIssue {
   level: "error" | "warning";
   message: string;
-  stepId?: string; // The ID of the step where the issue was found
+  stepId?: string | number; // The ID of the step where the issue was found
   relatedStepId?: string; // For issues like broken links
 }
 
@@ -20,7 +20,7 @@ export function validateFlow(
   // context?: Partial<OnboardingContext>
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  const stepIds = new Set<string>();
+  const stepIds = new Set<string | number>();
 
   if (!steps || steps.length === 0) {
     issues.push({

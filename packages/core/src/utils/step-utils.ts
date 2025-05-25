@@ -8,11 +8,12 @@ import { OnboardingStep, OnboardingContext } from "../types";
 export function evaluateStepId(
   stepIdOrFn:
     | string
+    | number
     | ((context: OnboardingContext) => string | null | undefined)
     | null
     | undefined,
   context: OnboardingContext
-): string | null | undefined {
+): string | number | null | undefined {
   if (typeof stepIdOrFn === "function") {
     return stepIdOrFn(context);
   }
@@ -24,7 +25,7 @@ export function evaluateStepId(
  */
 export function findStepById(
   steps: OnboardingStep[],
-  stepId: string | null | undefined
+  stepId: string | null | undefined | number
 ): OnboardingStep | undefined {
   if (!stepId) return undefined;
   return steps.find((s) => s.id === stepId);
