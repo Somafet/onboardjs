@@ -20,11 +20,26 @@ import {
   LoadedData,
 } from "@onboardjs/core";
 
+// Define the actions type based on OnboardingEngine methods
+// This makes it more maintainable if engine methods change.
+// Note: Return types are Promise<void> because our wrapped actions are async.
+export interface OnboardingActions {
+  next: (stepSpecificData?: any) => Promise<void>;
+  previous: () => Promise<void>;
+  skip: () => Promise<void>;
+  goToStep: (stepId: string, stepSpecificData?: any) => Promise<void>;
+  updateContext: (
+    newContextData: Partial<CoreOnboardingContext>
+  ) => Promise<void>;
+  reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
+}
+
 export interface OnboardingContextValue {
   engine: OnboardingEngine | null;
   state: EngineState | null;
   isLoading: boolean; // Combined loading state (engine + component interactions)
   setComponentLoading: (loading: boolean) => void;
+  actions: OnboardingActions | null;
 }
 
 export const OnboardingContext = createContext<
@@ -216,14 +231,67 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     [componentLoading, engineState?.isLoading, engineState?.isHydrating] // Add isHydrating
   );
 
+  // Memoize the actions object
+  const memoizedActions = useMemo((): OnboardingActions | null => {
+    if (!engine) return null;
+    return {
+      next: async (data?: any) => {
+        setComponentLoading(true);
+        try {
+          await engine.next(data);
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      previous: async () => {
+        setComponentLoading(true);
+        try {
+          await engine.previous();
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      skip: async () => {
+        setComponentLoading(true);
+        try {
+          await engine.skip();
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      goToStep: async (stepId: string, data?: any) => {
+        setComponentLoading(true);
+        try {
+          await engine.goToStep(stepId, data);
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      updateContext: async (newContextData: Partial<CoreOnboardingContext>) => {
+        await engine.updateContext(newContextData); // engine.updateContext is already async
+      },
+      reset: async (newConfig?: Partial<OnboardingEngineConfig>) => {
+        setComponentLoading(true);
+        try {
+          await engine.reset(newConfig);
+        } finally {
+          // engine.reset is already async
+          setComponentLoading(false);
+        }
+      },
+    };
+  }, [engine]); // Dependency is `engine` instance
+
   const value = useMemo(
-    () => ({
+    (): OnboardingContextValue => ({
+      // Explicitly type the return of useMemo
       engine,
       state: engineState,
       isLoading,
       setComponentLoading,
+      actions: memoizedActions, // <--- PASS THE MEMOIZED ACTIONS OBJECT HERE
     }),
-    [engine, engineState, isLoading]
+    [engine, engineState, isLoading, memoizedActions] // Add memoizedActions to dependencies
   );
 
   return (

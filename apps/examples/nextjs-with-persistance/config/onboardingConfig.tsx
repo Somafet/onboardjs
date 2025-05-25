@@ -1,74 +1,66 @@
-// config/onboardingConfig.ts
-import ConfirmationStep from "@/components/onboarding/ConfirmationStep";
-import UserProfileStep from "@/components/onboarding/UserProfileStep";
-import WelcomeStep from "@/components/onboarding/WelcomeStep";
-import WorkspaceDetailsStep from "@/components/onboarding/WorkspaceDetailsStep";
+// config/demoOnboardingConfig.ts
 import { OnboardingStep, StepComponentRegistry } from "@onboardjs/react";
 
+// Import custom step components
+import DemoNameStep from "@/components/onboarding/DemoNameStep";
+import DemoWelcomeStep from "@/components/onboarding/DemoWelcomeStep";
 
-export const appOnboardingSteps: OnboardingStep[] = [
+export const demoOnboardingSteps: OnboardingStep[] = [
   {
     id: "welcome",
-    type: "CUSTOM_COMPONENT", // Critical: Use CUSTOM_COMPONENT type
-    title: "Welcome!",
+    type: "CUSTOM_COMPONENT", // All steps will be custom for this demo
+    title: "Welcome Aboard!",
+    description: "We are excited to guide you through our app.",
     payload: {
-      componentKey: "welcome", // This key maps to WelcomeStep in the registry
-      title: "Welcome to Our Application!",
-      description: "We're excited to have you on board.",
-      imageUrl: "https://placehold.co/600x300/e2e8f0/64748b?text=Welcome!",
+      componentKey: "demoWelcome", // This key maps to DemoWelcomeStep
+      title: "Hello There, Developer!",
+      message:
+        "This is a fully custom onboarding flow using @onboardjs/react headless capabilities.",
+      imageUrl: "https://placehold.co/600x300/7c3aed/white?text=Welcome!",
     },
-    nextStep: "user-profile",
-    ctaLabel: "Let's Go!",
+    nextStep: "enter-name",
+    ctaLabel: "Let's Get Started",
   },
   {
-    id: "user-profile",
+    id: "enter-name",
     type: "CUSTOM_COMPONENT",
-    title: "Your Profile",
+    title: "What Should We Call You?",
+    description: "Personalization is key!",
     payload: {
-      componentKey: "userProfile",
-      nameFieldKey: "userName",
-      emailFieldKey: "userEmail",
+      componentKey: "demoName", // Maps to DemoNameStep
+      fieldLabel: "Your Preferred Name:",
+      fieldKey: "userName",
+      placeholder: "e.g., Alex The Developer",
     },
-    nextStep: "workspace-details",
     previousStep: "welcome",
+    nextStep: "final-step", // Points to a non-existent step for this short demo to show completion
+    ctaLabel: "Continue",
+    onStepComplete: async (stepData, context) => {
+      console.log("Name step completed. Data:", stepData);
+      console.log("Current flowData:", context.flowData);
+      // Example: an async operation
+      // await new Promise(resolve => setTimeout(resolve, 500));
+      // console.log('User name to be persisted:', context.flowData.userName);
+    },
   },
   {
-    id: "workspace-details",
+    id: "final-step",
     type: "CUSTOM_COMPONENT",
-    title: "Workspace Setup",
+    title: "All Done (Almost)!",
     payload: {
-      componentKey: "workspaceDetails",
-      workspaceNameKey: "workspaceName",
+      componentKey: "demoWelcome", // Reusing welcome for simplicity
+      title: "You are doing great!",
+      message: "This is the last step in our short demo. Click Finish!",
     },
-    nextStep: "confirmation",
-    previousStep: "user-profile",
-  },
-  {
-    id: "confirmation",
-    type: "CUSTOM_COMPONENT",
-    title: "Confirm Your Details",
-    payload: {
-      componentKey: "confirmation",
-      title: "Ready to Go?",
-      message: "One last look before we finalize your setup.",
-      dataKeysToShow: [
-        { key: "userName", label: "Full Name" },
-        { key: "userEmail", label: "Email" },
-        { key: "workspaceName", label: "Workspace" },
-      ],
-    },
-    previousStep: "workspace-details",
-    nextStep: null, // End of the flow
-    ctaLabel: "Finish Setup",
+    previousStep: "enter-name",
+    nextStep: null, // End of flow
+    ctaLabel: "Finish Onboarding",
   },
 ];
 
-export const appStepComponentRegistry: StepComponentRegistry = {
-  // The key here MUST match the `componentKey` in the step's payload
-  welcome: WelcomeStep,
-  userProfile: UserProfileStep,
-  workspaceDetails: WorkspaceDetailsStep,
-  confirmation: ConfirmationStep,
-  // Note: For non-CUSTOM_COMPONENT types, you'd use the OnboardingStepType string
-  // e.g., WELCOME: MyStandardWelcomeComponent (if you mix and match)
+export const demoStepComponentRegistry: StepComponentRegistry = {
+  demoWelcome: DemoWelcomeStep,
+  demoName: DemoNameStep,
+  // If you had standard types you wanted to map, e.g.:
+  // WELCOME: SomeOtherWelcomeComponent,
 };
