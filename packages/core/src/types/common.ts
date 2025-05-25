@@ -31,16 +31,30 @@ export interface BaseOnboardingStep {
   // --- Navigation Logic ---
   nextStep?:
     | string
-    | ((context: OnboardingContext) => string | null | undefined);
+    | null
+    | ((context: OnboardingContext) => string | null | undefined)
+    | undefined;
+  /**
+   * Determines the ID of the previous step.
+   * Can be a static string, null (no previous), undefined, or a function.
+   */
   previousStep?:
     | string
-    | ((context: OnboardingContext) => string | null | undefined);
+    | null
+    | ((context: OnboardingContext) => string | null | undefined)
+    | undefined;
 
   // --- Step Behavior ---
   isSkippable?: boolean;
+  /**
+   * If skippable, specifies the ID of the step to navigate to when skipped.
+   * Can be a static string, null, undefined, or a function.
+   */
   skipToStep?:
     | string
-    | ((context: OnboardingContext) => string | null | undefined);
+    | null
+    | ((context: OnboardingContext) => string | null | undefined)
+    | undefined;
 
   // --- Lifecycle Hooks & Logic ---
   onStepActive?: (context: OnboardingContext) => Promise<void> | void;

@@ -11,6 +11,7 @@ import {
   ConfirmationStepPayload,
   CustomComponentStepPayload,
   WelcomeInputFormStepPayload,
+  ChecklistStepPayload,
 } from "./payloads";
 
 export type OnboardingStepType =
@@ -22,7 +23,8 @@ export type OnboardingStepType =
   | "FEATURE_HIGHLIGHT"
   | "VIDEO_TUTORIAL"
   | "CONFIRMATION"
-  | "CUSTOM_COMPONENT";
+  | "CUSTOM_COMPONENT"
+  | "CHECKLIST";
 
 export type OnboardingStep =
   | (BaseOnboardingStep & {
@@ -56,6 +58,10 @@ export type OnboardingStep =
   | (BaseOnboardingStep & {
       type: "CONFIRMATION";
       payload: ConfirmationStepPayload;
+    })
+  | (BaseOnboardingStep & {
+      type: "CHECKLIST";
+      payload: ChecklistStepPayload;
     })
   | (BaseOnboardingStep & {
       type: "CUSTOM_COMPONENT";

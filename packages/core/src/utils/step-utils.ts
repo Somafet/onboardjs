@@ -9,6 +9,7 @@ export function evaluateStepId(
   stepIdOrFn:
     | string
     | ((context: OnboardingContext) => string | null | undefined)
+    | null
     | undefined,
   context: OnboardingContext
 ): string | null | undefined {

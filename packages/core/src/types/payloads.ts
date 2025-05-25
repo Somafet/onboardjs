@@ -1,5 +1,7 @@
 // @onboardjs/core/src/types/payloads.ts
 
+import { OnboardingContext } from "./common";
+
 // --- Example: Welcome Step ---
 export interface WelcomeStepPayload {
   mainText: string;
@@ -72,6 +74,41 @@ export interface SingleChoiceStepPayload {
   question: string;
   options: ChoiceOption[];
   dataKey: string;
+}
+
+/** Defines the structure of an item in a checklist step's payload. */
+export interface ChecklistItemDefinition {
+  id: string; // Unique identifier for the item within this checklist
+  label: string;
+  description?: string;
+  isMandatory?: boolean; // Defaults to true if not specified by the engine's logic
+  /** Optional condition to determine if this item should be shown/considered. */
+  condition?: (context: OnboardingContext) => boolean;
+  meta?: Record<string, any>; // For custom data per item
+}
+
+/** Payload for a checklist step. */
+export interface ChecklistStepPayload {
+  /** An array of item definitions for the checklist. */
+  items: ChecklistItemDefinition[];
+  /**
+   * The key under which the state of checklist items (e.g., Array<{id: string, isCompleted: boolean}>)
+   * will be stored in the step's data within `flowData`.
+   */
+  dataKey: string;
+  /**
+   * Optional: Minimum number of items that must be completed for the step to be considered complete.
+   * If not provided, all mandatory items must be completed.
+   */
+  minItemsToComplete?: number;
+  /** Optional: Title or heading for the checklist itself, if different from step.title */
+  checklistTitle?: string;
+}
+
+// Runtime state of a checklist item, typically stored in flowData
+export interface ChecklistItemState {
+  id: string;
+  isCompleted: boolean;
 }
 
 // --- Example: Feature Highlight Step ---
