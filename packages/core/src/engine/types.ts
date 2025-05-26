@@ -100,3 +100,26 @@ export type DataPersistListener = (
   context: OnboardingContext,
   currentStepId: string | number | null
 ) => Promise<void> | void;
+
+/**
+ * A callback function that is invoked when an onboarding flow is completed.
+ *
+ * @param context - The current onboarding context at the time of completion.
+ * @returns A promise that resolves when the listener has finished processing, or void for synchronous listeners.
+ */
+export type FlowCompleteListener = (
+  context: OnboardingContext
+) => Promise<void> | void;
+
+/**
+ * Callback type for listening to onboarding step changes.
+ *
+ * @param newStep - The new onboarding step that has become active, or `null` if there is no active step.
+ * @param oldStep - The previous onboarding step that was active, or `null` if there was no previous step.
+ * @param context - The current onboarding context providing additional information about the onboarding process.
+ */
+export type StepChangeListener = (
+  newStep: OnboardingStep | null,
+  oldStep: OnboardingStep | null, // Engine needs to track oldStep for this event
+  context: OnboardingContext
+) => void;

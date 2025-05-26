@@ -1408,4 +1408,524 @@ describe("OnboardingEngine", () => {
       });
     });
   });
+  describe("Event Handlers", () => {
+    beforeEach(async () => {
+      engine = new OnboardingEngine(basicConfig);
+      await engine.ready();
+    });
+
+    describe("Step Change Listeners", () => {
+      it("should notify step change listeners when navigating", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.addStepChangeListener(listener);
+
+        await engine.next();
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({ id: "step2" }), // new step
+          expect.objectContaining({ id: "step1" }), // old step
+          expect.objectContaining({
+            flowData: expect.any(Object),
+          })
+        );
+
+        unsubscribe();
+      });
+
+      it("should unsubscribe step change listeners", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.addStepChangeListener(listener);
+
+        unsubscribe();
+        await engine.next();
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it("should handle errors in step change listeners gracefully", async () => {
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+        const errorListener = vi.fn().mockImplementation(() => {
+          throw new Error("Listener error");
+        });
+
+        engine.addStepChangeListener(errorListener);
+        await engine.next();
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining("Error in stepChange listener:"),
+          expect.any(Error)
+        );
+        expect(errorListener).toHaveBeenCalled();
+      });
+
+      it("should notify multiple step change listeners", async () => {
+        const listener1 = vi.fn();
+        const listener2 = vi.fn();
+        const listener3 = vi.fn();
+
+        engine.addStepChangeListener(listener1);
+        engine.addStepChangeListener(listener2);
+        engine.addStepChangeListener(listener3);
+
+        await engine.next();
+
+        expect(listener1).toHaveBeenCalled();
+        expect(listener2).toHaveBeenCalled();
+        expect(listener3).toHaveBeenCalled();
+      });
+    });
+
+    describe("Flow Complete Listeners", () => {
+      it("should notify flow complete listeners when flow completes", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.addFlowCompletedListener(listener);
+
+        // Navigate to last step and complete the flow
+        await engine.goToStep("step3");
+        await engine.next(); // This should complete the flow
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            flowData: expect.any(Object),
+          })
+        );
+
+        unsubscribe();
+      });
+
+      it("should unsubscribe flow complete listeners", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.addFlowCompletedListener(listener);
+
+        unsubscribe();
+
+        // Complete the flow
+        await engine.goToStep("step3");
+        await engine.next();
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it("should handle errors in sync flow complete listeners gracefully", async () => {
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+        const errorListener = vi.fn().mockImplementation(() => {
+          throw new Error("Sync listener error");
+        });
+
+        engine.addFlowCompletedListener(errorListener);
+
+        // Complete the flow
+        await engine.goToStep("step3");
+        await engine.next();
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining("Error in sync onFlowHasCompleted listener:"),
+          expect.any(Error)
+        );
+        expect(errorListener).toHaveBeenCalled();
+      });
+
+      it("should handle errors in async flow complete listeners gracefully", async () => {
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+        const asyncErrorListener = vi.fn().mockImplementation(async () => {
+          throw new Error("Async listener error");
+        });
+
+        engine.addFlowCompletedListener(asyncErrorListener);
+
+        // Complete the flow
+        await engine.goToStep("step3");
+        await engine.next();
+
+        // Wait for async error handling
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Error in async onFlowHasCompleted listener:"
+          ),
+          expect.any(Error)
+        );
+        expect(asyncErrorListener).toHaveBeenCalled();
+      });
+
+      it("should notify multiple flow complete listeners", async () => {
+        const listener1 = vi.fn();
+        const listener2 = vi.fn();
+        const listener3 = vi.fn();
+
+        engine.addFlowCompletedListener(listener1);
+        engine.addFlowCompletedListener(listener2);
+        engine.addFlowCompletedListener(listener3);
+
+        // Complete the flow
+        await engine.goToStep("step3");
+        await engine.next();
+
+        expect(listener1).toHaveBeenCalled();
+        expect(listener2).toHaveBeenCalled();
+        expect(listener3).toHaveBeenCalled();
+      });
+    });
+
+    describe("Before Step Change Listeners", () => {
+      it("should call before step change listeners before navigation", async () => {
+        const listener = vi.fn();
+        engine.onBeforeStepChange(listener);
+
+        await engine.next();
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            currentStep: expect.objectContaining({ id: "step1" }),
+            targetStepId: "step2",
+            direction: "next",
+            cancel: expect.any(Function),
+            redirect: expect.any(Function),
+          })
+        );
+      });
+
+      it("should allow before step change listeners to cancel navigation", async () => {
+        const cancelListener = vi.fn((event: BeforeStepChangeEvent) => {
+          event.cancel();
+        });
+        engine.onBeforeStepChange(cancelListener);
+
+        await engine.next();
+
+        const state = engine.getState();
+        expect(state.currentStep?.id).toBe("step1"); // Should remain on step1
+        expect(cancelListener).toHaveBeenCalled();
+      });
+
+      it("should allow before step change listeners to redirect navigation", async () => {
+        const redirectListener = vi.fn((event: BeforeStepChangeEvent) => {
+          if (event.redirect) {
+            event.redirect("step3");
+          }
+        });
+        engine.onBeforeStepChange(redirectListener);
+
+        await engine.next();
+
+        const state = engine.getState();
+        expect(state.currentStep?.id).toBe("step3"); // Should redirect to step3
+        expect(redirectListener).toHaveBeenCalled();
+      });
+
+      it("should not allow redirect after cancel is called", async () => {
+        const cancelAndRedirectListener = vi.fn(
+          (event: BeforeStepChangeEvent) => {
+            event.cancel();
+            if (event.redirect) {
+              event.redirect("step3"); // This should be ignored
+            }
+          }
+        );
+        engine.onBeforeStepChange(cancelAndRedirectListener);
+
+        await engine.next();
+
+        const state = engine.getState();
+        expect(state.currentStep?.id).toBe("step1"); // Should remain on step1
+      });
+
+      it("should unsubscribe before step change listeners", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.onBeforeStepChange(listener);
+
+        unsubscribe();
+        await engine.next();
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it("should handle async before step change listeners", async () => {
+        const asyncListener = vi.fn(async (event: BeforeStepChangeEvent) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          // Allow navigation
+        });
+        engine.onBeforeStepChange(asyncListener);
+
+        await engine.next();
+
+        expect(asyncListener).toHaveBeenCalled();
+        const state = engine.getState();
+        expect(state.currentStep?.id).toBe("step2");
+      });
+
+      it("should call multiple before step change listeners sequentially", async () => {
+        const listener1 = vi.fn(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+        });
+        const listener2 = vi.fn();
+        const listener3 = vi.fn();
+
+        engine.onBeforeStepChange(listener1);
+        engine.onBeforeStepChange(listener2);
+        engine.onBeforeStepChange(listener3);
+
+        await engine.next();
+
+        expect(listener1).toHaveBeenCalled();
+        expect(listener2).toHaveBeenCalled();
+        expect(listener3).toHaveBeenCalled();
+      });
+
+      it("should pass correct direction for different navigation types", async () => {
+        const listener = vi.fn();
+        engine.onBeforeStepChange(listener);
+
+        // Test next
+        await engine.next();
+        expect(listener).toHaveBeenLastCalledWith(
+          expect.objectContaining({ direction: "next" })
+        );
+
+        // Test previous
+        await engine.previous();
+        expect(listener).toHaveBeenLastCalledWith(
+          expect.objectContaining({ direction: "previous" })
+        );
+
+        // Test goto
+        await engine.goToStep("step3");
+        expect(listener).toHaveBeenLastCalledWith(
+          expect.objectContaining({ direction: "goto" })
+        );
+
+        // Test skip
+        const skippableSteps: OnboardingStep[] = [
+          {
+            id: "step1",
+            type: "INFORMATION",
+            title: "Skippable Step",
+            payload: { mainText: "You can skip this" },
+            isSkippable: true,
+            nextStep: "step2",
+            skipToStep: "step3",
+          },
+          mockSteps[1],
+          mockSteps[2],
+        ];
+        const skippableEngine = new OnboardingEngine({
+          ...basicConfig,
+          steps: skippableSteps,
+        });
+        await skippableEngine.ready();
+
+        const skipListener = vi.fn();
+        skippableEngine.onBeforeStepChange(skipListener);
+
+        await skippableEngine.skip();
+        expect(skipListener).toHaveBeenCalledWith(
+          expect.objectContaining({ direction: "skip" })
+        );
+      });
+    });
+
+    describe("State Change Listeners", () => {
+      it("should notify state change listeners when state changes", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.subscribeToStateChange(listener);
+
+        await engine.next();
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            currentStep: expect.objectContaining({ id: "step2" }),
+            isLoading: false,
+          })
+        );
+
+        unsubscribe();
+      });
+
+      it("should unsubscribe state change listeners", async () => {
+        const listener = vi.fn();
+        const unsubscribe = engine.subscribeToStateChange(listener);
+
+        unsubscribe();
+        await engine.next();
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it("should notify state change listeners on context updates", async () => {
+        const listener = vi.fn();
+        engine.subscribeToStateChange(listener);
+
+        await engine.updateContext({ flowData: { newKey: "newValue" } });
+
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            context: expect.objectContaining({
+              flowData: expect.objectContaining({
+                newKey: "newValue",
+              }),
+            }),
+          })
+        );
+      });
+
+      it("should notify state change listeners on loading state changes", async () => {
+        const listener = vi.fn();
+        engine.subscribeToStateChange(listener);
+
+        // Reset to clear previous calls
+        listener.mockClear();
+
+        // Create a promise that we can control
+        let resolveNavigation: () => void;
+        const navigationPromise = new Promise<void>((resolve) => {
+          resolveNavigation = resolve;
+        });
+
+        // Mock the navigateToStep to add delay
+        const originalNavigateToStep = (engine as any).navigateToStep;
+        vi.spyOn(engine as any, "navigateToStep").mockImplementation(
+          async (...args) => {
+            // Call setState to set loading true
+            (engine as any).setState(() => ({ isLoading: true }));
+            await navigationPromise;
+            return originalNavigateToStep.call(engine, ...args);
+          }
+        );
+
+        // Start navigation (this will set loading to true)
+        const nextPromise = engine.next();
+
+        // Check that loading state was notified
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isLoading: true,
+          })
+        );
+
+        // Complete the navigation
+        resolveNavigation!();
+        await nextPromise;
+
+        // Should also be called when loading becomes false
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            isLoading: false,
+          })
+        );
+      });
+
+      it("should notify state change listeners on error state changes", async () => {
+        const listener = vi.fn();
+        engine.subscribeToStateChange(listener);
+
+        // Create a step with onStepActive that throws an error
+        const errorSteps: OnboardingStep[] = [
+          mockSteps[0],
+          {
+            ...mockSteps[1],
+            onStepActive: async () => {
+              throw new Error("Step activation error");
+            },
+          },
+          mockSteps[2],
+        ];
+
+        const errorEngine = new OnboardingEngine({
+          ...basicConfig,
+          steps: errorSteps,
+        });
+        await errorEngine.ready();
+
+        const errorListener = vi.fn();
+        errorEngine.subscribeToStateChange(errorListener);
+
+        await errorEngine.next();
+
+        expect(errorListener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            error: expect.any(Error),
+          })
+        );
+      });
+
+      it("should notify multiple state change listeners", async () => {
+        const listener1 = vi.fn();
+        const listener2 = vi.fn();
+        const listener3 = vi.fn();
+
+        engine.subscribeToStateChange(listener1);
+        engine.subscribeToStateChange(listener2);
+        engine.subscribeToStateChange(listener3);
+
+        await engine.next();
+
+        expect(listener1).toHaveBeenCalled();
+        expect(listener2).toHaveBeenCalled();
+        expect(listener3).toHaveBeenCalled();
+      });
+    });
+
+    describe("Integration - Multiple Event Types", () => {
+      it("should call all event handlers in correct order during navigation", async () => {
+        const callOrder: string[] = [];
+
+        const beforeStepChangeListener = vi.fn(() => {
+          callOrder.push("beforeStepChange");
+        });
+        const stepChangeListener = vi.fn(() => {
+          callOrder.push("stepChange");
+        });
+        const stateChangeListener = vi.fn(() => {
+          callOrder.push("stateChange");
+        });
+
+        engine.onBeforeStepChange(beforeStepChangeListener);
+        engine.addStepChangeListener(stepChangeListener);
+        engine.subscribeToStateChange(stateChangeListener);
+
+        await engine.next();
+
+        expect(callOrder).toEqual([
+          "stateChange", // Loading state change
+          "beforeStepChange",
+          "stateChange", // Triggered by beforeStepChange
+          "stepChange",
+          "stateChange", // Final state change
+        ]);
+      });
+
+      it("should handle event handler errors without affecting other handlers", async () => {
+        const consoleErrorSpy = vi
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+
+        const errorStepChangeListener = vi.fn(() => {
+          throw new Error("Step change error");
+        });
+        const workingStepChangeListener = vi.fn();
+        const stateChangeListener = vi.fn();
+
+        engine.addStepChangeListener(errorStepChangeListener);
+        engine.addStepChangeListener(workingStepChangeListener);
+        engine.subscribeToStateChange(stateChangeListener);
+
+        await engine.next();
+
+        expect(errorStepChangeListener).toHaveBeenCalled();
+        expect(workingStepChangeListener).toHaveBeenCalled();
+        expect(stateChangeListener).toHaveBeenCalled();
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining("Error in stepChange listener:"),
+          expect.any(Error)
+        );
+      });
+    });
+  });
 });

@@ -17,6 +17,8 @@ import {
   DataLoadListener,
   DataPersistListener,
   LoadedData,
+  FlowCompleteListener,
+  StepChangeListener,
 } from "./types";
 
 export class OnboardingEngine {
@@ -29,10 +31,13 @@ export class OnboardingEngine {
   private errorInternal: Error | null = null;
   private isCompletedInternal: boolean = false;
 
+  // Listeners for state changes
   private stateChangeListeners: Set<EngineStateChangeListener> = new Set();
   private beforeStepChangeListeners: Set<BeforeStepChangeListener> = new Set();
+  private flowCompleteListeners: Set<FlowCompleteListener> = new Set();
+  private stepChangeListeners: Set<StepChangeListener> = new Set();
 
-  private onFlowComplete?: (context: OnboardingContext) => void;
+  private onFlowComplete?: FlowCompleteListener;
   private onStepChangeCallback?: (
     newStep: OnboardingStep | null,
     oldStep: OnboardingStep | null,
@@ -174,13 +179,19 @@ export class OnboardingEngine {
         : configInitialStepId ||
           (this.steps.length > 0 ? this.steps[0].id : null);
 
+    console.log(
+      "[OnboardingEngine] Effective initial step ID:",
+      effectiveInitialStepId
+    );
+
     if (effectiveInitialStepId) {
       // navigateToStep will set isLoading to true, then false, and notify listeners
       await this.navigateToStep(effectiveInitialStepId, "initial");
     } else {
-      this.isCompletedInternal = true;
       // If no steps and no initial step, flow is complete.
-      // isLoadingInternal should be false here.
+      this.isCompletedInternal = true;
+      this.isLoadingInternal = false;
+
       this.notifyStateChangeListeners(); // Notify final state after potential completion
     }
   }
@@ -191,6 +202,81 @@ export class OnboardingEngine {
    */
   public async ready(): Promise<void> {
     return this.initializationPromise;
+  }
+
+  /**
+   * Registers a listener function that will be called whenever the onboarding step changes.
+   *
+   * @param listener - The function to be invoked on step change events.
+   * @returns An unsubscribe function that, when called, removes the registered listener.
+   */
+  public addStepChangeListener(
+    listener: StepChangeListener
+  ): UnsubscribeFunction {
+    this.stepChangeListeners.add(listener);
+    return () => this.stepChangeListeners.delete(listener);
+  }
+
+  private notifyStepChangeListeners(
+    newStep: OnboardingStep | null,
+    oldStep: OnboardingStep | null,
+    context: OnboardingContext
+  ): void {
+    this.stepChangeListeners.forEach((listener) => {
+      try {
+        listener(newStep, oldStep, context);
+      } catch (err) {
+        console.error("[OnboardingEngine] Error in stepChange listener:", err);
+      }
+    });
+  }
+
+  /**
+   * Registers a listener to be called when a flow has completed.
+   *
+   * @param listener - The callback function to invoke when the flow completes.
+   * @returns A function that can be called to unsubscribe the listener.
+   */
+  public addFlowCompletedListener(
+    listener: FlowCompleteListener
+  ): UnsubscribeFunction {
+    this.flowCompleteListeners.add(listener);
+    return () => this.flowCompleteListeners.delete(listener);
+  }
+
+  /**
+   * Notifies all registered flow completion listeners that the onboarding flow has completed.
+   *
+   * Iterates through each listener in `flowCompleteListeners` and invokes it with the provided
+   * `OnboardingContext`. Handles both synchronous and asynchronous listeners:
+   * - For synchronous listeners, any thrown errors are caught and logged.
+   * - For asynchronous listeners (those returning a Promise), any rejected promises are caught and logged.
+   *
+   * @param context - The current onboarding context to pass to each listener.
+   */
+  private notifyFlowCompleteListeners(context: OnboardingContext): void {
+    console.log(
+      "[OnboardingEngine] Notifying flowCompleteListeners. Count:",
+      this.flowCompleteListeners.size
+    );
+    this.flowCompleteListeners.forEach((listener) => {
+      try {
+        const result = listener(context);
+        if (result instanceof Promise) {
+          result.catch((err) =>
+            console.error(
+              "[OnboardingEngine] Error in async onFlowHasCompleted listener:",
+              err
+            )
+          );
+        }
+      } catch (err) {
+        console.error(
+          "[OnboardingEngine] Error in sync onFlowHasCompleted listener:",
+          err
+        );
+      }
+    });
   }
 
   /**
@@ -325,7 +411,7 @@ export class OnboardingEngine {
       nextCandidateStep = findStepById(this.steps, finalTargetStepId);
     }
 
-    const oldStep = this.currentStepInternal;
+    const oldStep = this.currentStepInternal; // Capture old step before changing
     this.currentStepInternal = nextCandidateStep || null;
 
     if (this.currentStepInternal) {
@@ -369,26 +455,44 @@ export class OnboardingEngine {
         );
       }
     } else {
-      // Flow is completed
+      // Flow is completed, notify config level onFlowComplete if defined
       this.isCompletedInternal = true;
+      const finalContext = this.contextInternal;
       if (
         this.onFlowComplete &&
         direction !== "initial" &&
-        (!oldStep || !evaluateStepId(oldStep.nextStep, this.contextInternal))
+        (!oldStep || !evaluateStepId(oldStep.nextStep, finalContext))
       ) {
-        this.onFlowComplete(this.contextInternal);
+        try {
+          await this.onFlowComplete(finalContext);
+        } catch (e) {
+          console.error(
+            "[OnboardingEngine] Error in config.onFlowComplete:",
+            e
+          );
+        }
       }
+
+      // Then notify all registered listeners
+      this.notifyFlowCompleteListeners(finalContext);
+
       // Persist on completion
       await this.persistDataIfNeeded(); // <--- ADDED PERSIST ON COMPLETION
     }
 
     if (this.onStepChangeCallback) {
+      // The one from config
       this.onStepChangeCallback(
         this.currentStepInternal,
         oldStep,
         this.contextInternal
       );
     }
+    this.notifyStepChangeListeners(
+      this.currentStepInternal,
+      oldStep,
+      this.contextInternal
+    ); // Notify all event listeners
 
     this.setState(() => ({ isLoading: false })); // This will notify listeners
   }
