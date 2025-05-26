@@ -28,8 +28,12 @@ jobs:
           node-version: 22
           cache: "npm"
 
+      - name: Clean install (remove node_modules and lockfile)
+        run: |
+          rm -rf node_modules package-lock.json
+  
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Vitest with coverage
         run: npx vitest run --coverage
