@@ -24,7 +24,7 @@ export type UnsubscribeFunction = () => void;
 
 export interface OnboardingEngineConfig {
   steps: OnboardingStep[];
-  initialStepId?: string;
+  initialStepId?: string | number;
   initialContext?: Partial<OnboardingContext>;
   onFlowComplete?: (context: OnboardingContext) => void;
   onStepChange?: (
@@ -60,7 +60,7 @@ export interface BeforeStepChangeEvent {
    * Optionally, provide a new targetStepId if you want to redirect the navigation
    * instead of just cancelling. This will only be respected if cancel() is not called.
    */
-  redirect?: (newTargetStepId: string | null) => void;
+  redirect?: (newTargetStepId: string | number | null) => void;
 }
 
 /**
@@ -75,7 +75,7 @@ export type BeforeStepChangeListener = (
 
 export interface LoadedData {
   flowData?: Record<string, any>;
-  currentStepId?: string | null;
+  currentStepId?: string | number | null;
   /** Optional: Any other context fields the user wants to restore */
   [key: string]: any;
 }

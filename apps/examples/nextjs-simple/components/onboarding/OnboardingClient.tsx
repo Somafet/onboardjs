@@ -13,8 +13,10 @@ import {
 } from "@/config/onboardingConfig";
 import { Button } from "@/components/ui/button"; // For custom loading/empty states
 import { toast } from "sonner"; // For notifications
+import { useRouter } from "next/navigation";
 
 export const OnboardingClientWrapper = () => {
+  const router = useRouter();
   const handleFlowComplete = (context: CoreOnboardingContext) => {
     console.log("Onboarding Completed! Final data:", context.flowData);
     toast("Onboarding Complete!", {
@@ -22,12 +24,12 @@ export const OnboardingClientWrapper = () => {
       duration: 5000,
     });
     // Here you would typically redirect the user or update application state
-    // For example: router.push('/dashboard');
+    router.push("/dashboard");
   };
 
   const handleStepChange = (
-    newStep: OnboardingStep | null,
-    oldStep: OnboardingStep | null
+    newStep: OnboardingStep | null
+    // oldStep: OnboardingStep | null
     // context: CoreOnboardingContext,
   ) => {
     if (newStep) {
@@ -42,13 +44,11 @@ export const OnboardingClientWrapper = () => {
         stepComponentRegistry={appStepComponentRegistry}
         onFlowComplete={handleFlowComplete}
         onStepChange={handleStepChange}
-        initialContext={
-          {
-            // You can pre-fill flowData or add other context here
-            // flowData: { userEmail: 'prefill@example.com' },
-            // currentUser: { id: 'user123', role: 'admin' }
-          }
-        }
+        initialContext={{
+          // You can pre-fill flowData or add other context here
+          // flowData: { userEmail: 'prefill@example.com' },
+          currentUser: { id: "user123", role: "admin" },
+        }}
         LoadingComponent={
           <div className="flex justify-center items-center h-64">
             <p className="text-lg">Loading Onboarding...</p>

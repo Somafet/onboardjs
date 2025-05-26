@@ -3,7 +3,7 @@
 import { OnboardingStep, OnboardingContext } from "../types";
 
 /**
- * Evaluates a step ID that can be a string or a function.
+ * Evaluates a step ID that can be a string, number or a function.
  */
 export function evaluateStepId(
   stepIdOrFn:

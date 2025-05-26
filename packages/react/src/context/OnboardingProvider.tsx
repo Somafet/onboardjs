@@ -135,7 +135,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const onDataPersistHandler = useCallback(
     async (
       context: CoreOnboardingContext,
-      currentStepId: string | null
+      currentStepId: string | number | null
     ): Promise<void> => {
       if (customOnDataPersist) {
         return customOnDataPersist(context, currentStepId);
@@ -193,11 +193,22 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     const newEngine = new OnboardingEngine(engineConfig);
     setEngine(newEngine);
-    // Initial state is set by the engine itself after potential hydration
-    // setEngineState(newEngine.getState()); // This might be too early if hydration is async
+
+    // The engine's constructor now calls initializeEngine, which is async
+    // and calls notifyStateChangeListeners at various points (start of hydration, end of init).
+    // The subscription below should pick up these notifications.
+    // We can also set an initial state, but it might be the "hydrating" state.
+    // The subscription is key to getting the *final* initial state after async ops.
+
+    // Set an initial state immediately. This will likely be the "isHydrating: true" state.
+    // This ensures `engineState` is not null while the engine initializes.
+    setEngineState(newEngine.getState());
 
     const unsubscribe = newEngine.subscribeToStateChange((newState) => {
-      // Assuming subscribeToStateChange exists
+      console.log(
+        "[OnboardingProvider] Engine state changed, updating React state:",
+        newState
+      );
       setEngineState(newState);
     });
 

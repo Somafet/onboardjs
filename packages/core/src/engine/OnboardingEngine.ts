@@ -91,7 +91,7 @@ export class OnboardingEngine {
    * @returns A promise that resolves when initialization is complete.
    */
   private async initializeEngine(
-    configInitialStepId?: string,
+    configInitialStepId?: string | number,
     configInitialContext?: Partial<OnboardingContext>
   ): Promise<void> {
     this.isHydratingInternal = true;
