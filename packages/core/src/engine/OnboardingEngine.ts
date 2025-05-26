@@ -98,6 +98,8 @@ export class OnboardingEngine {
     this.notifyStateChangeListeners(); // Notify that hydration is starting
 
     let loadedData: LoadedData | null | undefined = null;
+    let dataLoadError: Error | null = null;
+
     if (this.onDataLoad) {
       try {
         console.log("[OnboardingEngine] Attempting to load data...");
@@ -127,7 +129,7 @@ export class OnboardingEngine {
         }
       } catch (e: any) {
         console.error("[OnboardingEngine] Error during onDataLoad:", e);
-        this.errorInternal = new Error(
+        dataLoadError = new Error(
           `Failed to load onboarding state: ${e.message}`
         );
         // Proceed with default initialization if loading fails
@@ -136,6 +138,35 @@ export class OnboardingEngine {
 
     this.isHydratingInternal = false;
     // At this point, contextInternal is set up either from defaults or loaded data.
+
+    if (dataLoadError) {
+      this.errorInternal = dataLoadError;
+      this.currentStepInternal = null; // No current step if loading failed critically
+      this.isCompletedInternal = false; // Not completed, but in an error state
+      this.isLoadingInternal = false; // Not actively loading anymore
+      this.notifyStateChangeListeners(); // Notify with the hydration error
+      return;
+    }
+
+    // Proceed with normal initialization if onDataLoad was successful or not provided
+    this.contextInternal = {
+      // Ensure context is finalized after potential load
+      ...this.contextInternal,
+      ...configInitialContext,
+      flowData: {
+        ...(configInitialContext?.flowData || {}),
+        ...(loadedData?.flowData || {}),
+        ...(this.contextInternal.flowData || {}), // Ensure existing flowData (if any from constructor) is not lost if loadedData is sparse
+      },
+      // Apply other top-level loadedData fields if they exist
+      ...(loadedData &&
+        Object.keys(loadedData).reduce((acc, key) => {
+          if (key !== "flowData" && key !== "currentStepId") {
+            acc[key] = loadedData[key];
+          }
+          return acc;
+        }, {} as any)),
+    };
 
     const effectiveInitialStepId =
       loadedData?.currentStepId !== undefined // Check if currentStepId was explicitly loaded (even if null)

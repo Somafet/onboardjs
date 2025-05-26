@@ -146,7 +146,7 @@ describe("OnboardingEngine", () => {
       );
 
       const state = engine.getState();
-      expect(state.currentStep?.id).toBe("step1"); // Should fall back to default
+      expect(state.currentStep).toBe(null); // Should not have a current step
     });
 
     it("should persist data when context changes", async () => {
