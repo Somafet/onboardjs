@@ -1,0 +1,50 @@
+name: Core Package Tests
+
+on:
+  push:
+    paths:
+      - "packages/core/**"
+      - ".github/workflows/core-tests.yml"
+  pull_request:
+    paths:
+      - "packages/core/**"
+      - ".github/workflows/core-tests.yml"
+
+jobs:
+  test-core:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: packages/core
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest with coverage
+        run: npx vitest run --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-report
+          path: packages/core/coverage
+
+      - name: Display coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            npx vitest coverage report --reporter=text-summary
+          else
+            echo "No coverage summary found."
+          fi

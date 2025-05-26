@@ -42,7 +42,13 @@ export class OnboardingEngine {
   private onDataLoad?: DataLoadListener;
   private onDataPersist?: DataPersistListener;
 
+  private initializationPromise: Promise<void>;
+  private resolveInitialization!: () => void; // Definite assignment assertion
+
   constructor(config: OnboardingEngineConfig) {
+    this.initializationPromise = new Promise((resolve) => {
+      this.resolveInitialization = resolve;
+    });
     this.steps = config.steps;
     this.contextInternal = {
       flowData: {},
@@ -56,7 +62,15 @@ export class OnboardingEngine {
     // Don't notify listeners immediately, wait for potential hydration
     // this.notifyStateChangeListeners(); // Remove this initial call
 
-    this.initializeEngine(config.initialStepId, config.initialContext);
+    this.initializeEngine(config.initialStepId, config.initialContext).finally(
+      () => {
+        // This ensures resolveInitialization is called even if initializeEngine itself throws
+        // though errors within initializeEngine should ideally be caught and set to errorInternal
+        console.log("[OnboardingEngine] Initialization complete.");
+
+        this.resolveInitialization?.();
+      }
+    );
   }
 
   /**
@@ -138,6 +152,14 @@ export class OnboardingEngine {
       // isLoadingInternal should be false here.
       this.notifyStateChangeListeners(); // Notify final state after potential completion
     }
+  }
+
+  /**
+   * Waits for the onboarding engine to be fully initialized and ready for use.
+   * @returns A promise that resolves when the onboarding engine is fully initialized and ready for use.
+   */
+  public async ready(): Promise<void> {
+    return this.initializationPromise;
   }
 
   /**
