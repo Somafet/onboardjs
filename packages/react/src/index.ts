@@ -19,11 +19,16 @@ export type {
   OnboardingContext as CoreOnboardingContext,
   BaseOnboardingStep,
   OnboardingStepType,
-  // Export specific payloads if users might need to type them for custom logic
-  WelcomeStepPayload,
-  WelcomeInputFormStepPayload,
-  FormInputStepPayload,
-  // ... other payloads
+  CustomComponentStepPayload,
+  InformationStepPayload,
+  MultipleChoiceStepPayload,
+  SingleChoiceStepPayload,
+  ConfirmationStepPayload,
+  ChecklistStepPayload,
+  FormField,
+  FormFieldOption,
+  FormFieldValidation,
+  ChoiceOption,
   OnboardingEngineConfig,
   EngineState,
 } from "@onboardjs/core";
