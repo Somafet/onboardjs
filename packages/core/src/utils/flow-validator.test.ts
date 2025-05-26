@@ -335,14 +335,45 @@ describe("validateFlow", () => {
     expect(issues).toEqual([]);
   });
 
-  // Example of a test for a specific step type's payload if you add more detailed validation
-  // For now, our validator is quite generic on payloads other than CUSTOM_COMPONENT
-  // it('should return an error if FORM_INPUT payload is missing fields array', () => {
-  //   const steps: OnboardingStep[] = [
-  //     { id: 'form1', type: 'FORM_INPUT', payload: {} as any },
-  //   ];
-  //   // This would require adding specific checks in validateFlow for FORM_INPUT
-  //   // const issues = validateFlow(steps);
-  //   // expectIssueWithMessage(issues, "FORM_INPUT step 'form1' is missing 'payload.fields'");
-  // });
+  it("should return an error for SINGLE_CHOICE with no options", () => {
+    const steps: OnboardingStep[] = [
+      {
+        id: "singleChoice1",
+        type: "SINGLE_CHOICE",
+        title: "Single Choice Step",
+        payload: {
+          question: "What is your role?",
+          options: [], // No options provided
+          dataKey: "userRole",
+        },
+      },
+    ];
+    const issues = validateFlow(steps);
+    expect(issues.length).toBe(1);
+    expectIssueWithMessage(
+      issues,
+      "Step 'singleChoice1' is of type 'SINGLE_CHOICE' but has no valid 'options'."
+    );
+  });
+
+  it("should return an error for MULTIPLE_CHOICE with no options", () => {
+    const steps: OnboardingStep[] = [
+      {
+        id: "multipleChoice1",
+        type: "MULTIPLE_CHOICE",
+        title: "Multiple Choice Step",
+        payload: {
+          question: "Select your interests",
+          options: [], // No options provided
+          dataKey: "userInterests",
+        },
+      },
+    ];
+    const issues = validateFlow(steps);
+    expect(issues.length).toBe(1);
+    expectIssueWithMessage(
+      issues,
+      "Step 'multipleChoice1' is of type 'MULTIPLE_CHOICE' but has no valid 'options'."
+    );
+  });
 });

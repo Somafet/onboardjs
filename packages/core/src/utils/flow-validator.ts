@@ -71,8 +71,34 @@ export function validateFlow(
           stepId: step.id,
         });
       }
+    } else if (step.type === "SINGLE_CHOICE") {
+      const payload = step.payload;
+
+      if (
+        !payload ||
+        !Array.isArray(payload.options) ||
+        payload.options.length === 0
+      ) {
+        issues.push({
+          level: "error",
+          message: `Step '${step.id}' is of type 'SINGLE_CHOICE' but has no valid 'options'.`,
+          stepId: step.id,
+        });
+      }
+    } else if (step.type === "MULTIPLE_CHOICE") {
+      const payload = step.payload;
+      if (
+        !payload ||
+        !Array.isArray(payload.options) ||
+        payload.options.length === 0
+      ) {
+        issues.push({
+          level: "error",
+          message: `Step '${step.id}' is of type 'MULTIPLE_CHOICE' but has no valid 'options'.`,
+          stepId: step.id,
+        });
+      }
     }
-    // Add more type-specific payload validation here if needed
   });
 
   // Pass 2: Check for navigation link validity (for static string links)
