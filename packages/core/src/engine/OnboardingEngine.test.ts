@@ -183,6 +183,67 @@ describe("OnboardingEngine", () => {
         expect.any(Error)
       );
     });
+
+    // It should handle no data returned from onDataLoad
+    it("should handle no data returned from onDataLoad", async () => {
+      const onDataLoad = vi.fn().mockResolvedValue(null);
+      const config = { ...basicConfig, onDataLoad };
+
+      engine = new OnboardingEngine(config);
+      await engine.ready(); // Ensure engine is fully initialized
+
+      const state = engine.getState();
+      expect(state.currentStep).toBe(mockSteps[0]); // Should default to first step
+      expect(state.context.flowData).toEqual({}); // Flow data should be empty
+    });
+
+    // Ensure existing flowData (if any from constructor) is not lost if loadedData is sparse
+    it("should not lose existing flowData when loadedData is sparse", async () => {
+      const initialContext: OnboardingContext = {
+        flowData: { existingData: "initial" },
+      };
+      const onDataLoad = vi.fn().mockResolvedValue({
+        currentStepId: "step2",
+        flowData: {}, // Sparse data
+      });
+      const config = { ...basicConfig, onDataLoad, initialContext };
+
+      engine = new OnboardingEngine(config);
+      await engine.ready(); // Ensure engine is fully initialized
+
+      const state = engine.getState();
+      expect(state.context.flowData.existingData).toBe("initial");
+    });
+
+    // Check if context actually changed to avoid unnecessary persists
+    it("should not persist if context did not change", async () => {
+      const onDataPersist = vi.fn();
+      const config = { ...basicConfig, onDataPersist };
+
+      engine = new OnboardingEngine(config);
+
+      const initialContext = engine.getState().context;
+      await engine.updateContext(initialContext); // Same data
+
+      expect(onDataPersist).not.toHaveBeenCalled(); // Should not persist
+    });
+
+    // Ensure Persist data if context changed and not hydrating
+    it("should persist data if context changed and not hydrating", async () => {
+      const onDataPersist = vi.fn();
+      const config = { ...basicConfig, onDataPersist };
+
+      engine = new OnboardingEngine(config);
+
+      await engine.updateContext({ flowData: { newData: "value" } });
+
+      expect(onDataPersist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          flowData: expect.objectContaining({ newData: "value" }),
+        }),
+        "step1"
+      );
+    });
   });
 
   describe("Navigation", () => {
@@ -205,6 +266,45 @@ describe("OnboardingEngine", () => {
       expect(state.currentStep?.id).toBe("step1");
     });
 
+    // It should navigate to previous step even if no previous step is defined
+    it("should handle previous step when no previous step is defined", async () => {
+      await engine.next(); // Go to step2
+      await engine.previous(); // Back to step1
+      await engine.previous(); // Try to go back again
+
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step1"); // Should remain on step1
+    });
+
+    // It should navigate to previous step even when previousStep is not defined
+    it("should handle previous step when previousStep is not defined", async () => {
+      const stepsWithoutPrevious: OnboardingStep[] = [
+        {
+          id: "step1",
+          type: "INFORMATION",
+          title: "Step 1",
+          payload: { mainText: "First step" },
+          nextStep: "step2",
+        },
+        {
+          id: "step2",
+          type: "INFORMATION",
+          title: "Step 2",
+          payload: { mainText: "Second step" },
+          previousStep: undefined, // No previous step defined
+        },
+      ];
+
+      const config = { ...basicConfig, steps: stepsWithoutPrevious };
+      engine = new OnboardingEngine(config);
+
+      await engine.next(); // Go to step2
+      await engine.previous(); // Back to step1
+
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step1");
+    });
+
     it("should navigate to specific step using goToStep", async () => {
       await engine.goToStep("step3");
 
@@ -218,6 +318,15 @@ describe("OnboardingEngine", () => {
 
       const state = engine.getState();
       expect(state.context.flowData.userRole).toBe("developer");
+    });
+
+    it("should handle goToStep navigation with step data", async () => {
+      const stepData = { confirmation: true };
+      await engine.goToStep("step3", stepData);
+
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step3");
+      expect(state.context.flowData.confirmation).toBe(true);
     });
 
     it("should maintain navigation history", async () => {
@@ -238,6 +347,203 @@ describe("OnboardingEngine", () => {
       expect(state.isCompleted).toBe(true);
       expect(state.currentStep).toBeNull();
       expect(basicConfig.onFlowComplete).toHaveBeenCalledWith(state.context);
+    });
+
+    it("should navigate to a valid step by id", async () => {
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "goto");
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step2");
+    });
+
+    it("should set currentStep to null if step id does not exist", async () => {
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("non-existent", "goto");
+      const state = engine.getState();
+      expect(state.currentStep).toBeNull();
+      expect(state.isCompleted).toBe(true);
+    });
+
+    it("should skip steps with unmet condition", async () => {
+      const conditionalSteps: OnboardingStep[] = [
+        {
+          id: "step1",
+          type: "INFORMATION",
+          title: "Step 1",
+          payload: { mainText: "First step" },
+          nextStep: "step2",
+        },
+        {
+          id: "step2",
+          type: "INFORMATION",
+          title: "Step 2",
+          payload: { mainText: "Conditional step" },
+          condition: () => false,
+          nextStep: "step3",
+        },
+        {
+          id: "step3",
+          type: "INFORMATION",
+          title: "Step 3",
+          payload: { mainText: "Final step" },
+        },
+      ];
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        steps: conditionalSteps,
+      });
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "next");
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step3");
+    });
+
+    it("should call beforeStepChange listeners and allow cancellation", async () => {
+      await engine.ready();
+      const cancelListener = vi.fn((event: BeforeStepChangeEvent) => {
+        event.cancel();
+      });
+      engine.onBeforeStepChange(cancelListener);
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "next");
+      const state = engine.getState();
+      expect(cancelListener).toHaveBeenCalled();
+      expect(state.currentStep?.id).toBe("step1");
+    });
+
+    it("should allow beforeStepChange listener to redirect navigation", async () => {
+      await engine.ready();
+      const redirectListener = vi.fn((event: BeforeStepChangeEvent) => {
+        if (event.redirect) event.redirect("step3");
+      });
+      engine.onBeforeStepChange(redirectListener);
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "next");
+      const state = engine.getState();
+      expect(redirectListener).toHaveBeenCalled();
+      expect(state.currentStep?.id).toBe("step3");
+    });
+
+    it("should call onStepActive when entering a step", async () => {
+      const onStepActive = vi.fn();
+      const stepsWithHook = [
+        { ...basicConfig.steps[0], onStepActive },
+        ...basicConfig.steps.slice(1),
+      ];
+      engine = new OnboardingEngine({ ...basicConfig, steps: stepsWithHook });
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "goto");
+      expect(onStepActive).toHaveBeenCalled();
+    });
+
+    it("should set error if onStepActive throws", async () => {
+      const error = new Error("onStepActive error");
+      const onStepActive = vi.fn().mockRejectedValue(error);
+      const stepsWithHook = [
+        {
+          ...basicConfig.steps[0],
+          id: "step1",
+          type: "CUSTOM_COMPONENT" as const,
+          payload: {
+            componentKey: "testComponent",
+          },
+          nextStep: "step2",
+        }, // Ensure IDs are clear
+        {
+          ...basicConfig.steps.slice(1)[0],
+          id: "step2",
+          type: "CUSTOM_COMPONENT" as const,
+          payload: {
+            componentKey: "testComponent",
+          },
+          onStepActive,
+        },
+      ];
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        steps: stepsWithHook,
+        initialStepId: "step1",
+      });
+
+      await engine.ready();
+      // Now engine is past initial loading. Current step should be "step1".
+
+      // Call the method that triggers the error
+      // We expect navigateToStep to complete, including its internal async operations and state updates
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "goto");
+
+      // Add a minimal yield to the event loop, just in case.
+      // This helps ensure any final microtasks from the promise rejection handling in navigateToStep complete.
+      await new Promise((resolve) => setTimeout(resolve, 0)); // Or process.nextTick for Node
+
+      const state = engine.getState();
+      expect(onStepActive).toHaveBeenCalled(); // Make sure the mock was called
+      expect(state.error).toBe(error); // Now check the error
+      expect(state.currentStep?.id).toBe("step2");
+      expect(state.isLoading).toBe(false);
+    });
+
+    it("should call onFlowComplete when navigating from the last step (which has no nextStep)", async () => {
+      // engine is instantiated in the beforeEach with basicConfig
+      // basicConfig.onFlowComplete is a vi.fn()
+
+      // Ensure engine is ready and on the first step
+      await engine.ready();
+      expect(engine.getState().currentStep?.id).toBe("step1");
+
+      // Navigate to the last defined step ("step3")
+      await engine.goToStep("step3");
+      let state = engine.getState();
+      expect(state.currentStep?.id).toBe("step3");
+      expect(state.isCompleted).toBe(false);
+      expect(basicConfig.onFlowComplete).not.toHaveBeenCalled(); // Not yet completed
+
+      // Now, attempt to navigate *from* step3. Since step3 has no nextStep, this should complete the flow.
+      await engine.next(); // This is the action that triggers completion
+
+      // It's good practice to allow microtasks to settle after the action that triggers the callback
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Assertions after completion
+      expect(basicConfig.onFlowComplete).toHaveBeenCalledTimes(1);
+      // You can also check the context passed to onFlowComplete if needed:
+      // expect(basicConfig.onFlowComplete).toHaveBeenCalledWith(expect.objectContaining({ flowData: ... }));
+
+      state = engine.getState();
+      expect(state.isCompleted).toBe(true);
+      expect(state.currentStep).toBeNull();
+    });
+
+    it("should persist data when flow is completed", async () => {
+      const onDataPersist = vi.fn();
+      engine = new OnboardingEngine({ ...basicConfig, onDataPersist });
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep(null, "next");
+      expect(onDataPersist).toHaveBeenCalled();
+    });
+
+    it("should update history when navigating forward", async () => {
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "next");
+      // @ts-expect-error: access private property for test
+      expect(engine.history).toContain("step1");
+    });
+
+    it("should not update history when navigating previous", async () => {
+      await engine.ready();
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step2", "next");
+      // @ts-expect-error: access private method for test
+      await engine.navigateToStep("step1", "previous");
+      // @ts-expect-error: access private property for test
+      expect(engine.history).not.toContain("step2");
     });
   });
 
@@ -741,6 +1047,29 @@ describe("OnboardingEngine", () => {
 
       expect(onDataPersist).toHaveBeenCalled();
     });
+
+    // it should handle reset with overridden persistence handlers
+    it("should handle reset with overridden persistence handlers", async () => {
+      const onDataPersist = vi.fn();
+      const onDataLoad = vi.fn();
+      const onFlowComplete = vi.fn();
+      const onStepChange = vi.fn();
+      const configWithPersist = { ...basicConfig, onDataPersist };
+      engine = new OnboardingEngine(configWithPersist);
+
+      await engine.reset({
+        onDataPersist: vi.fn(),
+        onDataLoad: vi.fn(),
+        onFlowComplete: vi.fn(),
+        onStepChange: vi.fn(),
+      }); // Reset with new persistence config
+      await engine.updateContext({ flowData: { test: "data" } });
+
+      expect(onDataPersist).not.toHaveBeenCalled(); // Should not call old handler
+      expect(onDataLoad).not.toHaveBeenCalled(); // Should not call old handler
+      expect(onFlowComplete).not.toHaveBeenCalled(); // Should not call old handler
+      expect(onStepChange).not.toHaveBeenCalled(); // Should not call old handler
+    });
   });
 
   describe("Error Handling", () => {
@@ -962,6 +1291,120 @@ describe("OnboardingEngine", () => {
 
         const state = engine.getState();
         expect(state.currentStep?.id).toBe("step1");
+      });
+    });
+
+    describe("OnboardingEngine - setState", () => {
+      let engine: OnboardingEngine;
+      let basicConfig: OnboardingEngineConfig;
+      let mockSteps: OnboardingStep[];
+
+      beforeEach(() => {
+        mockSteps = [
+          {
+            id: "step1",
+            type: "INFORMATION",
+            title: "Welcome",
+            payload: { mainText: "Welcome to onboarding" },
+            nextStep: "step2",
+          },
+          {
+            id: "step2",
+            type: "INFORMATION",
+            title: "Step 2",
+            payload: { mainText: "Second step" },
+            previousStep: "step1",
+          },
+        ];
+        basicConfig = {
+          steps: mockSteps,
+          onFlowComplete: vi.fn(),
+          onStepChange: vi.fn(),
+        };
+        engine = new OnboardingEngine(basicConfig);
+      });
+
+      it("should update isLoading, isHydrating, error, isCompleted in setState", () => {
+        // @ts-expect-error Accessing private method for test
+        engine.setState(() => ({
+          isLoading: true,
+          isHydrating: true,
+          error: new Error("Test error"),
+          isCompleted: true,
+        }));
+        const state = engine.getState();
+        expect(state.isLoading).toBe(true);
+        expect(state.isHydrating).toBe(true);
+        expect(state.error?.message).toBe("Test error");
+        expect(state.isCompleted).toBe(true);
+      });
+
+      it("should update context and persist if changed", async () => {
+        const onDataPersist = vi.fn().mockResolvedValue(undefined);
+        const config = { ...basicConfig, onDataPersist };
+        engine = new OnboardingEngine(config);
+        await engine.ready();
+
+        const newContext = { flowData: { foo: "bar" } };
+        // @ts-expect-error Accessing private method for test
+        engine.setState(() => ({
+          context: newContext,
+        }));
+
+        // Wait for persist to be called
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(engine.getState().context.flowData.foo).toBe("bar");
+        expect(onDataPersist).toHaveBeenCalledWith(
+          expect.objectContaining({
+            flowData: expect.objectContaining({ foo: "bar" }),
+          }),
+          "step1"
+        );
+      });
+
+      it("should not persist if context did not change", async () => {
+        const onDataPersist = vi.fn();
+        const config = { ...basicConfig, onDataPersist };
+        engine = new OnboardingEngine(config);
+        await engine.ready();
+
+        // @ts-expect-error Accessing private method for test
+        engine.setState(() => ({
+          context: engine.getState().context,
+        }));
+
+        // Wait for persist to be called (should not be called)
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(onDataPersist).not.toHaveBeenCalled();
+      });
+
+      it("should not persist if hydrating", async () => {
+        const onDataPersist = vi.fn();
+        const config = { ...basicConfig, onDataPersist };
+        engine = new OnboardingEngine(config);
+        await engine.ready();
+
+        // @ts-expect-error Accessing private method for test
+        engine.isHydratingInternal = true;
+        // @ts-expect-error Accessing private method for test
+        engine.setState(() => ({
+          context: { flowData: { test: 1 } },
+        }));
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(onDataPersist).not.toHaveBeenCalled();
+      });
+
+      it("should notify state change listeners", () => {
+        const listener = vi.fn();
+        engine.subscribeToStateChange(listener);
+        // @ts-expect-error Accessing private method for test
+        engine.setState(() => ({
+          isLoading: true,
+        }));
+        expect(listener).toHaveBeenCalledWith(
+          expect.objectContaining({ isLoading: true })
+        );
       });
     });
   });
