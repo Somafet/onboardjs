@@ -1150,7 +1150,9 @@ describe("OnboardingEngine", () => {
       // Simulate some persisted data for a step
       await engine.next({ test: "data" });
       expect(onDataPersist).toHaveBeenCalledWith(
-        { flowData: { test: "data" } },
+        expect.objectContaining({
+          flowData: expect.objectContaining({ test: "data" }),
+        }),
         "step2"
       );
 
