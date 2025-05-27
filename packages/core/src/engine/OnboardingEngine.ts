@@ -758,22 +758,26 @@ export class OnboardingEngine {
         // onStepComplete might also modify contextInternal.flowData
         // We assume persistDataIfNeeded will be called after state notification
       }
+
+      const currentStepId = this.currentStepInternal!.id;
+      // this.contextInternal.flowData[`_completed_${currentStepId}`] = true;
+      // Or a more structured approach:
+      this.contextInternal.flowData._internal = {
+        ...this.contextInternal.flowData._internal,
+        completedSteps: {
+          ...(this.contextInternal.flowData._internal?.completedSteps || {}),
+          [currentStepId]: Date.now(), // Store timestamp of completion
+        },
+      };
+
       const nextStepId = evaluateStepId(
         this.currentStepInternal!.nextStep,
         this.contextInternal
       );
       await this.navigateToStep(nextStepId, "next"); // This will eventually call setState and notify
 
-      // Persist after successful navigation and potential context update from onStepComplete
-      // or if stepSpecificData was provided.
-      // navigateToStep calls setState which calls notify, which should be enough if persist is in setState.
-      // However, if onStepComplete modifies context directly, we might need an explicit persist here.
-      // Let's rely on setState's persist call for now. If contextUpdated is true, it will persist.
-      // If onStepComplete modifies context, the next getState() will reflect it.
-      if (contextUpdated) {
-        // If data was directly merged here
-        this.persistDataIfNeeded();
-      }
+      // If data was directly merged here
+      await this.persistDataIfNeeded();
     } catch (e: any) {
       this.errorInternal = e;
       console.error(
