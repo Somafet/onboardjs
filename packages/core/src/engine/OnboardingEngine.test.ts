@@ -266,6 +266,14 @@ describe("OnboardingEngine", () => {
       expect(state.currentStep?.id).toBe("step1");
     });
 
+    it("canGoPrevious should be false if navigating back to the first step", async () => {
+      await engine.next(); // Go to step2
+      await engine.previous(); // Back to step1
+
+      const state = engine.getState();
+      expect(state.canGoPrevious).toBe(false); // Should not be able to go back from step1
+    });
+
     // It should navigate to previous step even if no previous step is defined
     it("should handle previous step when no previous step is defined", async () => {
       await engine.next(); // Go to step2
@@ -347,6 +355,24 @@ describe("OnboardingEngine", () => {
       expect(state.isCompleted).toBe(true);
       expect(state.currentStep).toBeNull();
       expect(basicConfig.onFlowComplete).toHaveBeenCalledWith(state.context);
+    });
+
+    // it should handle errors when onFlowComplete throws
+    it("should handle errors when onFlowComplete throws", async () => {
+      const error = new Error("Flow complete error");
+      const onFlowComplete = vi.fn().mockImplementation(() => {
+        throw error;
+      });
+      const config = { ...basicConfig, onFlowComplete };
+      engine = new OnboardingEngine(config);
+
+      await engine.next(); // step1 -> step2
+      await engine.next(); // step2 -> step3
+      await engine.next(); // step3 -> complete
+
+      const state = engine.getState();
+      expect(state.isCompleted).toBe(true);
+      expect(state.error).toBe(error);
     });
 
     it("should navigate to a valid step by id", async () => {
@@ -1069,6 +1095,92 @@ describe("OnboardingEngine", () => {
       expect(onDataLoad).not.toHaveBeenCalled(); // Should not call old handler
       expect(onFlowComplete).not.toHaveBeenCalled(); // Should not call old handler
       expect(onStepChange).not.toHaveBeenCalled(); // Should not call old handler
+    });
+
+    // It should call onClearPersistedData when it is provided
+    it("should call onClearPersistedData when provided", async () => {
+      const onClearPersistedData = vi.fn();
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        onClearPersistedData,
+      });
+
+      await engine.reset();
+
+      expect(onClearPersistedData).toHaveBeenCalled();
+    });
+
+    // Mock a persistence data store and ensure that during the reset, it is cleared if the onClearPersistedData handler is provided
+    it("should clear persisted data when onClearPersistedData is provided", async () => {
+      const fakeStorage = {
+        items: {} as Record<string | number, any>,
+        get: function (key: string | number) {
+          return this.items[key];
+        },
+        set: function (key: string | number, value: any) {
+          this.items[key] = value;
+        },
+      };
+      const onClearPersistedData = vi.fn(() => {
+        // Actually clear the fake storage
+        fakeStorage.items = {};
+      });
+      const onDataPersist = vi.fn((data, stepId) => {
+        console.log(`Persisting data for step ${stepId}:`, data);
+
+        if (stepId) {
+          fakeStorage.set(stepId, data);
+        }
+      });
+
+      const onDataLoad = vi.fn(async () => {
+        // Simulate loading from storage
+        return fakeStorage.items;
+      });
+
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        onClearPersistedData,
+        onDataPersist,
+        onDataLoad,
+      });
+
+      await engine.ready(); // Ensure engine is ready
+
+      // Simulate some persisted data for a step
+      await engine.next({ test: "data" });
+      expect(onDataPersist).toHaveBeenCalledWith(
+        { flowData: { test: "data" } },
+        "step2"
+      );
+
+      // Reset the engine
+      await engine.reset();
+
+      expect(onClearPersistedData).toHaveBeenCalled();
+      expect(fakeStorage.items).toMatchObject({}); // Ensure storage is cleared
+    });
+
+    // it should handle errors when onClearPersistedData throws
+    it("should handle errors when onClearPersistedData throws", async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const onClearPersistedData = vi.fn().mockImplementation(() => {
+        throw new Error("Clear error");
+      });
+
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        onClearPersistedData,
+      });
+
+      await engine.reset();
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Error during onClearPersistedData"),
+        expect.any(Error)
+      );
     });
   });
 

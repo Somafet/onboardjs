@@ -37,6 +37,7 @@ export class OnboardingEngine {
   private flowCompleteListeners: Set<FlowCompleteListener> = new Set();
   private stepChangeListeners: Set<StepChangeListener> = new Set();
 
+  // Onboarding engine instance configuration
   private onFlowComplete?: FlowCompleteListener;
   private onStepChangeCallback?: (
     newStep: OnboardingStep | null,
@@ -46,6 +47,7 @@ export class OnboardingEngine {
 
   private onDataLoad?: DataLoadListener;
   private onDataPersist?: DataPersistListener;
+  private onClearPersistedData?: () => Promise<void> | void;
 
   private initializationPromise: Promise<void>;
   private resolveInitialization!: () => void; // Definite assignment assertion
@@ -63,6 +65,7 @@ export class OnboardingEngine {
     this.onStepChangeCallback = config.onStepChange;
     this.onDataLoad = config.onDataLoad; // Store
     this.onDataPersist = config.onDataPersist; // Store
+    this.onClearPersistedData = config.onClearPersistedData;
 
     // Don't notify listeners immediately, wait for potential hydration
     // this.notifyStateChangeListeners(); // Remove this initial call
@@ -470,6 +473,7 @@ export class OnboardingEngine {
             "[OnboardingEngine] Error in config.onFlowComplete:",
             e
           );
+          this.errorInternal = e as Error; // Store error for UI
         }
       }
 
@@ -501,22 +505,27 @@ export class OnboardingEngine {
     const currentStep = this.currentStepInternal;
     const context = this.contextInternal;
     let nextPossibleStepId: string | number | null | undefined;
+    let previousPossibleStepId: string | number | null | undefined;
     if (currentStep) {
       nextPossibleStepId = evaluateStepId(currentStep.nextStep, context);
+      previousPossibleStepId = evaluateStepId(
+        currentStep.previousStep,
+        context
+      );
     }
 
     return {
       currentStep,
       context,
       isFirstStep: currentStep
-        ? !evaluateStepId(currentStep.previousStep, context) &&
-          this.history.length === 0
+        ? !previousPossibleStepId && this.history.length === 0
         : false,
       isLastStep: currentStep ? !nextPossibleStepId : this.isCompletedInternal,
       canGoNext: !!(currentStep && nextPossibleStepId),
       canGoPrevious: !!(
-        (currentStep && evaluateStepId(currentStep.previousStep, context)) ||
-        this.history.length > 0
+        (currentStep && previousPossibleStepId) ||
+        (this.history.length > 0 &&
+          this.history[this.history.length - 1] !== (currentStep?.id ?? null))
       ),
       isSkippable: !!(currentStep && currentStep.isSkippable),
       isLoading: this.isLoadingInternal,
@@ -864,6 +873,23 @@ export class OnboardingEngine {
         ? newConfig.onStepChange
         : this.onStepChangeCallback;
 
+    if (this.onClearPersistedData) {
+      try {
+        console.log("[OnboardingEngine] reset: Clearing persisted data...");
+        await this.onClearPersistedData();
+      } catch (e) {
+        console.error(
+          "[OnboardingEngine] reset: Error during onClearPersistedData:",
+          e
+        );
+        // Decide if this error should halt the reset or just be logged
+      }
+    }
+
+    // Now, set a truly fresh context before calling initializeEngine
+    const resetInitialContext = newConfig?.initialContext || { flowData: {} };
+    this.contextInternal = { flowData: {}, ...resetInitialContext }; // Start fresh
+
     // For reset, we don't persist the "empty" state immediately.
     // We re-initialize, which might load data.
     this.currentStepInternal = null;
@@ -871,12 +897,6 @@ export class OnboardingEngine {
     this.isLoadingInternal = false;
     this.errorInternal = null;
     this.isCompletedInternal = false;
-    // isHydratingInternal will be set by initializeEngine
-
-    // Re-initialize with potentially new initial context from newConfig
-    // or fall back to a truly empty context if no newConfig.initialContext
-    const resetInitialContext = newConfig?.initialContext || { flowData: {} };
-    this.contextInternal = { flowData: {}, ...resetInitialContext };
 
     await this.initializeEngine(newConfig?.initialStepId, resetInitialContext);
     // initializeEngine will call notifyStateChangeListeners

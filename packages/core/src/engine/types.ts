@@ -34,6 +34,12 @@ export interface OnboardingEngineConfig {
   ) => void;
   onDataLoad?: DataLoadListener;
   onDataPersist?: DataPersistListener;
+
+  /**
+   * A callback invoked right at the start of clearing the onboarding flow.
+   * @returns A promise that resolves when all persisted data is cleared.
+   */
+  onClearPersistedData?: () => Promise<void> | void;
 }
 
 /**
