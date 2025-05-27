@@ -58,21 +58,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       )}
     </Card>
   ),
-  CompletedScreen = (
-    <Card className="w-full max-w-lg mx-auto my-8 text-center">
-      <CardHeader>
-        <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-2" />
-        <CardTitle className="text-3xl text-green-600">
-          Onboarding Complete!
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-lg text-gray-700">
-          You're all set up and ready to go.
-        </p>
-      </CardContent>
-    </Card>
-  ),
+  CompletedScreen,
 }) => {
   const { state, isLoading, actions } = useOnboarding();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<any>({});
@@ -98,7 +84,31 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
         onRetry={() => actions.reset({ steps: stepsConfig })}
       />
     );
-  if (state.isCompleted) return <>{CompletedScreen}</>;
+  if (state.isCompleted)
+    return (
+      <>
+        {CompletedScreen ?? (
+          <Card className="w-full max-w-lg mx-auto my-8 text-center">
+            <CardHeader>
+              <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-2" />
+              <CardTitle className="text-3xl text-green-600">
+                Onboarding Complete!
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg text-gray-700">
+                You're all set up and ready to go.
+              </p>
+            </CardContent>
+            <CardFooter className="justify-center mt-8">
+              <Button onClick={() => actions.reset()}>
+                Reset Onboarding flow
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+      </>
+    );
 
   const currentStepDetails = state.currentStep;
   if (!currentStepDetails) {
@@ -129,17 +139,18 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   const currentStepIndex = stepsConfig.findIndex(
     (s) => s.id === currentStepDetails.id
   );
+
   const progressPercentage =
     stepsConfig.length > 0
       ? ((currentStepIndex + 1) / stepsConfig.length) * 100
       : 0;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-2xl">
+    <div className="w-full mx-auto h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle className="text-2xl font-bold mb-2">
               {currentStepDetails.title}
             </CardTitle>
             {currentStepDetails.description && (
@@ -148,14 +159,14 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               </CardDescription>
             )}
           </div>
-          <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full">
-            STEP {currentStepIndex + 1} / {stepsConfig.length}
+          <span className="text-xs uppercase font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded-full text-nowrap">
+            Step {currentStepIndex + 1} / {stepsConfig.length}
           </span>
         </div>
-        <Progress value={progressPercentage} className="w-full h-2" />
+        <Progress value={progressPercentage} className="my-8" />
       </CardHeader>
 
-      <CardContent className="min-h-[250px] py-6">
+      <CardContent className="min-h-[250px] py-6 pt-12 grow">
         <SpecificStepComponent
           payload={currentStepDetails.payload}
           coreContext={state.context}
@@ -164,7 +175,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
         />
       </CardContent>
 
-      <CardFooter className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-6">
+      <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4">
         <div className="w-full sm:w-auto">
           {state.isSkippable && currentStepDetails.isSkippable && (
             <Button
@@ -200,8 +211,8 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
             </Button>
           )}
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 };
 

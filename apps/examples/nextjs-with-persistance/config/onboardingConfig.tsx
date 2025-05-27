@@ -13,9 +13,13 @@ export const demoOnboardingSteps: OnboardingStep[] = [
     description: "We are excited to guide you through our app.",
     payload: {
       componentKey: "demoWelcome", // This key maps to DemoWelcomeStep
-      title: "Hello There, Developer!",
-      message:
-        "This is a fully custom onboarding flow using @onboardjs/react headless capabilities.",
+      title: "Hello There!",
+      message: (
+        <>
+          This is a fully custom onboarding flow using{" "}
+          <code>@onboardjs/react</code> headless capabilities.
+        </>
+      ),
       imageUrl: "https://placehold.co/600x300/7c3aed/white?text=Welcome!",
     },
     nextStep: "enter-name",
@@ -28,20 +32,23 @@ export const demoOnboardingSteps: OnboardingStep[] = [
     description: "Personalization is key!",
     payload: {
       componentKey: "demoName", // Maps to DemoNameStep
-      fieldLabel: "Your Preferred Name:",
-      fieldKey: "userName",
-      placeholder: "e.g., Alex The Developer",
+      fields: [
+        {
+          label: "Your Name",
+          key: "userName", // This will be stored in flowData
+          placeholder: "Enter your name",
+        },
+        {
+          label: "Organization",
+          description: "Optional, but helps us personalize your experience.",
+          key: "orgName", // This will be stored in flowData
+          placeholder: "Google LLC",
+        },
+      ],
     },
     previousStep: "welcome",
-    nextStep: "final-step", // Points to a non-existent step for this short demo to show completion
+    nextStep: "final-step",
     ctaLabel: "Continue",
-    onStepComplete: async (stepData, context) => {
-      console.log("Name step completed. Data:", stepData);
-      console.log("Current flowData:", context.flowData);
-      // Example: an async operation
-      // await new Promise(resolve => setTimeout(resolve, 500));
-      // console.log('User name to be persisted:', context.flowData.userName);
-    },
   },
   {
     id: "final-step",

@@ -2,7 +2,10 @@
 
 // @onboardjs/react/src/components/StepRenderer.tsx
 import React, { useState, useEffect, useCallback } from "react";
-import { OnboardingStep as CoreOnboardingStep, CustomComponentStepPayload } from "@onboardjs/core";
+import {
+  OnboardingStep as CoreOnboardingStep,
+  CustomComponentStepPayload,
+} from "@onboardjs/core";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { StepComponentRegistry } from "../types";
 
@@ -26,8 +29,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   EmptyStateComponent = <div>No active step.</div>,
   ErrorComponent,
 }) => {
-  const { engine, state, isLoading, actions, setComponentLoading } =
-    useOnboarding();
+  const { engine, state, isLoading, actions } = useOnboarding();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<any>({});
   const [isCurrentActiveStepValid, setIsCurrentActiveStepValid] =
     useState<boolean>(true);

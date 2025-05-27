@@ -47,8 +47,7 @@ const HeadlessFlowRendererInternal: React.FC<{
   children: (props: HeadlessFlowRenderProps) => ReactNode;
   stepComponentRegistry: StepComponentRegistry;
 }> = ({ children, stepComponentRegistry }) => {
-  const { engine, state, isLoading, actions, setComponentLoading } =
-    useOnboarding(); // Assuming setComponentLoading is still useful for actions
+  const { engine, state, isLoading, actions } = useOnboarding();
 
   // Local state for data/validity of the current step, if we want renderStepContent to be simpler
   // This makes HeadlessFlowRendererInternal a bit stateful regarding the current step's UI interaction.

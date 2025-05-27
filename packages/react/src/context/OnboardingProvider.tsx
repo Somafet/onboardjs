@@ -75,6 +75,12 @@ export interface OnboardingProviderProps
    * If provided, this will be used INSTEAD of localStoragePersistence.
    */
   customOnDataPersist?: DataPersistListener;
+
+  /**
+   * Optional custom function to clear persisted data.
+   * If provided, this will be used INSTEAD of the default localStorage clearing logic.
+   */
+  customOnClearPeristedData?: () => void;
 }
 
 export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
@@ -82,11 +88,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   steps,
   initialStepId,
   initialContext,
-  onFlowComplete,
+  onFlowComplete: passedOnFlowComplete,
   onStepChange,
   localStoragePersistence,
   customOnDataLoad,
   customOnDataPersist,
+  customOnClearPeristedData, // Optional custom clear function
 }) => {
   const [engine, setEngine] = useState<OnboardingEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
@@ -165,7 +172,38 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     },
     [localStoragePersistence, customOnDataPersist]
   );
+
+  const onClearPeristedData = useCallback(() => {
+    if (!localStoragePersistence || typeof window === "undefined") {
+      return;
+    }
+    const { key } = localStoragePersistence;
+    try {
+      window.localStorage.removeItem(key);
+      console.log(
+        `[OnboardJS] Cleared localStorage (key: "${key}") on clear request.`
+      );
+    } catch (error) {
+      console.error(
+        `[OnboardJS] Error clearing localStorage (key: "${key}"):`,
+        error
+      );
+    }
+  }, [localStoragePersistence]);
   // --- End Persistence Logic ---
+
+  const onFlowComplete = useCallback(
+    (context: CoreOnboardingContext) => {
+      if (passedOnFlowComplete) {
+        passedOnFlowComplete(context);
+      } else {
+        console.warn(
+          "[OnboardingProvider] No onFlowComplete handler provided. Flow completed without custom action."
+        );
+      }
+    },
+    [passedOnFlowComplete]
+  );
 
   useEffect(() => {
     const engineConfig: OnboardingEngineConfig = {
@@ -189,6 +227,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       onDataPersist:
         customOnDataPersist ||
         (localStoragePersistence ? onDataPersistHandler : undefined),
+      onClearPersistedData:
+        customOnClearPeristedData ||
+        (localStoragePersistence ? onClearPeristedData : undefined),
     };
 
     const newEngine = new OnboardingEngine(engineConfig);
@@ -300,9 +341,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       state: engineState,
       isLoading,
       setComponentLoading,
-      actions: memoizedActions, // <--- PASS THE MEMOIZED ACTIONS OBJECT HERE
+      actions: memoizedActions,
     }),
-    [engine, engineState, isLoading, memoizedActions] // Add memoizedActions to dependencies
+    [engine, engineState, isLoading, memoizedActions, onFlowComplete] // Add memoizedActions to dependencies
   );
 
   return (

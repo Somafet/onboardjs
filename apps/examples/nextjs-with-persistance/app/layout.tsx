@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Lexend, Overpass_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { OnboardingProvider } from "@onboardjs/react";
+import { demoOnboardingSteps } from "@/config/onboardingConfig";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const lexend = Lexend({
+  variable: "--font-lexend",
   subsets: ["latin"],
 });
 
@@ -25,10 +22,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${lexend.variable} antialiased font-lexend`}>
+        <OnboardingProvider
+          steps={demoOnboardingSteps}
+          // Enable localStorage persistence for this demo
+          localStoragePersistence={{
+            key: "onboardjsDemo_v1_progress",
+            ttl: 1000 * 60 * 60 * 24,
+          }}
+        >
+          {children}
+        </OnboardingProvider>
         <Toaster />
       </body>
     </html>
