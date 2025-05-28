@@ -1,7 +1,7 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1-alpha",
+  "private": false,
   "files": [
     "dist"
   ],
@@ -27,7 +27,7 @@
     "test:watch": "vitest --watch"
   },
   "devDependencies": {
-    "@onboardjs/core": "^0.1.0",
+    "@onboardjs/core": "^0.1.1-alpha",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@testing-library/jest-dom": "^6.6.3",
@@ -36,6 +36,7 @@
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",
     "@vitejs/plugin-react": "^4.5.0",
+    "@vitest/coverage-v8": "^3.1.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.27.0",
     "jest": "^29.7.0",
