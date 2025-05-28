@@ -81,10 +81,15 @@ export const mockStepComponents: StepComponentRegistry = {
       <div data-testid="checklist-step">
         <h2>Checklist Component</h2>
         {items?.map((item: any) => (
-          <label key={item.id}>
+          <label key={item.id} htmlFor={item.id}>
             <input
+              id={item.id}
+              name={item.id}
+              data-testid={item.id}
               type="checkbox"
-              onChange={(e) => onDataChange({ [item.id]: e.target.checked }, true)}
+              onChange={(e) =>
+                onDataChange({ [item.id]: e.target.checked }, true)
+              }
             />
             {item.label}
           </label>

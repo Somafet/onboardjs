@@ -1,0 +1,54 @@
+name: React Package Tests
+
+on:
+  push:
+    paths:
+      - "packages/react/**"
+      - ".github/workflows/react-tests.yml"
+  pull_request:
+    paths:
+      - "packages/react/**"
+      - ".github/workflows/react-tests.yml"
+
+jobs:
+  test-react:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: packages/react
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Clean install (remove node_modules and lockfile)
+        run: |
+          rm -rf node_modules package-lock.json
+  
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Vitest with coverage
+        run: npx vitest run --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-report
+          path: packages/core/coverage
+
+      - name: Display coverage summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            npx vitest coverage report --reporter=text-summary
+          else
+            echo "No coverage summary found."
+          fi

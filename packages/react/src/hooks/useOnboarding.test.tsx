@@ -73,11 +73,10 @@ describe("useOnboarding", () => {
 
   it("should register onFlowComplete callback", async () => {
     const onFlowComplete = vi.fn();
-    
-    const { result } = renderHook(
-      () => useOnboarding({ onFlowComplete }),
-      { wrapper: createWrapper() }
-    );
+
+    const { result } = renderHook(() => useOnboarding({ onFlowComplete }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.engine).toBeTruthy();
@@ -85,7 +84,7 @@ describe("useOnboarding", () => {
 
     // Simulate flow completion
     await act(async () => {
-      await result.current.goToStep("step3");
+      await result.current.goToStep("step4");
       await result.current.next();
     });
 
@@ -96,11 +95,10 @@ describe("useOnboarding", () => {
 
   it("should register onStepChange callback", async () => {
     const onStepChange = vi.fn();
-    
-    const { result } = renderHook(
-      () => useOnboarding({ onStepChange }),
-      { wrapper: createWrapper() }
-    );
+
+    const { result } = renderHook(() => useOnboarding({ onStepChange }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.engine).toBeTruthy();
@@ -120,10 +118,9 @@ describe("useOnboarding", () => {
     let onFlowComplete = vi.fn();
     let options: UseOnboardingOptions = { onFlowComplete };
 
-    const { result, rerender } = renderHook(
-      () => useOnboarding(options),
-      { wrapper: createWrapper() }
-    );
+    const { result, rerender } = renderHook(() => useOnboarding(options), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(result.current.engine).toBeTruthy();
@@ -136,7 +133,7 @@ describe("useOnboarding", () => {
 
     // Complete the flow
     await act(async () => {
-      await result.current.goToStep("step3");
+      await result.current.goToStep("step4");
       await result.current.next();
     });
 

@@ -8,7 +8,7 @@ import { mockSteps, mockStepsWithoutCriteria } from "../test-utils";
 
 // Test component that uses the context
 const TestConsumer: React.FC = () => {
-  const { state, engine, isLoading, next, previous, goToStep } = useOnboarding();
+  const { state, isLoading, next, previous, goToStep } = useOnboarding();
 
   return (
     <div>
@@ -23,8 +23,8 @@ const TestConsumer: React.FC = () => {
       <button data-testid="previous-btn" onClick={() => previous()}>
         Previous
       </button>
-      <button data-testid="goto-step3-btn" onClick={() => goToStep("step3")}>
-        Go to Step 3
+      <button data-testid="goto-final-btn" onClick={() => goToStep("step4")}>
+        Go to Final Step
       </button>
     </div>
   );
@@ -118,13 +118,13 @@ describe("OnboardingProvider", () => {
       expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
     });
 
-    // Navigate directly to step 3
+    // Navigate directly to step 4
     await act(async () => {
-      screen.getByTestId("goto-step3-btn").click();
+      screen.getByTestId("goto-final-btn").click();
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("current-step")).toHaveTextContent("step3");
+      expect(screen.getByTestId("current-step")).toHaveTextContent("step4");
     });
   });
 
@@ -144,11 +144,11 @@ describe("OnboardingProvider", () => {
 
     // Navigate to last step and complete
     await act(async () => {
-      screen.getByTestId("goto-step3-btn").click();
+      screen.getByTestId("goto-final-btn").click();
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId("current-step")).toHaveTextContent("step3");
+      expect(screen.getByTestId("current-step")).toHaveTextContent("step4");
     });
 
     await act(async () => {
@@ -209,8 +209,10 @@ describe("OnboardingProvider", () => {
   });
 
   it("should handle persistence data loading errors gracefully", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
     // Mock localStorage to throw an error
     const originalGetItem = localStorage.getItem;
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
@@ -279,7 +281,7 @@ describe("OnboardingProvider", () => {
       flowData: {},
     });
     const customOnDataPersist = vi.fn().mockResolvedValue(undefined);
-    
+
     const persistenceConfig = {
       key: "test-onboarding",
       version: "1.0",
@@ -305,18 +307,18 @@ describe("OnboardingProvider", () => {
   it("should handle component loading state", async () => {
     const TestConsumerWithLoading: React.FC = () => {
       const { isLoading, setComponentLoading } = useOnboarding();
-      
+
       return (
         <div>
           <div data-testid="is-loading">{isLoading.toString()}</div>
-          <button 
-            data-testid="set-loading-true-btn" 
+          <button
+            data-testid="set-loading-true-btn"
             onClick={() => setComponentLoading(true)}
           >
             Set Loading True
           </button>
-          <button 
-            data-testid="set-loading-false-btn" 
+          <button
+            data-testid="set-loading-false-btn"
             onClick={() => setComponentLoading(false)}
           >
             Set Loading False
@@ -367,5 +369,4 @@ describe("OnboardingProvider", () => {
       expect(screen.getByTestId("is-completed")).toHaveTextContent("true");
     });
   });
-
 });

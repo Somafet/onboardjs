@@ -15,6 +15,8 @@ export default defineConfig({
         "*.config.ts", // Exclude config files
         "src/test-setup.ts", // Exclude test setup
         "**/*.test.{ts,tsx}", // Exclude test files
+        // Exclude config.mjs files
+        "*.config.mjs",
       ],
       reporter: ["text", "html", "clover"],
     },
