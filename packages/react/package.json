@@ -19,7 +19,12 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "build": "vite build && tsc --emitDeclarationOnly true",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch"
   },
   "devDependencies": {
     "@onboardjs/core": "^0.1.0",

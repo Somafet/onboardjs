@@ -14,15 +14,15 @@ import {
 import {
   OnboardingProvider,
   LocalStoragePersistenceOptions, // Assuming this is exported
-  OnboardingContextValue, // Assuming this is exported
+  OnboardingContextValue,
+  OnboardingActions, // Assuming this is exported
 } from "./context/OnboardingProvider";
 import { StepComponentRegistry, StepComponentProps } from "./types";
 import { useOnboarding } from "./hooks/useOnboarding";
 
 // Props for the render function provided by the user
-export interface HeadlessFlowRenderProps {
+export interface HeadlessFlowRenderProps extends OnboardingActions {
   state: EngineState; // Current state from the engine
-  actions: CoreOnboardingContext["actions"]; // The actions object from useOnboarding
   currentStep: CoreOnboardingStep | null;
   isLoading: boolean;
   /**
@@ -47,7 +47,18 @@ const HeadlessFlowRendererInternal: React.FC<{
   children: (props: HeadlessFlowRenderProps) => ReactNode;
   stepComponentRegistry: StepComponentRegistry;
 }> = ({ children, stepComponentRegistry }) => {
-  const { engine, state, isLoading, actions } = useOnboarding();
+  const {
+    engine,
+    state,
+    isLoading,
+    skip,
+    next,
+    previous,
+    goToStep,
+    reset,
+    setComponentLoading,
+    updateContext,
+  } = useOnboarding();
 
   // Local state for data/validity of the current step, if we want renderStepContent to be simpler
   // This makes HeadlessFlowRendererInternal a bit stateful regarding the current step's UI interaction.
@@ -98,7 +109,7 @@ const HeadlessFlowRendererInternal: React.FC<{
     activeStepData,
   ]);
 
-  if (!engine || !state || !actions) {
+  if (!engine || !state) {
     // This should be covered by the isLoading state from useOnboarding
     return null;
   }
@@ -110,7 +121,12 @@ const HeadlessFlowRendererInternal: React.FC<{
 
   return children({
     state,
-    actions, // These are already wrapped with setComponentLoading
+    skip,
+    next,
+    previous,
+    goToStep,
+    reset,
+    updateContext,
     currentStep: state.currentStep,
     isLoading,
     renderStepContent, // Provide this helper

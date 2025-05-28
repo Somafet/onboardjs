@@ -29,7 +29,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   EmptyStateComponent = <div>No active step.</div>,
   ErrorComponent,
 }) => {
-  const { engine, state, isLoading, actions } = useOnboarding();
+  const { engine, state, isLoading, next, skip, previous } = useOnboarding();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<any>({});
   const [isCurrentActiveStepValid, setIsCurrentActiveStepValid] =
     useState<boolean>(true);
@@ -58,7 +58,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
     []
   );
 
-  if ((isLoading && !currentStep) || !actions || !state) {
+  if ((isLoading && !currentStep) || !state) {
     // Initial loading of the engine or flow
     return <>{LoadingComponent}</>;
   }
@@ -154,7 +154,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
         <div>
           {state?.isSkippable && (
             <button
-              onClick={() => actions.skip()}
+              onClick={() => skip()}
               disabled={isLoading}
               style={{ marginRight: "10px" }}
             >
@@ -164,13 +164,13 @@ const StepRenderer: React.FC<StepRendererProps> = ({
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
           {state?.canGoPrevious && (
-            <button onClick={() => actions.previous()} disabled={isLoading}>
+            <button onClick={() => previous()} disabled={isLoading}>
               {isLoading ? "..." : prevButtonLabel}
             </button>
           )}
           {state?.canGoNext && (
             <button
-              onClick={() => actions.next(currentActiveStepData)}
+              onClick={() => next(currentActiveStepData)}
               disabled={isLoading || !isCurrentActiveStepValid}
             >
               {isLoading ? "..." : nextButtonLabel}
@@ -184,7 +184,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
             !state?.canGoNext &&
             currentStep.nextStep === null && (
               <button
-                onClick={() => actions.next(currentActiveStepData)} // This will call engine.next() which handles completion
+                onClick={() => next(currentActiveStepData)} // This will call engine.next() which handles completion
                 disabled={isLoading || !isCurrentActiveStepValid}
               >
                 {isLoading ? "..." : currentStep.ctaLabel || "Finish"}

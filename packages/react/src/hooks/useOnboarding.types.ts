@@ -49,11 +49,10 @@ export interface UseOnboardingOptions {
   onDataPersist?: DataPersistListener;
 }
 
-export interface UseOnboardingReturn {
+export interface UseOnboardingReturn extends OnboardingActions {
   engine: OnboardingEngine | null;
   state: EngineState | null;
   isLoading: boolean;
-  actions: OnboardingActions | null; // Keep the wrapped actions for direct invocation
   // Add any other status shorthands if desired, similar to next-safe-action
   isCompleted: boolean;
   currentStep: EngineState["currentStep"];

@@ -34,12 +34,11 @@ export interface OnboardingActions {
   reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
 }
 
-export interface OnboardingContextValue {
+export interface OnboardingContextValue extends OnboardingActions {
   engine: OnboardingEngine | null;
   state: EngineState | null;
   isLoading: boolean; // Combined loading state (engine + component interactions)
   setComponentLoading: (loading: boolean) => void;
-  actions: OnboardingActions | null;
 }
 
 export const OnboardingContext = createContext<
@@ -274,7 +273,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     onFlowComplete,
     onStepChange,
   ]);
-
   const isLoading = useMemo(
     () =>
       componentLoading ||
@@ -283,56 +281,74 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     [componentLoading, engineState?.isLoading, engineState?.isHydrating] // Add isHydrating
   );
 
-  // Memoize the actions object
-  const memoizedActions = useMemo((): OnboardingActions | null => {
-    if (!engine) return null;
-    return {
-      next: async (data?: any) => {
-        setComponentLoading(true);
-        try {
-          await engine.next(data);
-        } finally {
-          setComponentLoading(false);
-        }
-      },
-      previous: async () => {
-        setComponentLoading(true);
-        try {
-          await engine.previous();
-        } finally {
-          setComponentLoading(false);
-        }
-      },
-      skip: async () => {
-        setComponentLoading(true);
-        try {
-          await engine.skip();
-        } finally {
-          setComponentLoading(false);
-        }
-      },
-      goToStep: async (stepId: string, data?: any) => {
-        setComponentLoading(true);
-        try {
-          await engine.goToStep(stepId, data);
-        } finally {
-          setComponentLoading(false);
-        }
-      },
-      updateContext: async (newContextData: Partial<CoreOnboardingContext>) => {
-        await engine.updateContext(newContextData); // engine.updateContext is already async
-      },
-      reset: async (newConfig?: Partial<OnboardingEngineConfig>) => {
-        setComponentLoading(true);
-        try {
-          await engine.reset(newConfig);
-        } finally {
-          // engine.reset is already async
-          setComponentLoading(false);
-        }
-      },
-    };
-  }, [engine]); // Dependency is `engine` instance
+  // Individual action functions
+  const next = useCallback(
+    async (data?: any) => {
+      if (!engine) return;
+      setComponentLoading(true);
+      try {
+        await engine.next(data);
+      } finally {
+        setComponentLoading(false);
+      }
+    },
+    [engine]
+  );
+
+  const previous = useCallback(async () => {
+    if (!engine) return;
+    setComponentLoading(true);
+    try {
+      await engine.previous();
+    } finally {
+      setComponentLoading(false);
+    }
+  }, [engine]);
+
+  const skip = useCallback(async () => {
+    if (!engine) return;
+    setComponentLoading(true);
+    try {
+      await engine.skip();
+    } finally {
+      setComponentLoading(false);
+    }
+  }, [engine]);
+
+  const goToStep = useCallback(
+    async (stepId: string, data?: any) => {
+      if (!engine) return;
+      setComponentLoading(true);
+      try {
+        await engine.goToStep(stepId, data);
+      } finally {
+        setComponentLoading(false);
+      }
+    },
+    [engine]
+  );
+
+  const updateContext = useCallback(
+    async (newContextData: Partial<CoreOnboardingContext>) => {
+      if (!engine) return;
+      await engine.updateContext(newContextData); // engine.updateContext is already async
+    },
+    [engine]
+  );
+
+  const reset = useCallback(
+    async (newConfig?: Partial<OnboardingEngineConfig>) => {
+      if (!engine) return;
+      setComponentLoading(true);
+      try {
+        await engine.reset(newConfig);
+      } finally {
+        // engine.reset is already async
+        setComponentLoading(false);
+      }
+    },
+    [engine]
+  );
 
   const value = useMemo(
     (): OnboardingContextValue => ({
@@ -341,9 +357,25 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       state: engineState,
       isLoading,
       setComponentLoading,
-      actions: memoizedActions,
+      skip,
+      next,
+      reset,
+      previous,
+      goToStep,
+      updateContext,
     }),
-    [engine, engineState, isLoading, memoizedActions, onFlowComplete] // Add memoizedActions to dependencies
+    [
+      engine,
+      engineState,
+      isLoading,
+      setComponentLoading,
+      skip,
+      next,
+      reset,
+      previous,
+      goToStep,
+      updateContext,
+    ]
   );
 
   return (

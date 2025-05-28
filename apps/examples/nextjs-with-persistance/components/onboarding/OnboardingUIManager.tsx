@@ -60,7 +60,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   ),
   CompletedScreen,
 }) => {
-  const { state, isLoading, actions } = useOnboarding();
+  const { state, isLoading, next, skip, reset, previous } = useOnboarding();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<any>({});
   const [isCurrentActiveStepValid, setIsCurrentActiveStepValid] =
     useState<boolean>(true);
@@ -86,13 +86,13 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     [currentActiveStepData]
   );
 
-  if (!state || !actions) return <>{LoadingScreen}</>; // Engine not ready
+  if (!state) return <>{LoadingScreen}</>; // Engine not ready
   if (isLoading) return <>{LoadingScreen}</>; // Covers hydration and engine's isLoading
   if (state.error)
     return (
       <ErrorScreen
         error={state.error}
-        onRetry={() => actions.reset({ steps: stepsConfig })}
+        onRetry={() => reset({ steps: stepsConfig })}
       />
     );
   if (state.isCompleted)
@@ -112,9 +112,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               </p>
             </CardContent>
             <CardFooter className="justify-center mt-8">
-              <Button onClick={() => actions.reset()}>
-                Reset Onboarding flow
-              </Button>
+              <Button onClick={() => reset()}>Reset Onboarding flow</Button>
             </CardFooter>
           </Card>
         )}
@@ -191,7 +189,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
           {state.isSkippable && currentStepDetails.isSkippable && (
             <Button
               variant="outline"
-              onClick={() => actions.skip()}
+              onClick={() => skip()}
               disabled={isLoading}
               className="w-full sm:w-auto"
             >
@@ -203,7 +201,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
           {state.canGoPrevious && (
             <Button
               variant="outline"
-              onClick={() => actions.previous()}
+              onClick={() => previous()}
               disabled={isLoading}
             >
               {currentStepDetails.secondaryCtaLabel || "Back"}
@@ -214,7 +212,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               !state.canGoNext &&
               currentStepDetails.nextStep === null)) && (
             <Button
-              onClick={() => actions.next(currentActiveStepData)}
+              onClick={() => next(currentActiveStepData)}
               disabled={isLoading || !isCurrentActiveStepValid}
             >
               {currentStepDetails.ctaLabel ||

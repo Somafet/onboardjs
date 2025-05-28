@@ -747,7 +747,6 @@ describe("OnboardingEngine", () => {
           payload: { mainText: "You can skip this" },
           isSkippable: false,
           nextStep: "step2",
-          skipToStep: "step3",
         },
         {
           id: "step2",

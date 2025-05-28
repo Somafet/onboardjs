@@ -4,10 +4,7 @@
 import { useContext, useEffect, useRef } from "react";
 import { OnboardingContext } from "../context/OnboardingProvider";
 import { UseOnboardingOptions } from "./useOnboarding.types";
-import {
-  OnboardingStep,
-  OnboardingContext as CoreOnboardingContext,
-} from "@onboardjs/core";
+import { OnboardingContext as CoreOnboardingContext } from "@onboardjs/core";
 
 export const useOnboarding = (options?: UseOnboardingOptions) => {
   const contextValue = useContext(OnboardingContext);
@@ -15,7 +12,18 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
     throw new Error("useOnboarding must be used within an OnboardingProvider");
   }
 
-  const { engine, state, isLoading, actions } = contextValue;
+  const {
+    engine,
+    state,
+    isLoading,
+    skip,
+    next,
+    previous,
+    goToStep,
+    reset,
+    setComponentLoading,
+    updateContext,
+  } = contextValue;
 
   // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
   // if only the callback function instance changes but not the hook's dependencies for subscription.
@@ -86,10 +94,14 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
     engine,
     state,
     isLoading,
-    actions, // The memoized actions from OnboardingProvider
-    // Add shorthand status or derived values:
+    skip,
+    next,
+    previous,
+    goToStep,
+    reset,
+    setComponentLoading,
+    updateContext,
     isCompleted,
     currentStep,
-    // ... any other values from `getActionShorthandStatusObject` pattern you want to adapt
   };
 };
