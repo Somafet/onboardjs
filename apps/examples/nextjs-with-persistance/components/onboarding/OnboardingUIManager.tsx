@@ -70,10 +70,21 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     setIsCurrentActiveStepValid(true); // New step must prove its validity
   }, [state?.currentStep?.id]);
 
-  const handleStepDataChange = useCallback((data: any, isValid: boolean) => {
-    setCurrentActiveStepData(data);
-    setIsCurrentActiveStepValid(isValid);
-  }, []);
+  const handleStepDataChange = useCallback(
+    (data: any, isValid: boolean) => {
+      const prevData =
+        typeof currentActiveStepData === "object" &&
+        currentActiveStepData !== null
+          ? currentActiveStepData
+          : {};
+      const newData = typeof data === "object" && data !== null ? data : {};
+      const mergedData = { ...prevData, ...newData };
+
+      setCurrentActiveStepData(mergedData);
+      setIsCurrentActiveStepValid(isValid);
+    },
+    [currentActiveStepData]
+  );
 
   if (!state || !actions) return <>{LoadingScreen}</>; // Engine not ready
   if (isLoading) return <>{LoadingScreen}</>; // Covers hydration and engine's isLoading

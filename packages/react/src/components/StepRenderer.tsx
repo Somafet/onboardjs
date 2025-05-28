@@ -44,7 +44,15 @@ const StepRenderer: React.FC<StepRendererProps> = ({
 
   const handleStepDataChange = useCallback(
     (data: unknown, isValid: boolean) => {
-      setCurrentActiveStepData(data);
+      const prevData =
+        typeof currentActiveStepData === "object" &&
+        currentActiveStepData !== null
+          ? currentActiveStepData
+          : {};
+      const newData = typeof data === "object" && data !== null ? data : {};
+      const mergedData = { ...prevData, ...newData };
+
+      setCurrentActiveStepData(mergedData);
       setIsCurrentActiveStepValid(isValid);
     },
     []

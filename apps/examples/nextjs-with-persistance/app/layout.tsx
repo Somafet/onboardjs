@@ -30,6 +30,10 @@ export default function RootLayout({
             key: "onboardjsDemo_v1_progress",
             ttl: 1000 * 60 * 60 * 24,
           }}
+          // Use the custom persistence handlers to implement your own logic
+          // customOnDataLoad={() => { return fetch('/api/load-onboarding-data') }} // Load data from your API or Db
+          // customOnDataPersist={} // Persist data to your API or Db
+          // customOnClearPeristedData={} // Handle clearing the persisted data (e.g., on onboarding flow reset)
         >
           {children}
         </OnboardingProvider>
