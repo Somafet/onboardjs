@@ -770,11 +770,39 @@ export class OnboardingEngine {
         },
       };
 
-      const nextStepId = evaluateStepId(
-        this.currentStepInternal!.nextStep,
-        this.contextInternal
-      );
-      await this.navigateToStep(nextStepId, "next"); // This will eventually call setState and notify
+      let finalNextStepId: string | number | null | undefined;
+
+      // Evaluate the defined nextStep first
+      const definedNextStepTarget =
+        this.currentStepInternal.nextStep !== undefined
+          ? evaluateStepId(
+              this.currentStepInternal.nextStep,
+              this.contextInternal
+            )
+          : undefined; // Treat missing nextStep prop as undefined
+
+      if (definedNextStepTarget === undefined) {
+        // If nextStep is not defined OR evaluates to undefined, default to next in array
+        const currentIndex = this.steps.findIndex(
+          (s) => s.id === this.currentStepInternal!.id
+        );
+        if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
+          finalNextStepId = this.steps[currentIndex + 1].id;
+          console.log(
+            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting to next in array: '${finalNextStepId}'`
+          );
+        } else {
+          finalNextStepId = null; // No explicit nextStep, and no more steps in array
+          console.log(
+            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing.`
+          );
+        }
+      } else {
+        // Use the explicitly defined/evaluated nextStep (which could be a string ID or null)
+        finalNextStepId = definedNextStepTarget;
+      }
+
+      await this.navigateToStep(finalNextStepId, "next"); // This will eventually call setState and notify
 
       // If data was directly merged here
       await this.persistDataIfNeeded();
@@ -813,11 +841,51 @@ export class OnboardingEngine {
     ) {
       return;
     }
-    const skipToId = evaluateStepId(
-      this.currentStepInternal.skipToStep || this.currentStepInternal.nextStep,
-      this.contextInternal
-    );
-    await this.navigateToStep(skipToId, "skip");
+    let finalSkipTargetId: string | number | null | undefined;
+
+    // 1. Try skipToStep
+    let evaluatedSkipTarget =
+      this.currentStepInternal.skipToStep !== undefined
+        ? evaluateStepId(
+            this.currentStepInternal.skipToStep,
+            this.contextInternal
+          )
+        : undefined;
+
+    if (evaluatedSkipTarget === undefined) {
+      // 2. If skipToStep is undefined, try nextStep
+      evaluatedSkipTarget =
+        this.currentStepInternal.nextStep !== undefined
+          ? evaluateStepId(
+              this.currentStepInternal.nextStep,
+              this.contextInternal
+            )
+          : undefined;
+    }
+
+    if (evaluatedSkipTarget === undefined) {
+      // 3. If both skipToStep and nextStep are undefined (or evaluate to undefined),
+      //    default to the next step in the array.
+      const currentIndex = this.steps.findIndex(
+        (s) => s.id === this.currentStepInternal!.id
+      );
+      if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
+        finalSkipTargetId = this.steps[currentIndex + 1].id;
+        console.log(
+          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting skip to next in array: '${finalSkipTargetId}'`
+        );
+      } else {
+        finalSkipTargetId = null; // No explicit target, no next in array, so complete on skip
+        console.log(
+          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing on skip.`
+        );
+      }
+    } else {
+      // Use the explicitly defined/evaluated target (from skipToStep or nextStep)
+      finalSkipTargetId = evaluatedSkipTarget;
+    }
+    
+    await this.navigateToStep(finalSkipTargetId, "skip");
   }
 
   public async goToStep(stepId: string, stepSpecificData?: any): Promise<void> {

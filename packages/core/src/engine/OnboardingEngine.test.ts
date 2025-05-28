@@ -642,6 +642,64 @@ describe("OnboardingEngine", () => {
       const state = engine.getState();
       expect(state.currentStep?.id).toBe("admin-step");
     });
+
+    // It should handle empty nextStep property (no next step defined) by getting to the next step in the steps array
+    it("should handle empty nextStep property", async () => {
+      const stepsWithEmptyNext: OnboardingStep[] = [
+        {
+          id: "step1",
+          type: "INFORMATION",
+          title: "Step 1",
+          payload: { mainText: "First step" },
+          nextStep: undefined, // No next step defined
+        },
+        {
+          id: "step2",
+          type: "INFORMATION",
+          title: "Step 2",
+          payload: { mainText: "Second step" },
+        },
+      ];
+
+      const config = { ...basicConfig, steps: stepsWithEmptyNext };
+      engine = new OnboardingEngine(config);
+      await engine.ready(); // Ensure engine is fully initialized
+      expect(engine.getState().currentStep?.id).toBe("step1");
+
+      await engine.next(); // Should go to step2
+
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step2");
+    });
+
+    it("should handle empty nextStep property with Flow Finish if no other steps are provided", async () => {
+      const stepsWithEmptyNext: OnboardingStep[] = [
+        {
+          id: "step1",
+          type: "INFORMATION",
+          title: "Step 1",
+          payload: { mainText: "First step" },
+          nextStep: undefined, // No next step defined
+        },
+      ];
+      const onFlowComplete = vi.fn();
+
+      const config = {
+        ...basicConfig,
+        onFlowComplete,
+        steps: stepsWithEmptyNext,
+      };
+      engine = new OnboardingEngine(config);
+      await engine.ready(); // Ensure engine is fully initialized
+      expect(engine.getState().currentStep?.id).toBe("step1");
+
+      await engine.next();
+
+      const state = engine.getState();
+      expect(state.currentStep).toBe(null);
+      expect(state.isCompleted).toBe(true);
+      expect(onFlowComplete).toHaveBeenCalledWith(state.context);
+    });
   });
 
   describe("Skip Functionality", () => {
