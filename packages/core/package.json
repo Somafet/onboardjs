@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/core",
-  "version": "0.1.1-aplha",
+  "version": "0.1.1-alpha",
   "description": "Headless core logic for dynamic onboarding flows.",
   "private": false,
   "author": {
@@ -25,8 +25,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.es.js",
       "require": "./dist/index.cjs.js"
-    },
-    "./index.css": "./dist/index.css"
+    }
   },
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly true",
