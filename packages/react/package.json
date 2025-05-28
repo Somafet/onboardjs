@@ -2,6 +2,11 @@
   "name": "@onboardjs/react",
   "version": "0.1.1-alpha",
   "private": false,
+  "author": {
+    "name": "Soma Somorjai",
+    "email": "somafet@gmail.com",
+    "url": "https://somafet.com"
+  },
   "files": [
     "dist"
   ],
