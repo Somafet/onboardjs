@@ -27,7 +27,6 @@
     "test:watch": "vitest --watch"
   },
   "devDependencies": {
-    "@onboardjs/core": "^0.1.1-aplha",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@testing-library/jest-dom": "^6.6.3",
@@ -49,6 +48,7 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
+    "@onboardjs/core": "^0.1.1-alpha",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/postcss": "^4.1.7",
