@@ -13,6 +13,8 @@
 
 ![OnboardJS Demo](./assets/demo.gif)
 
+Try out the [DEMO](https://demo.onboardjs.com)
+
 ---
 
 ## Why OnboardJS?
