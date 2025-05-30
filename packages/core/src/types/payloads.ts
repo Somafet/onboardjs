@@ -2,7 +2,10 @@
 
 import { OnboardingContext } from "./common";
 
-export interface InformationStepPayload {
+export interface BasePayload {
+  [key: string]: any;
+}
+export interface InformationStepPayload extends BasePayload {
   mainText: string;
   subText?: string;
 }
@@ -53,7 +56,7 @@ export interface ChoiceOption<TValue = string | number> {
   icon?: string;
 }
 
-export interface MultipleChoiceStepPayload {
+export interface MultipleChoiceStepPayload extends BasePayload {
   question: string;
   options: ChoiceOption[];
   minSelections?: number;
@@ -62,7 +65,7 @@ export interface MultipleChoiceStepPayload {
 }
 
 // --- Example: Single Choice Selection Step ---
-export interface SingleChoiceStepPayload {
+export interface SingleChoiceStepPayload extends BasePayload {
   question: string;
   options: ChoiceOption[];
   dataKey: string;
@@ -80,7 +83,7 @@ export interface ChecklistItemDefinition {
 }
 
 /** Payload for a checklist step. */
-export interface ChecklistStepPayload {
+export interface ChecklistStepPayload extends BasePayload {
   /** An array of item definitions for the checklist. */
   items: ChecklistItemDefinition[];
   /**
@@ -104,7 +107,7 @@ export interface ChecklistItemState {
 }
 
 // --- Example: Confirmation Step ---
-export interface ConfirmationStepPayload {
+export interface ConfirmationStepPayload extends BasePayload {
   confirmationTitle?: string;
   confirmationMessage: string;
   details?: Array<{ label: string; value: string | (() => string) }>;
@@ -112,7 +115,6 @@ export interface ConfirmationStepPayload {
 }
 
 // --- For Custom Components (interpreted by the UI package) ---
-export interface CustomComponentStepPayload {
+export interface CustomComponentStepPayload extends BasePayload {
   componentKey: string;
-  [key: string]: any;
 }
