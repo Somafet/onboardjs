@@ -2,7 +2,7 @@
 import { StepComponentProps } from "@onboardjs/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { z, ZodError } from "zod";
+import { ZodError, ZodType } from "zod";
 import React from "react";
 
 export interface DemoNamePayload {
@@ -11,7 +11,7 @@ export interface DemoNamePayload {
     key: string; // This will be used as the fieldKey in flowData
     placeholder?: string;
     // zod schema for validation
-    validation: any;
+    validation: ZodType;
   }[];
 }
 

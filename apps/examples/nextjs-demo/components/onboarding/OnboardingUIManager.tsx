@@ -62,7 +62,9 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   const router = useRouter();
   const { state, currentStep, isLoading, next, skip, reset, previous } =
     useOnboarding();
-  const [currentActiveStepData, setCurrentActiveStepData] = useState<any>({});
+  const [currentActiveStepData, setCurrentActiveStepData] = useState<
+    Record<string, unknown>
+  >({});
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [isCurrentActiveStepValid, setIsCurrentActiveStepValid] =
     useState<boolean>(true);
@@ -70,7 +72,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   useEffect(() => {
     setCurrentActiveStepData({});
     setIsCurrentActiveStepValid(currentStep?.meta?.isValid ?? false);
-  }, [currentStep?.id]);
+  }, [currentStep?.id, currentStep?.meta?.isValid]);
 
   const currentStepIndex = stepsConfig.findIndex(
     (s) => s.id === currentStep?.id
@@ -91,7 +93,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   }, [progressPercentage]);
 
   const handleStepDataChange = useCallback(
-    (data: any, isValid: boolean) => {
+    (data: unknown, isValid: boolean) => {
       const prevData =
         typeof currentActiveStepData === "object" &&
         currentActiveStepData !== null
@@ -132,7 +134,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
                 <br />
                 <br />
                 You can customize the steps, components, and flow to fit your
-                application's needs. Check out the code to see how it works!
+                application’s needs. Check out the code to see how it works!
               </p>
             </CardContent>
             <CardFooter className="justify-center mt-8 space-x-4">
@@ -156,19 +158,18 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     );
   }
 
-  let SpecificStepComponent;
   const componentKey =
     currentStep.type === "CUSTOM_COMPONENT"
-      ? (currentStep.payload as any)?.componentKey
+      ? currentStep.payload?.componentKey
       : currentStep.type;
 
-  SpecificStepComponent = stepComponentRegistry[componentKey];
+  const SpecificStepComponent = stepComponentRegistry[componentKey];
 
   if (!SpecificStepComponent) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <div className="p-10 text-center text-red-500">
-          Error: UI Component not found for step ID '{currentStep.id}' (key:{" "}
+          Error: UI Component not found for step ID ’{currentStep.id}’ (key:{" "}
           {componentKey}).
         </div>
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lexend, Overpass_Mono } from "next/font/google";
+import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { OnboardingProvider } from "@onboardjs/react";

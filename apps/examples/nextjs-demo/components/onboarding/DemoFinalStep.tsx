@@ -19,7 +19,7 @@ const DemoFinalStep: React.FC<
       <h2 className="text-3xl font-bold text-zinc-950 animate-fade-up mb-6">
         {userName
           ? `🎉 Welcome aboard, ${userName}!`
-          : (payload.mainText ?? "You're all set!")}
+          : (payload.mainText ?? "You’re all set!")}
       </h2>
       <p className="text-lg text-gray-600 animate-fade-up animate-delay-300 mb-8">
         {payload.subText ?? "Your onboarding is complete."}
