@@ -141,7 +141,7 @@ See [CONTRIBUTING.md](./CODE_OF_CONDUCT.md) for more details.
 ## 🗺️ Roadmap
 
 - **v1.0**: Stable, documented releases for core & react
-- **Next.js Starter Templates**: Beautiful, animated, production-ready
+- **Next.js Starter Templates**: Beautiful, animated, production-ready with integration examples (e.g., Supabase, Neon, Resend, etc.)
 - **Helper Packages**: (e.g., Supabase persistence)
 - **Builder App MVP**: Visual drag-and-drop onboarding builder
 - **Premium Builder Features**: Code export, hosted flows, analytics
