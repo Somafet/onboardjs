@@ -13,10 +13,11 @@ export const demoOnboardingSteps: OnboardingStep[] = [
   {
     id: "welcome",
     type: "CUSTOM_COMPONENT", // All steps will be custom for this demo
-    title: "Build Your Onboarding Flow",
-    description: "We just need a few details to better tailor your experience.",
     payload: {
       componentKey: "step1",
+      title: "Build Your Onboarding Flow",
+      description:
+        "We just need a few details to better tailor your experience.",
       mainText: "Welcome to OnboardJs!",
       subText:
         "Thanks for checking out OnboardJS. In just a few steps, you’ll see how easy it is to build powerful, custom onboarding flows for your own apps.",
@@ -30,10 +31,10 @@ export const demoOnboardingSteps: OnboardingStep[] = [
   {
     id: "enter-name",
     type: "CUSTOM_COMPONENT",
-    title: "What Should We Call You?",
-    description: "Personalization is key!",
     payload: {
       componentKey: "demoName", // Maps to DemoNameStep
+      title: "What Should We Call You?",
+      description: "Personalization is key!",
       fields: [
         {
           label: "Your Name",
@@ -49,26 +50,26 @@ export const demoOnboardingSteps: OnboardingStep[] = [
           validation: z.string().optional(),
         },
       ],
+      ctaLabel: "Continue",
     },
     previousStep: "welcome",
     nextStep: "final-step",
-    ctaLabel: "Continue",
   },
   {
     id: "final-step",
     type: "CUSTOM_COMPONENT",
-    title: "All Done (Almost)!",
     payload: {
       componentKey: "finalStep",
+      title: "All Done (Almost)!",
       mainText: "🎉 Welcome aboard!",
       subText: "This is the last step in our short demo. Click Finish!",
+      ctaLabel: "Finish!",
     },
     previousStep: "enter-name",
     nextStep: null, // End of flow
-    ctaLabel: "Finish!",
     meta: {
       isValid: true, // This step is always valid
-    }
+    },
   },
 ];
 
