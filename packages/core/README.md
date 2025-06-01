@@ -11,13 +11,13 @@
 
 **`@onboardjs/core` is the headless, framework-agnostic engine that powers dynamic and customizable onboarding experiences. It provides the foundational logic for defining, managing, and transitioning through multi-step user onboarding flows.**
 
-This core library is designed to be integrated into any JavaScript/TypeScript application, with dedicated binding packages (like [`@onboardjs/react`](#)) for popular UI frameworks.
+This core library is designed to be integrated into any JavaScript/TypeScript application, with dedicated binding packages (like [`@onboardjs/react`](../react)) for popular UI frameworks.
 
 **The OnboardJS Project:**
 
 OnboardJS aims to enable developers to quickly and easily build highly customizable, dynamic, and effective onboarding flows for their web applications. We provide an open-source engine, comprehensive resources, and foster a supportive community.
 
-➡️ **Looking for React integration? Check out [`@onboardjs/react`](#)!** (Coming soon)
+➡️ **Looking for React integration? Check out [`@onboardjs/react`](../react)!**
 ➡️ **Explore our [Documentation](#)!** (Coming soon)
 ➡️ **Join our [Community](#)!** (Coming soon)
 
@@ -39,7 +39,6 @@ Building effective user onboarding is crucial for product adoption and user succ
   - `id`: Unique identifier.
   - `type`: String identifier for the kind of step (e.g., `INFORMATION`, `SINGLE_CHOICE`, `CHECKLIST`, `CUSTOM_COMPONENT`).
   - `payload`: Arbitrary data specific to the step type, used to render its content.
-  - `title`, `description`: For display purposes.
 - **Dynamic Navigation:**
   - `nextStep`, `previousStep`, `skipToStep`: Can be a static step ID (string) or a function `(context: OnboardingContext) => string | null | undefined` for conditional routing.
 - **Conditional Step Rendering:**
@@ -90,8 +89,10 @@ const steps: OnboardingStep[] = [
   {
     id: "welcome",
     type: "INFORMATION", // Predefined or custom type
-    title: "Welcome to Our App!",
-    payload: { mainText: "We are excited to have you." },
+    payload: {
+      title: "Welcome to Our App!",
+      mainText: "We are excited to have you.",
+    },
     nextStep: "profile-setup",
     onStepActive: (context) => {
       console.log("Welcome step is now active!", context.flowData);
@@ -100,8 +101,8 @@ const steps: OnboardingStep[] = [
   {
     id: "profile-setup",
     type: "CUSTOM_COMPONENT", // Example type
-    title: "Setup Your Profile",
     payload: {
+      title: "Setup Your Profile",
       fields: [
         { id: "name", name: "userName", label: "Your Name", type: "text" },
       ],
@@ -124,16 +125,17 @@ const steps: OnboardingStep[] = [
   {
     id: "profile-setup-error",
     type: "INFORMATION",
-    title: "Name Required",
-    payload: { message: "Please go back and enter your name." },
+    payload: {
+      title: "Name Required",
+      message: "Please go back and enter your name.",
+    },
     previousStep: "profile-setup",
     nextStep: null,
   },
   {
     id: "confirmation",
     type: "CONFIRMATION",
-    title: "All Set!",
-    payload: { message: "Your profile is set up." },
+    payload: { title: "All Set!", message: "Your profile is set up." },
     previousStep: "profile-setup",
     nextStep: null, // End of flow
   },
@@ -154,10 +156,14 @@ const engine = new OnboardingEngine({
   },
   onStepChange: (newStep, oldStep, context) => {
     if (newStep) {
-      console.log(`Moved to step: ${newStep.title} (ID: ${newStep.id})`);
+      console.log(
+        `Moved to step: ${newStep.payload.title} (ID: ${newStep.id})`
+      );
     }
     if (oldStep) {
-      console.log(`Came from step: ${oldStep.title} (ID: ${oldStep.id})`);
+      console.log(
+        `Came from step: ${oldStep.payload.title} (ID: ${oldStep.id})`
+      );
     }
   },
   // onDataLoad: async () => {
@@ -227,8 +233,6 @@ An object defining a single step in the flow. Key properties:
 
 - `id: string` (Unique)
 - `type: string` (e.g., `CHECKLIST`, `CUSTOM_COMPONENT`)
-- `title: string`
-- `description?: string`
 - `payload: any` (Data specific to this step's type and content)
 - `nextStep?: string | null | ((context: OnboardingContext) => string | null | undefined) | undefined`
 - `previousStep?: string | null | ((context: OnboardingContext) => string | null | undefined) | undefined`
@@ -237,7 +241,6 @@ An object defining a single step in the flow. Key properties:
 - `onStepComplete?: (stepData: any, context: OnboardingContext) => Promise<void> | void`
 - `isSkippable?: boolean`
 - `skipToStep?: string | null | ((context: OnboardingContext) => string | null | undefined) | undefined`
-- `ctaLabel?: string` (Hint for UI libraries)
 - `meta?: Record<string, any>` (For arbitrary custom data)
 
 _(For detailed type definitions, please refer to the source code or generated type documentation.)_

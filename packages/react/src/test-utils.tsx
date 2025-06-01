@@ -6,15 +6,14 @@ import { OnboardingProvider } from "./context/OnboardingProvider";
 import { StepComponentRegistry } from "./types";
 
 // Helper function to create mock step components
-export const createMockStepComponent = (name: string) => 
+export const createMockStepComponent =
+  (name: string) =>
   ({ payload, onDataChange }: any) => (
     <div data-testid={`${name.toLowerCase()}-step`}>
       <h2>{name} Component</h2>
       <p>Step content for {name}</p>
       {onDataChange && (
-        <button onClick={() => onDataChange({}, true)}>
-          {name} Action
-        </button>
+        <button onClick={() => onDataChange({}, true)}>{name} Action</button>
       )}
     </div>
   );
@@ -39,7 +38,9 @@ export const mockStepComponents: StepComponentRegistry = {
               type="radio"
               name="choice"
               value={option.value}
-              onChange={(e) => onDataChange({ [payload.dataKey]: e.target.value }, true)}
+              onChange={(e) =>
+                onDataChange({ [payload.dataKey]: e.target.value }, true)
+              }
             />
             {option.label}
           </label>
@@ -50,11 +51,11 @@ export const mockStepComponents: StepComponentRegistry = {
   MULTIPLE_CHOICE: ({ payload, onDataChange }) => {
     const { question, options } = payload;
     const [selected, setSelected] = React.useState<string[]>([]);
-    
+
     const handleChange = (value: string, checked: boolean) => {
       const newSelected = checked
         ? [...selected, value]
-        : selected.filter(v => v !== value);
+        : selected.filter((v) => v !== value);
       setSelected(newSelected);
       onDataChange({ [payload.dataKey]: newSelected }, newSelected.length > 0);
     };
@@ -117,10 +118,10 @@ export const mockSteps: OnboardingStep[] = [
   {
     id: "step1",
     type: "INFORMATION",
-    title: "Welcome Step",
-    payload: { 
+    payload: {
+      title: "Welcome Step",
       mainText: "Welcome to the onboarding flow!",
-      subText: "Let's get started"
+      subText: "Let's get started",
     },
     nextStep: "step2",
     isSkippable: true,
@@ -129,14 +130,14 @@ export const mockSteps: OnboardingStep[] = [
   {
     id: "step2",
     type: "SINGLE_CHOICE",
-    title: "Role Selection",
-    payload: { 
+    payload: {
+      title: "Role Selection",
       question: "What is your role?",
       options: [
         { id: "dev", label: "Developer", value: "developer" },
-        { id: "des", label: "Designer", value: "designer" }
+        { id: "des", label: "Designer", value: "designer" },
       ],
-      dataKey: "userRole"
+      dataKey: "userRole",
     },
     previousStep: "step1",
     nextStep: "step3",
@@ -144,13 +145,13 @@ export const mockSteps: OnboardingStep[] = [
   {
     id: "step3",
     type: "CHECKLIST",
-    title: "Complete Tasks",
-    payload: { 
+    payload: {
+      title: "Complete Tasks",
       items: [
         { id: "task1", label: "Task 1", isMandatory: true },
-        { id: "task2", label: "Task 2", isMandatory: false }
+        { id: "task2", label: "Task 2", isMandatory: false },
       ],
-      dataKey: "taskData"
+      dataKey: "taskData",
     },
     previousStep: "step2",
     nextStep: "step4",
@@ -158,9 +159,9 @@ export const mockSteps: OnboardingStep[] = [
   {
     id: "step4",
     type: "CONFIRMATION",
-    title: "Final Step",
-    payload: { 
-      confirmationMessage: "All done!"
+    payload: {
+      title: "Final Step",
+      confirmationMessage: "All done!",
     },
     previousStep: "step3",
     nextStep: null,
@@ -172,8 +173,8 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
   {
     id: "step1",
     type: "INFORMATION",
-    title: "Welcome Step",
     payload: {
+      title: "Welcome Step",
       mainText: "Welcome to the onboarding flow!",
       subText: "Let's get started",
     },
@@ -183,8 +184,8 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
   {
     id: "step2",
     type: "INFORMATION",
-    title: "Welcome Step",
     payload: {
+      title: "Welcome Step",
       mainText: "Welcome to step 2!",
       subText: "Let's get started",
     },
@@ -192,8 +193,8 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
   {
     id: "step3",
     type: "INFORMATION",
-    title: "Step 3",
     payload: {
+      title: "Step 3",
       mainText: "Welcome to step 3!",
       subText: "Let's get started",
     },
@@ -201,8 +202,8 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
   {
     id: "step4",
     type: "CONFIRMATION",
-    title: "Final Step",
     payload: {
+      title: "Final Step",
       confirmationMessage: "All done!",
     },
     nextStep: null,
@@ -219,7 +220,11 @@ export function renderWithOnboardingProvider(
   ui: React.ReactElement,
   options: CustomRenderOptions = {}
 ) {
-  const { onboardingConfig = {}, localStoragePersistence, ...renderOptions } = options;
+  const {
+    onboardingConfig = {},
+    localStoragePersistence,
+    ...renderOptions
+  } = options;
 
   const defaultConfig: OnboardingEngineConfig = {
     steps: mockSteps,
@@ -236,11 +241,15 @@ export function renderWithOnboardingProvider(
       >
         {children}
       </OnboardingProvider>
-    );  }
+    );
+  }
   return render(ui, { wrapper: Wrapper, ...renderOptions });
 }
 
 // Alternative render function for tests that don't need provider
-export function renderWithTestUtils(ui: React.ReactElement, options: RenderOptions = {}) {
+export function renderWithTestUtils(
+  ui: React.ReactElement,
+  options: RenderOptions = {}
+) {
   return render(ui, options);
 }

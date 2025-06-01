@@ -137,8 +137,7 @@ describe("StepRenderer", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Skippable Step",
-        payload: { mainText: "You can skip this" },
+        payload: { title: "Skippable Step", mainText: "You can skip this" },
         isSkippable: true,
         nextStep: "step2",
         skipToStep: "step3",
@@ -146,15 +145,13 @@ describe("StepRenderer", () => {
       {
         id: "step2",
         type: "INFORMATION",
-        title: "Step 2",
-        payload: { mainText: "Regular step" },
+        payload: { title: "Step 2", mainText: "Regular step" },
         nextStep: "step3",
       },
       {
         id: "step3",
         type: "CONFIRMATION",
-        title: "Final Step",
-        payload: { confirmationMessage: "All done!" },
+        payload: { title: "Final Step", confirmationMessage: "All done!" },
       },
     ];
 
@@ -280,8 +277,8 @@ describe("StepRenderer", () => {
       {
         id: "custom1",
         type: "CUSTOM_COMPONENT",
-        title: "Custom Component",
         payload: {
+          title: "Custom Component",
           componentKey: "MyCustomComponent",
           customData: "test",
         },

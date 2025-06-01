@@ -7,11 +7,7 @@ import {
   HeadlessFlowRenderProps,
 } from "./HeadlessOnboardingFlow";
 import { OnboardingStep } from "@onboardjs/core";
-import {
-  mockSteps,
-  createMockStepComponent,
-  renderWithTestUtils,
-} from "./test-utils";
+import { mockSteps, createMockStepComponent } from "./test-utils";
 
 describe("HeadlessOnboardingFlow", () => {
   const mockStepRegistry = {
@@ -81,7 +77,7 @@ describe("HeadlessOnboardingFlow", () => {
             <div>
               <span data-testid="step-id">{currentStep?.id}</span>
               <span data-testid="step-type">{currentStep?.type}</span>
-              <span data-testid="step-title">{currentStep?.title}</span>
+              <span data-testid="step-title">{currentStep?.payload.title}</span>
             </div>
           )}
         </HeadlessOnboardingFlow>
@@ -280,8 +276,8 @@ describe("HeadlessOnboardingFlow", () => {
         {
           id: "custom-step",
           type: "CUSTOM_COMPONENT",
-          title: "Custom Step",
           payload: {
+            title: "Custom Step",
             componentKey: "CUSTOM_COMPONENT",
           },
           nextStep: null,
@@ -312,8 +308,11 @@ describe("HeadlessOnboardingFlow", () => {
         {
           id: "invalid-step",
           type: "CUSTOM_COMPONENT",
-          title: "Invalid Step",
-          payload: { componentKey: "NONEXISTENT_COMPONENT" },
+
+          payload: {
+            componentKey: "NONEXISTENT_COMPONENT",
+            title: "Invalid Step",
+          },
           nextStep: null,
           previousStep: null,
         },
@@ -579,9 +578,9 @@ describe("HeadlessOnboardingFlow", () => {
         {
           id: "complex-step",
           type: "CUSTOM_COMPONENT",
-          title: "Complex Form",
           payload: {
             componentKey: "CUSTOM_COMPONENT",
+            title: "Complex Form",
             metadata: {
               category: "user-info",
               priority: "high",
@@ -600,9 +599,11 @@ describe("HeadlessOnboardingFlow", () => {
         >
           {({ currentStep }) => (
             <div>
-              <span data-testid="step-title">{currentStep?.title}</span>
+              <span data-testid="step-title">{currentStep?.payload.title}</span>
               <span data-testid="component-key">
-                {"componentKey" in (currentStep?.payload ?? {}) ? (currentStep?.payload as any).componentKey : ""}
+                {"componentKey" in (currentStep?.payload ?? {})
+                  ? (currentStep?.payload as any).componentKey
+                  : ""}
               </span>
             </div>
           )}

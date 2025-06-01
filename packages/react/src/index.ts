@@ -7,10 +7,6 @@ export {
   OnboardingProvider,
 } from "./context/OnboardingProvider";
 
-// Export step display components if you want to allow users to import them directly
-// though they are primarily used via the stepComponentRegistry
-export * from "./components/steps";
-
 // Export types needed by consumers
 export * from "./types"; // StepComponentProps, StepComponentRegistry
 // Re-export core types for convenience, so users only need to import from @onboardjs/react
