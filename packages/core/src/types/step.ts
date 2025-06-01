@@ -19,27 +19,27 @@ export type OnboardingStepType =
   | "CHECKLIST";
 
 export type OnboardingStep =
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"INFORMATION", InformationStepPayload> & {
       type: "INFORMATION";
       payload: InformationStepPayload;
     })
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"MULTIPLE_CHOICE", MultipleChoiceStepPayload> & {
       type: "MULTIPLE_CHOICE";
       payload: MultipleChoiceStepPayload;
     })
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"SINGLE_CHOICE", SingleChoiceStepPayload> & {
       type: "SINGLE_CHOICE";
       payload: SingleChoiceStepPayload;
     })
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"CONFIRMATION", ConfirmationStepPayload> & {
       type: "CONFIRMATION";
       payload: ConfirmationStepPayload;
     })
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"CHECKLIST", ChecklistStepPayload> & {
       type: "CHECKLIST";
       payload: ChecklistStepPayload;
     })
-  | (BaseOnboardingStep & {
+  | (BaseOnboardingStep<"CUSTOM_COMPONENT", CustomComponentStepPayload> & {
       type: "CUSTOM_COMPONENT";
       payload: CustomComponentStepPayload;
     });

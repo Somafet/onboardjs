@@ -26,14 +26,12 @@ describe("OnboardingEngine", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Welcome",
         payload: { mainText: "Welcome to onboarding" },
         nextStep: "step2",
       },
       {
         id: "step2",
         type: "SINGLE_CHOICE",
-        title: "Choose Option",
         payload: {
           question: "What is your role?",
           options: [
@@ -48,7 +46,6 @@ describe("OnboardingEngine", () => {
       {
         id: "step3",
         type: "CONFIRMATION",
-        title: "Confirm",
         payload: { confirmationMessage: "Are you ready?" },
         previousStep: "step2",
       },
@@ -290,14 +287,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Step 1",
           payload: { mainText: "First step" },
           nextStep: "step2",
         },
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Second step" },
           previousStep: undefined, // No previous step defined
         },
@@ -397,14 +392,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Step 1",
           payload: { mainText: "First step" },
           nextStep: "step2",
         },
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Conditional step" },
           condition: () => false,
           nextStep: "step3",
@@ -412,7 +405,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step3",
           type: "INFORMATION",
-          title: "Step 3",
           payload: { mainText: "Final step" },
         },
       ];
@@ -579,14 +571,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Step 1",
           payload: { mainText: "First step" },
           nextStep: "step2",
         },
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Conditional step" },
           condition: (context) => context.flowData.showStep2 === true,
           nextStep: "step3",
@@ -594,7 +584,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step3",
           type: "INFORMATION",
-          title: "Step 3",
           payload: { mainText: "Final step" },
         },
       ];
@@ -615,7 +604,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Dynamic Step",
           payload: { mainText: "Choose path" },
           nextStep: (context) =>
             context.flowData.userRole === "admin" ? "admin-step" : "user-step",
@@ -623,13 +611,11 @@ describe("OnboardingEngine", () => {
         {
           id: "admin-step",
           type: "INFORMATION",
-          title: "Admin Step",
           payload: { mainText: "Admin content" },
         },
         {
           id: "user-step",
           type: "INFORMATION",
-          title: "User Step",
           payload: { mainText: "User content" },
         },
       ];
@@ -649,14 +635,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Step 1",
           payload: { mainText: "First step" },
           nextStep: undefined, // No next step defined
         },
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Second step" },
         },
       ];
@@ -677,7 +661,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Step 1",
           payload: { mainText: "First step" },
           nextStep: undefined, // No next step defined
         },
@@ -708,7 +691,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Skippable Step",
           payload: { mainText: "You can skip this" },
           isSkippable: true,
           nextStep: "step2",
@@ -717,14 +699,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Regular step" },
           nextStep: "step3",
         },
         {
           id: "step3",
           type: "INFORMATION",
-          title: "Step 3",
           payload: { mainText: "Final step" },
         },
       ];
@@ -743,7 +723,6 @@ describe("OnboardingEngine", () => {
         {
           id: "step1",
           type: "INFORMATION",
-          title: "Non-Skippable Step",
           payload: { mainText: "You can skip this" },
           isSkippable: false,
           nextStep: "step2",
@@ -751,14 +730,12 @@ describe("OnboardingEngine", () => {
         {
           id: "step2",
           type: "INFORMATION",
-          title: "Step 2",
           payload: { mainText: "Regular step" },
           nextStep: "step3",
         },
         {
           id: "step3",
           type: "INFORMATION",
-          title: "Step 3",
           payload: { mainText: "Final step" },
         },
       ];
@@ -779,7 +756,6 @@ describe("OnboardingEngine", () => {
         {
           id: "checklist-step",
           type: "CHECKLIST",
-          title: "Complete Tasks",
           payload: {
             items: [
               { id: "task1", label: "Task 1", isMandatory: true },
@@ -793,7 +769,6 @@ describe("OnboardingEngine", () => {
         {
           id: "next-step",
           type: "INFORMATION",
-          title: "Next Step",
           payload: { mainText: "Checklist completed" },
         },
       ];
@@ -875,7 +850,6 @@ describe("OnboardingEngine", () => {
         {
           id: "conditional-checklist",
           type: "CHECKLIST",
-          title: "Conditional Tasks",
           payload: {
             items: [
               { id: "task1", label: "Task 1", isMandatory: true },
@@ -1109,7 +1083,6 @@ describe("OnboardingEngine", () => {
         {
           id: "new-step",
           type: "INFORMATION",
-          title: "New Step",
           payload: { mainText: "New content" },
         },
       ];
@@ -1348,7 +1321,6 @@ describe("OnboardingEngine", () => {
         {
           id: "checklist-step",
           type: "CHECKLIST",
-          title: "Tasks",
           payload: {
             items: [{ id: "task1", label: "Task 1" }],
             dataKey: "checklistData",
@@ -1475,14 +1447,12 @@ describe("OnboardingEngine", () => {
           {
             id: "step1",
             type: "INFORMATION",
-            title: "Welcome",
             payload: { mainText: "Welcome to onboarding" },
             nextStep: "step2",
           },
           {
             id: "step2",
             type: "INFORMATION",
-            title: "Step 2",
             payload: { mainText: "Second step" },
             previousStep: "step1",
           },
@@ -1877,7 +1847,6 @@ describe("OnboardingEngine", () => {
           {
             id: "step1",
             type: "INFORMATION",
-            title: "Skippable Step",
             payload: { mainText: "You can skip this" },
             isSkippable: true,
             nextStep: "step2",

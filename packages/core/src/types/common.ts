@@ -1,16 +1,38 @@
+import { type ChecklistItemState } from "./payloads";
+
 /**
  * Represents the shared context available throughout the onboarding flow.
  * This context is passed to dynamic functions (like condition, nextStep)
  * and can be made available to UI components.
  */
-export interface OnboardingContext {
+export interface OnboardingContext<TUser = any> {
   /** Data collected from all completed steps so far. */
   flowData: Record<string, any>;
   /** Information about the current user, if available. */
-  currentUser?: any;
+  currentUser?: TUser;
   /** Any other global state or services relevant to the onboarding flow. */
   [key: string]: any;
 }
+
+/**
+ * Helper type to extract the step data type based on step type and payload
+ */
+export type StepDataForStep<
+  TStepType extends string,
+  TPayload,
+> = TStepType extends "SINGLE_CHOICE"
+  ? TPayload extends { dataKey: infer K extends string }
+    ? { [P in K]: any }
+    : Record<string, any>
+  : TStepType extends "MULTIPLE_CHOICE"
+    ? TPayload extends { dataKey: infer K extends string }
+      ? { [P in K]: any[] }
+      : Record<string, any>
+    : TStepType extends "CHECKLIST"
+      ? TPayload extends { dataKey: infer K extends string }
+        ? { [P in K]: ChecklistItemState[] }
+        : Record<string, any>
+      : Record<string, any>;
 
 type SkipableStep = {
   isSkippable: true;
@@ -20,27 +42,22 @@ type SkipableStep = {
     | null
     | ((context: OnboardingContext) => string | null | undefined)
     | undefined;
-  skipLabel?: string;
 };
 
 type NonSkipableStep = {
   isSkippable?: false;
   skipToStep?: never;
-  skipLabel?: never;
 };
 
 /**
  * Base properties common to all onboarding steps.
  */
-export type BaseOnboardingStep = {
+export type BaseOnboardingStep<
+  TStepType extends string = string,
+  TPayload = any,
+> = {
   /** A unique identifier for this step. */
   id: string | number;
-  /** The title displayed for the step (e.g., in a header). */
-  title: string;
-  /** An optional, more detailed description or instructions for the step. */
-  description?: string;
-  /** Optional: Identifier for an icon associated with the step. */
-  icon?: string;
   nextStep?:
     | string
     | number
@@ -59,12 +76,10 @@ export type BaseOnboardingStep = {
     | undefined;
   onStepActive?: (context: OnboardingContext) => Promise<void> | void;
   onStepComplete?: (
-    stepData: any,
+    stepData: StepDataForStep<TStepType, TPayload>,
     context: OnboardingContext
   ) => Promise<void> | void;
   condition?: (context: OnboardingContext) => boolean;
-  ctaLabel?: string;
-  secondaryCtaLabel?: string;
   /** Arbitrary metadata for custom use cases or extensions. */
   meta?: Record<string, any>;
 } & (SkipableStep | NonSkipableStep);

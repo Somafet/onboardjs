@@ -160,11 +160,11 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
         <div className="flex justify-between items-start mb-2">
           <div>
             <CardTitle className="text-2xl font-bold mb-2">
-              {currentStepDetails.title}
+              {currentStepDetails.payload.title}
             </CardTitle>
-            {currentStepDetails.description && (
+            {currentStepDetails.payload.description && (
               <CardDescription className="mt-1 text-md">
-                {currentStepDetails.description}
+                {currentStepDetails.payload.description}
               </CardDescription>
             )}
           </div>
@@ -193,7 +193,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               disabled={isLoading}
               className="w-full sm:w-auto"
             >
-              {currentStepDetails.skipLabel || "Skip"}
+              {currentStepDetails.payload.skipLabel || "Skip"}
             </Button>
           )}
         </div>
@@ -204,7 +204,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               onClick={() => previous()}
               disabled={isLoading}
             >
-              {currentStepDetails.secondaryCtaLabel || "Back"}
+              {currentStepDetails.payload.secondaryCtaLabel || "Back"}
             </Button>
           )}
           {(state.canGoNext ||
@@ -215,7 +215,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               onClick={() => next(currentActiveStepData)}
               disabled={isLoading || !isCurrentActiveStepValid}
             >
-              {currentStepDetails.ctaLabel ||
+              {currentStepDetails.payload.ctaLabel ||
                 (state.isLastStep ? "Finish" : "Next")}
             </Button>
           )}

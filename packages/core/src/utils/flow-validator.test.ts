@@ -30,14 +30,12 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Welcome Step 1",
         payload: { mainText: "Hi" },
         nextStep: 2,
       },
       {
         id: 2,
         type: "INFORMATION",
-        title: "Input Form Step 2",
         payload: { mainText: "Please enter your details" },
         previousStep: "step1",
       },
@@ -51,7 +49,6 @@ describe("validateFlow", () => {
       {
         id: "custom1",
         type: "CUSTOM_COMPONENT",
-        title: "Custom Component",
         payload: { componentKey: "MyCustomWelcome", title: "Welcome!" },
         nextStep: null,
       },
@@ -90,13 +87,11 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Welcome",
         payload: { mainText: "Hi" },
       },
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Input Form",
         payload: { mainText: "Please enter your details" },
       },
     ];
@@ -119,7 +114,6 @@ describe("validateFlow", () => {
       {
         id: "custom1",
         type: "CUSTOM_COMPONENT",
-        title: "Custom Component Missing Key", // Added title
         payload: { title: "Oops" } as any,
       }, // Cast to any to simulate missing key
     ];
@@ -136,7 +130,6 @@ describe("validateFlow", () => {
       {
         id: "custom1",
         type: "CUSTOM_COMPONENT",
-        title: "Custom Null Payload",
         payload: null as any,
       },
     ];
@@ -153,7 +146,6 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Broken Next Step", // Added title
         payload: { mainText: "Hi" },
         nextStep: "nonExistentStep",
       },
@@ -173,7 +165,6 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Broken Skip Step", // Added title
         payload: { mainText: "Hi" },
         isSkippable: true,
         skipToStep: "nonExistentSkipTarget",
@@ -193,7 +184,6 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Null Next Step", // Added title
         payload: { mainText: "Hi" },
         nextStep: null,
       },
@@ -207,7 +197,6 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Undefined Next Step",
         payload: { mainText: "Hi" },
       }, // nextStep is undefined
     ];
@@ -220,14 +209,12 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Functional Next Step 1", // Added title
         payload: { mainText: "Hi" },
         nextStep: () => "step2",
       },
       {
         id: "step2",
         type: "INFORMATION",
-        title: "Functional Next Step 2",
         payload: { mainText: "There" },
       }, // Added title
     ];
@@ -243,32 +230,27 @@ describe("validateFlow", () => {
       {
         id: "s1",
         type: "INFORMATION",
-        title: "Step S1",
         payload: { mainText: "1" },
         nextStep: "s_non_existent",
       },
       {
         id: "s2",
         type: "CUSTOM_COMPONENT",
-        title: "Step S2",
         payload: {} as any,
       }, // Missing componentKey
       {
         id: "s1",
         type: "INFORMATION",
-        title: "Step S1 Duplicate",
         payload: { mainText: "1-dup" },
       }, // Duplicate ID
       {
         id: "s3",
         type: null as any,
-        title: "Step S3",
         payload: { mainText: "3" },
       }, // Missing type
       {
         id: "s4",
         type: "INFORMATION",
-        title: "Step S4",
         payload: { mainText: "4" },
         isSkippable: true,
         skipToStep: "s_skip_non_existent",
@@ -299,14 +281,12 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Valid Previous Step 1", // Added title
         payload: { mainText: "Hi" },
         nextStep: "step2",
       },
       {
         id: "step2",
         type: "INFORMATION",
-        title: "Valid Previous Step 2", // Added title
         payload: { mainText: "Please enter your details" },
         previousStep: "step1",
       },
@@ -320,14 +300,12 @@ describe("validateFlow", () => {
       {
         id: "step1",
         type: "INFORMATION",
-        title: "Null Previous Step", // Added title
         payload: { mainText: "Hi" },
         previousStep: null,
       },
       {
         id: "step2",
         type: "INFORMATION",
-        title: "Undefined Previous Step",
         payload: { mainText: "Hi" },
       }, // undefined previousStep
     ];
@@ -340,7 +318,6 @@ describe("validateFlow", () => {
       {
         id: "singleChoice1",
         type: "SINGLE_CHOICE",
-        title: "Single Choice Step",
         payload: {
           question: "What is your role?",
           options: [], // No options provided
@@ -361,7 +338,6 @@ describe("validateFlow", () => {
       {
         id: "multipleChoice1",
         type: "MULTIPLE_CHOICE",
-        title: "Multiple Choice Step",
         payload: {
           question: "Select your interests",
           options: [], // No options provided

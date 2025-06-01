@@ -111,9 +111,9 @@ const StepRenderer: React.FC<StepRendererProps> = ({
   }
 
   const nextButtonLabel =
-    currentStep.ctaLabel || (state?.isLastStep ? "Finish" : "Next");
-  const prevButtonLabel = currentStep.secondaryCtaLabel || "Back";
-  const skipButtonLabel = currentStep.skipLabel || "Skip";
+    currentStep.payload.ctaLabel || (state?.isLastStep ? "Finish" : "Next");
+  const prevButtonLabel = currentStep.payload.secondaryCtaLabel || "Back";
+  const skipButtonLabel = currentStep.payload.skipLabel || "Skip";
 
   return (
     <div
@@ -124,8 +124,10 @@ const StepRenderer: React.FC<StepRendererProps> = ({
         background: "#fff",
       }}
     >
-      <h2 style={{ marginTop: 0 }}>{currentStep.title}</h2>
-      {currentStep.description && <p>{currentStep.description}</p>}
+      <h2 style={{ marginTop: 0 }}>{currentStep.payload.title}</h2>
+      {currentStep.payload.description && (
+        <p>{currentStep.payload.description}</p>
+      )}
 
       {isLoading && currentStep && (
         <div style={{ minHeight: "50px" }}>{LoadingComponent}</div>
@@ -187,7 +189,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
                 onClick={() => next(currentActiveStepData)} // This will call engine.next() which handles completion
                 disabled={isLoading || !isCurrentActiveStepValid}
               >
-                {isLoading ? "..." : currentStep.ctaLabel || "Finish"}
+                {isLoading ? "..." : currentStep.payload.ctaLabel || "Finish"}
               </button>
             )}
         </div>
