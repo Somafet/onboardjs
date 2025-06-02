@@ -335,13 +335,21 @@ export class OnboardingEngine<
       };
       // Execute listeners sequentially to allow promise resolution
       for (const listener of this.beforeStepChangeListeners) {
-        await listener(event);
-        if (isCancelled) {
-          console.log(
-            "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
+        try {
+          await listener(event);
+          if (isCancelled) {
+            console.log(
+              "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
+            );
+            this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
+            return;
+          }
+        } catch (error) {
+          console.error(
+            "[OnboardingEngine] Error in beforeStepChange listener:",
+            error
           );
-          this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
-          return;
+          this.errorInternal = error as Error; // Capture error for state
         }
       }
     }
@@ -828,6 +836,10 @@ export class OnboardingEngine<
       };
     }
     const newContextJSON = JSON.stringify(this.contextInternal);
+
+    console.log("Old context:", oldContextJSON);
+    console.log("New context:", newContextJSON);
+    console.log("isSame:", oldContextJSON === newContextJSON);
 
     // Only notify and persist if something actually changed
     if (oldContextJSON !== newContextJSON) {

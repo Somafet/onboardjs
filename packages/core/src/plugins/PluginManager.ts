@@ -78,10 +78,6 @@ export class PluginManagerImpl<
         await cleanup();
       }
 
-      // Remove from maps
-      this.plugins.delete(pluginName);
-      this.cleanupFunctions.delete(pluginName);
-
       console.debug(`[PluginManager] Uninstalled plugin: ${pluginName}`);
     } catch (error) {
       console.error(
@@ -89,6 +85,10 @@ export class PluginManagerImpl<
         error
       );
       throw error;
+    } finally {
+      // Ensure cleanup function is removed even if it fails
+      this.cleanupFunctions.delete(pluginName);
+      this.plugins.delete(pluginName);
     }
   }
 

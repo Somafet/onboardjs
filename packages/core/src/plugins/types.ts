@@ -20,15 +20,15 @@ export interface OnboardingPlugin<
   ) => PluginCleanup | Promise<PluginCleanup>;
 }
 
-export type PluginCleanup = () => void | Promise<void>;
+export type PluginCleanup = () => any | Promise<any>;
 
 export interface PluginManager<
   TContext extends OnboardingContext = OnboardingContext,
 > {
   /** Install a plugin */
-  install(plugin: OnboardingPlugin<TContext>): Promise<void>;
+  install(plugin: OnboardingPlugin<TContext>): Promise<any>;
   /** Uninstall a plugin */
-  uninstall(pluginName: string): Promise<void>;
+  uninstall(pluginName: string): Promise<any>;
   /** Get installed plugin */
   getPlugin(name: string): OnboardingPlugin<TContext> | undefined;
   /** Get all installed plugins */
@@ -36,7 +36,7 @@ export interface PluginManager<
   /** Check if plugin is installed */
   isInstalled(name: string): boolean;
   /** Cleanup all plugins */
-  cleanup(): Promise<void>;
+  cleanup(): Promise<any>;
 }
 
 export interface PluginHooks<
