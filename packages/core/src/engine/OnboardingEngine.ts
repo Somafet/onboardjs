@@ -19,7 +19,152 @@ import {
   LoadedData,
   FlowCompleteListener,
   StepChangeListener,
+  EventListenerMap,
 } from "./types";
+
+/**
+ * Unified event listener handler with consistent error management
+ */
+class EventManager<TContext extends OnboardingContext = OnboardingContext> {
+  private listeners: Map<keyof EventListenerMap<TContext>, Set<any>> =
+    new Map();
+
+  constructor() {
+    // Initialize listener sets for each event type
+    const eventTypes: (keyof EventListenerMap<TContext>)[] = [
+      "stateChange",
+      "beforeStepChange",
+      "stepChange",
+      "flowComplete",
+      "stepActive",
+      "stepComplete",
+      "contextUpdate",
+      "error",
+    ];
+
+    eventTypes.forEach((eventType) => {
+      this.listeners.set(eventType, new Set());
+    });
+  }
+
+  /**
+   * Add an event listener with unified error handling
+   */
+  addEventListener<T extends keyof EventListenerMap<TContext>>(
+    eventType: T,
+    listener: EventListenerMap<TContext>[T]
+  ): UnsubscribeFunction {
+    const listenerSet = this.listeners.get(eventType);
+    if (!listenerSet) {
+      throw new Error(`Unknown event type: ${String(eventType)}`);
+    }
+
+    listenerSet.add(listener);
+    return () => listenerSet.delete(listener);
+  }
+
+  /**
+   * Notify all listeners for a specific event with consistent error handling
+   */
+  notifyListeners<T extends keyof EventListenerMap<TContext>>(
+    eventType: T,
+    ...args: Parameters<EventListenerMap<TContext>[T]>
+  ): void {
+    const listenerSet = this.listeners.get(eventType);
+    if (!listenerSet) return;
+
+    listenerSet.forEach((listener) => {
+      try {
+        const result = (listener as any)(...args);
+        if (result instanceof Promise) {
+          result.catch((err) => {
+            // Use legacy error message format for backward compatibility
+            const legacyEventName =
+              eventType === "flowComplete"
+                ? "async onFlowHasCompleted"
+                : this.getLegacyEventName(eventType);
+            console.error(`Error in ${legacyEventName} listener:`, err);
+          });
+        }
+      } catch (err) {
+        // Use legacy error message format for backward compatibility
+        const legacyEventName =
+          eventType === "flowComplete"
+            ? "sync onFlowHasCompleted"
+            : this.getLegacyEventName(eventType);
+        console.error(`Error in ${legacyEventName} listener:`, err);
+      }
+    });
+  }
+
+  /**
+   * Get legacy event name for error messages to maintain backward compatibility
+   */
+  private getLegacyEventName<T extends keyof EventListenerMap<TContext>>(
+    eventType: T
+  ): string {
+    switch (eventType) {
+      case "stepChange":
+        return "stepChange";
+      case "stateChange":
+        return "stateChange";
+      case "beforeStepChange":
+        return "beforeStepChange";
+      case "stepActive":
+        return "stepActive";
+      case "stepComplete":
+        return "stepComplete";
+      case "contextUpdate":
+        return "contextUpdate";
+      case "error":
+        return "error";
+      default:
+        return String(eventType);
+    }
+  }
+
+  /**
+   * Notify listeners with promise resolution for sequential execution
+   */
+  async notifyListenersSequential<T extends keyof EventListenerMap<TContext>>(
+    eventType: T,
+    ...args: Parameters<EventListenerMap<TContext>[T]>
+  ): Promise<void> {
+    const listenerSet = this.listeners.get(eventType);
+    if (!listenerSet) return;
+
+    for (const listener of listenerSet) {
+      try {
+        const result = (listener as any)(...args);
+        if (result instanceof Promise) {
+          await result;
+        }
+      } catch (err) {
+        console.error(
+          `[OnboardingEngine] Error in sequential ${String(eventType)} listener:`,
+          err
+        );
+        throw err; // Re-throw for beforeStepChange cancellation logic
+      }
+    }
+  }
+
+  /**
+   * Get the number of listeners for an event type
+   */
+  getListenerCount<T extends keyof EventListenerMap<TContext>>(
+    eventType: T
+  ): number {
+    return this.listeners.get(eventType)?.size || 0;
+  }
+
+  /**
+   * Clear all listeners
+   */
+  clearAllListeners(): void {
+    this.listeners.forEach((listenerSet) => listenerSet.clear());
+  }
+}
 
 export class OnboardingEngine<
   TContext extends OnboardingContext = OnboardingContext,
@@ -33,14 +178,8 @@ export class OnboardingEngine<
   private errorInternal: Error | null = null;
   private isCompletedInternal: boolean = false;
 
-  // Listeners for state changes
-  private stateChangeListeners: Set<EngineStateChangeListener<TContext>> =
-    new Set();
-  private beforeStepChangeListeners: Set<BeforeStepChangeListener<TContext>> =
-    new Set();
-  private flowCompleteListeners: Set<FlowCompleteListener<TContext>> =
-    new Set();
-  private stepChangeListeners: Set<StepChangeListener<TContext>> = new Set();
+  // Unified event manager
+  private eventManager: EventManager<TContext> = new EventManager();
 
   // Onboarding engine instance configuration
   private onFlowComplete?: FlowCompleteListener<TContext>;
@@ -78,6 +217,129 @@ export class OnboardingEngine<
         this.resolveInitialization?.();
       }
     );
+  }
+
+  /**
+   * Unified method to register event listeners
+   */
+  public addEventListener<T extends keyof EventListenerMap<TContext>>(
+    eventType: T,
+    listener: EventListenerMap<TContext>[T]
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener(eventType, listener);
+  }
+
+  /**
+   * Legacy method - use addEventListener('stepChange', listener) instead
+   * @deprecated Use addEventListener('stepChange', listener) instead
+   */
+  public addStepChangeListener(
+    listener: StepChangeListener<TContext>
+  ): UnsubscribeFunction {
+    return this.addEventListener("stepChange", listener);
+  }
+
+  /**
+   * Legacy method - use addEventListener('flowComplete', listener) instead
+   * @deprecated Use addEventListener('flowComplete', listener) instead
+   */
+  public addFlowCompletedListener(
+    listener: FlowCompleteListener<TContext>
+  ): UnsubscribeFunction {
+    return this.addEventListener("flowComplete", listener);
+  }
+
+  /**
+   * Legacy method - use addEventListener('stateChange', listener) instead
+   * @deprecated Use addEventListener('stateChange', listener) instead
+   */
+  public subscribeToStateChange(
+    listener: EngineStateChangeListener<TContext>
+  ): UnsubscribeFunction {
+    return this.addEventListener("stateChange", listener);
+  }
+
+  /**
+   * Legacy method - use addEventListener('beforeStepChange', listener) instead
+   * @deprecated Use addEventListener('beforeStepChange', listener) instead
+   */
+  public onBeforeStepChange(
+    listener: BeforeStepChangeListener<TContext>
+  ): UnsubscribeFunction {
+    return this.addEventListener("beforeStepChange", listener);
+  }
+
+  // Plugin compatibility methods
+  public addBeforeStepChangeListener(
+    listener: (
+      currentStep: OnboardingStep<TContext> | null,
+      nextStep: OnboardingStep<TContext>,
+      context: TContext
+    ) => void | Promise<void>
+  ): UnsubscribeFunction {
+    // Convert to BeforeStepChangeListener format
+    const wrappedListener: BeforeStepChangeListener<TContext> = async (
+      event
+    ) => {
+      if (event.targetStepId) {
+        const nextStep = findStepById(this.steps, event.targetStepId);
+        if (nextStep) {
+          await listener(event.currentStep, nextStep, this.contextInternal);
+        }
+      }
+    };
+
+    return this.addEventListener("beforeStepChange", wrappedListener);
+  }
+
+  public addAfterStepChangeListener(
+    listener: (
+      previousStep: OnboardingStep<TContext> | null,
+      currentStep: OnboardingStep<TContext> | null,
+      context: TContext
+    ) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("stepChange", listener);
+  }
+
+  public addStepActiveListener(
+    listener: (
+      step: OnboardingStep<TContext>,
+      context: TContext
+    ) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("stepActive", listener);
+  }
+
+  public addStepCompleteListener(
+    listener: (
+      step: OnboardingStep<TContext>,
+      stepData: any,
+      context: TContext
+    ) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("stepComplete", listener);
+  }
+
+  public addFlowCompleteListener(
+    listener: (context: TContext) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("flowComplete", listener);
+  }
+
+  public addContextUpdateListener(
+    listener: (
+      oldContext: TContext,
+      newContext: TContext
+    ) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("contextUpdate", listener);
+  }
+
+  public addErrorListener(
+    listener: (error: Error, context: TContext) => void | Promise<void>
+  ): UnsubscribeFunction {
+    return this.addEventListener("error", listener);
   }
 
   /**
@@ -138,6 +400,7 @@ export class OnboardingEngine<
       this.currentStepInternal = null; // No current step if loading failed critically
       this.isCompletedInternal = false; // Not completed, but in an error state
       this.isLoadingInternal = false; // Not actively loading anymore
+      this.notifyErrorListeners(dataLoadError);
       this.notifyStateChangeListeners(); // Notify with the hydration error
       return;
     }
@@ -193,66 +456,51 @@ export class OnboardingEngine<
     return this.initializationPromise;
   }
 
-  /**
-   * Registers a listener function that will be called whenever the onboarding step changes.
-   */
-  public addStepChangeListener(
-    listener: StepChangeListener<TContext>
-  ): UnsubscribeFunction {
-    this.stepChangeListeners.add(listener);
-    return () => this.stepChangeListeners.delete(listener);
-  }
-
   private notifyStepChangeListeners(
     newStep: OnboardingStep<TContext> | null,
     oldStep: OnboardingStep<TContext> | null,
     context: TContext
   ): void {
-    this.stepChangeListeners.forEach((listener) => {
-      try {
-        listener(newStep, oldStep, context);
-      } catch (err) {
-        console.error("[OnboardingEngine] Error in stepChange listener:", err);
-      }
-    });
+    this.eventManager.notifyListeners("stepChange", newStep, oldStep, context);
   }
 
-  /**
-   * Registers a listener to be called when a flow has completed.
-   */
-  public addFlowCompletedListener(
-    listener: FlowCompleteListener<TContext>
-  ): UnsubscribeFunction {
-    this.flowCompleteListeners.add(listener);
-    return () => this.flowCompleteListeners.delete(listener);
-  }
-
-  /**
-   * Notifies all registered flow completion listeners that the onboarding flow has completed.
-   */
   private notifyFlowCompleteListeners(context: TContext): void {
     console.log(
       "[OnboardingEngine] Notifying flowCompleteListeners. Count:",
-      this.flowCompleteListeners.size
+      this.eventManager.getListenerCount("flowComplete")
     );
-    this.flowCompleteListeners.forEach((listener) => {
-      try {
-        const result = listener(context);
-        if (result instanceof Promise) {
-          result.catch((err) =>
-            console.error(
-              "[OnboardingEngine] Error in async onFlowHasCompleted listener:",
-              err
-            )
-          );
-        }
-      } catch (err) {
-        console.error(
-          "[OnboardingEngine] Error in sync onFlowHasCompleted listener:",
-          err
-        );
-      }
-    });
+    this.eventManager.notifyListeners("flowComplete", context);
+  }
+
+  private notifyStateChangeListeners(): void {
+    const state = this.getState();
+    this.eventManager.notifyListeners("stateChange", state);
+  }
+
+  private notifyStepActiveListeners(
+    step: OnboardingStep<TContext>,
+    context: TContext
+  ): void {
+    this.eventManager.notifyListeners("stepActive", step, context);
+  }
+
+  private notifyStepCompleteListeners(
+    step: OnboardingStep<TContext>,
+    stepData: any,
+    context: TContext
+  ): void {
+    this.eventManager.notifyListeners("stepComplete", step, stepData, context);
+  }
+
+  private notifyContextUpdateListeners(
+    oldContext: TContext,
+    newContext: TContext
+  ): void {
+    this.eventManager.notifyListeners("contextUpdate", oldContext, newContext);
+  }
+
+  private notifyErrorListeners(error: Error): void {
+    this.eventManager.notifyListeners("error", error, this.contextInternal);
   }
 
   /**
@@ -267,6 +515,7 @@ export class OnboardingEngine<
         );
       } catch (e: any) {
         console.error("[OnboardingEngine] Error during onDataPersist:", e);
+        this.notifyErrorListeners(e);
         // Optionally set an error state or notify, but don't block core functionality
       }
     }
@@ -279,6 +528,7 @@ export class OnboardingEngine<
     ) => Partial<EngineState<TContext>>
   ) {
     const currentState = this.getState();
+    const oldContext = { ...this.contextInternal };
     const changes = updater(currentState);
 
     let contextChanged = false;
@@ -286,7 +536,12 @@ export class OnboardingEngine<
       this.isLoadingInternal = changes.isLoading;
     if (changes.isHydrating !== undefined)
       this.isHydratingInternal = changes.isHydrating;
-    if (changes.error !== undefined) this.errorInternal = changes.error;
+    if (changes.error !== undefined) {
+      this.errorInternal = changes.error;
+      if (changes.error) {
+        this.notifyErrorListeners(changes.error);
+      }
+    }
     if (changes.isCompleted !== undefined)
       this.isCompletedInternal = changes.isCompleted;
     if (changes.context) {
@@ -301,8 +556,9 @@ export class OnboardingEngine<
 
     this.notifyStateChangeListeners();
 
-    // Persist data if context changed and not hydrating
+    // Notify context update listeners if context changed
     if (contextChanged && !this.isHydratingInternal) {
+      this.notifyContextUpdateListeners(oldContext, this.contextInternal);
       this.persistDataIfNeeded();
     }
   }
@@ -315,7 +571,7 @@ export class OnboardingEngine<
     let finalTargetStepId = requestedTargetStepId;
     let redirected = false;
 
-    if (this.beforeStepChangeListeners.size > 0) {
+    if (this.eventManager.getListenerCount("beforeStepChange") > 0) {
       const event: BeforeStepChangeEvent<TContext> = {
         currentStep: this.currentStepInternal,
         targetStepId: requestedTargetStepId,
@@ -333,24 +589,27 @@ export class OnboardingEngine<
           }
         },
       };
-      // Execute listeners sequentially to allow promise resolution
-      for (const listener of this.beforeStepChangeListeners) {
-        try {
-          await listener(event);
-          if (isCancelled) {
-            console.log(
-              "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
-            );
-            this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
-            return;
-          }
-        } catch (error) {
-          console.error(
-            "[OnboardingEngine] Error in beforeStepChange listener:",
-            error
+
+      try {
+        // Execute listeners sequentially to allow promise resolution
+        await this.eventManager.notifyListenersSequential(
+          "beforeStepChange",
+          event
+        );
+        if (isCancelled) {
+          console.log(
+            "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
           );
-          this.errorInternal = error as Error; // Capture error for state
+          this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
+          return;
         }
+      } catch (error) {
+        console.error(
+          "[OnboardingEngine] Error in beforeStepChange listener:",
+          error
+        );
+        this.errorInternal = error as Error; // Capture error for state
+        this.notifyErrorListeners(error as Error);
       }
     }
 
@@ -413,8 +672,14 @@ export class OnboardingEngine<
         if (this.currentStepInternal.onStepActive) {
           await this.currentStepInternal.onStepActive(this.contextInternal);
         }
+        // Notify step active listeners
+        this.notifyStepActiveListeners(
+          this.currentStepInternal,
+          this.contextInternal
+        );
       } catch (e: any) {
         this.errorInternal = e;
+        this.notifyErrorListeners(e);
         console.error(
           `Error in onStepActive for ${this.currentStepInternal.id}:`,
           e
@@ -437,6 +702,7 @@ export class OnboardingEngine<
             e
           );
           this.errorInternal = e as Error;
+          this.notifyErrorListeners(e as Error);
         }
       }
 
@@ -448,12 +714,18 @@ export class OnboardingEngine<
     }
 
     if (this.onStepChangeCallback) {
-      this.onStepChangeCallback(
-        this.currentStepInternal,
-        oldStep,
-        this.contextInternal
-      );
+      try {
+        this.onStepChangeCallback(
+          this.currentStepInternal,
+          oldStep,
+          this.contextInternal
+        );
+      } catch (e: any) {
+        console.error("[OnboardingEngine] Error in onStepChangeCallback:", e);
+        this.notifyErrorListeners(e);
+      }
     }
+
     this.notifyStepChangeListeners(
       this.currentStepInternal,
       oldStep,
@@ -495,28 +767,6 @@ export class OnboardingEngine<
       error: this.errorInternal,
       isCompleted: this.isCompletedInternal,
     };
-  }
-
-  public subscribeToStateChange(
-    listener: EngineStateChangeListener<TContext>
-  ): UnsubscribeFunction {
-    this.stateChangeListeners.add(listener);
-    return () => this.stateChangeListeners.delete(listener);
-  }
-
-  /**
-   * Registers a listener function to be called before a step change occurs in the onboarding engine.
-   */
-  public onBeforeStepChange(
-    listener: BeforeStepChangeListener<TContext>
-  ): UnsubscribeFunction {
-    this.beforeStepChangeListeners.add(listener);
-    return () => this.beforeStepChangeListeners.delete(listener);
-  }
-
-  private notifyStateChangeListeners(): void {
-    const state = this.getState();
-    this.stateChangeListeners.forEach((listener) => listener(state));
   }
 
   // Helper to manage checklist item state initialization/retrieval
@@ -589,14 +839,16 @@ export class OnboardingEngine<
       : this.currentStepInternal;
 
     if (!targetStep || targetStep.type !== "CHECKLIST") {
+      const error = new Error(
+        "Target step for checklist item update is invalid."
+      );
       console.error(
         `[OnboardingEngine] Cannot update checklist item: Step '${
           stepId || this.currentStepInternal?.id
         }' not found or not a CHECKLIST step.`
       );
-      this.errorInternal = new Error(
-        "Target step for checklist item update is invalid."
-      );
+      this.errorInternal = error;
+      this.notifyErrorListeners(error);
       this.notifyStateChangeListeners();
       return;
     }
@@ -656,10 +908,12 @@ export class OnboardingEngine<
           }
         )
       ) {
+        const error = new Error("Checklist criteria not met.");
         console.warn(
           `[OnboardingEngine] Cannot proceed from checklist step '${this.currentStepInternal.id}': Not all completion criteria met.`
         );
-        this.errorInternal = new Error("Checklist criteria not met.");
+        this.errorInternal = error;
+        this.notifyErrorListeners(error);
         this.notifyStateChangeListeners();
         return;
       }
@@ -687,12 +941,20 @@ export class OnboardingEngine<
           this.contextInternal.flowData = newFlowData;
         }
       }
+
       if (this.currentStepInternal!.onStepComplete) {
         await this.currentStepInternal!.onStepComplete(
           stepSpecificData || {},
           this.contextInternal
         );
       }
+
+      // Notify step complete listeners
+      this.notifyStepCompleteListeners(
+        this.currentStepInternal!,
+        stepSpecificData || {},
+        this.contextInternal
+      );
 
       const currentStepId = this.currentStepInternal!.id;
       this.contextInternal.flowData._internal = {
@@ -738,6 +1000,7 @@ export class OnboardingEngine<
       await this.persistDataIfNeeded();
     } catch (e: any) {
       this.errorInternal = e;
+      this.notifyErrorListeners(e);
       console.error(
         `Error in next() for step ${this.currentStepInternal.id}:`,
         e
@@ -827,6 +1090,7 @@ export class OnboardingEngine<
   }
 
   public async updateContext(newContextData: Partial<TContext>): Promise<void> {
+    const oldContext = { ...this.contextInternal };
     const oldContextJSON = JSON.stringify(this.contextInternal);
     this.contextInternal = { ...this.contextInternal, ...newContextData };
     if (newContextData.flowData) {
@@ -843,6 +1107,7 @@ export class OnboardingEngine<
 
     // Only notify and persist if something actually changed
     if (oldContextJSON !== newContextJSON) {
+      this.notifyContextUpdateListeners(oldContext, this.contextInternal);
       this.notifyStateChangeListeners();
       await this.persistDataIfNeeded();
     }
@@ -879,6 +1144,7 @@ export class OnboardingEngine<
           "[OnboardingEngine] reset: Error during onClearPersistedData:",
           e
         );
+        this.notifyErrorListeners(e as Error);
       }
     }
 
@@ -899,111 +1165,5 @@ export class OnboardingEngine<
   // Add methods for plugin support
   public getSteps(): OnboardingStep<TContext>[] {
     return [...this.steps]; // Return a copy
-  }
-
-  // Plugin listener methods (these would be implemented based on your plugin system needs)
-  public addBeforeStepChangeListener(
-    listener: (
-      currentStep: OnboardingStep<TContext> | null,
-      nextStep: OnboardingStep<TContext>,
-      context: TContext
-    ) => void | Promise<void>
-  ): () => void {
-    // Convert to BeforeStepChangeListener format
-    const wrappedListener: BeforeStepChangeListener<TContext> = async (
-      event
-    ) => {
-      if (event.targetStepId) {
-        const nextStep = findStepById(this.steps, event.targetStepId);
-        if (nextStep) {
-          await listener(event.currentStep, nextStep, this.contextInternal);
-        }
-      }
-    };
-
-    this.beforeStepChangeListeners.add(wrappedListener);
-    return () => this.beforeStepChangeListeners.delete(wrappedListener);
-  }
-
-  public addAfterStepChangeListener(
-    listener: (
-      previousStep: OnboardingStep<TContext> | null,
-      currentStep: OnboardingStep<TContext> | null,
-      context: TContext
-    ) => void | Promise<void>
-  ): () => void {
-    return this.addStepChangeListener(listener);
-  }
-
-  public addStepActiveListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      context: TContext
-    ) => void | Promise<void>
-  ): () => void {
-    const wrappedListener: StepChangeListener<TContext> = (
-      newStep,
-      oldStep,
-      context
-    ) => {
-      if (newStep && newStep !== oldStep) {
-        try {
-          const result = listener(newStep, context);
-          if (result instanceof Promise) {
-            result.catch((err) =>
-              console.error(
-                "[OnboardingEngine] Error in step active listener:",
-                err
-              )
-            );
-          }
-        } catch (err) {
-          console.error(
-            "[OnboardingEngine] Error in step active listener:",
-            err
-          );
-        }
-      }
-    };
-
-    this.stepChangeListeners.add(wrappedListener);
-    return () => this.stepChangeListeners.delete(wrappedListener);
-  }
-
-  public addStepCompleteListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      stepData: any,
-      context: TContext
-    ) => void | Promise<void>
-  ): () => void {
-    // This would need to be implemented based on when you consider a step "complete"
-    // For now, return a no-op
-    return () => {};
-  }
-
-  public addFlowCompleteListener(
-    listener: (context: TContext) => void | Promise<void>
-  ): () => void {
-    return this.addFlowCompletedListener(listener);
-  }
-
-  public addContextUpdateListener(
-    listener: (
-      oldContext: TContext,
-      newContext: TContext
-    ) => void | Promise<void>
-  ): () => void {
-    // This would need to be implemented to track context changes
-    // For now, return a no-op
-    return () => {};
-  }
-
-  public addErrorListener(
-    listener: (error: Error, context: TContext) => void | Promise<void>
-  ): () => void {
-    // This would need to be implemented to track errors
-    // For now, return a no-op
-    return () => {};
   }
 }

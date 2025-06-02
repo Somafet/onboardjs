@@ -50,6 +50,29 @@ export type FlowCompleteListener<
   TContext extends OnboardingContext = OnboardingContext,
 > = (context: TContext) => void | Promise<void>;
 
+export interface EventListenerMap<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  stateChange: EngineStateChangeListener<TContext>;
+  beforeStepChange: BeforeStepChangeListener<TContext>;
+  stepChange: StepChangeListener<TContext>;
+  flowComplete: FlowCompleteListener<TContext>;
+  stepActive: (
+    step: OnboardingStep<TContext>,
+    context: TContext
+  ) => void | Promise<void>;
+  stepComplete: (
+    step: OnboardingStep<TContext>,
+    stepData: any,
+    context: TContext
+  ) => void | Promise<void>;
+  contextUpdate: (
+    oldContext: TContext,
+    newContext: TContext
+  ) => void | Promise<void>;
+  error: (error: Error, context: TContext) => void | Promise<void>;
+}
+
 export type LoadedData<TContext extends OnboardingContext = OnboardingContext> =
   Partial<TContext> & {
     currentStepId?: string | number | null;
