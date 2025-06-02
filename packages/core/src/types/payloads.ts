@@ -1,5 +1,3 @@
-// @onboardjs/core/src/types/payloads.ts
-
 import { OnboardingContext } from "./common";
 
 export interface BasePayload {
@@ -72,20 +70,24 @@ export interface SingleChoiceStepPayload extends BasePayload {
 }
 
 /** Defines the structure of an item in a checklist step's payload. */
-export interface ChecklistItemDefinition {
+export interface ChecklistItemDefinition<
+  TContext extends OnboardingContext = OnboardingContext, // Add TContext
+> {
   id: string; // Unique identifier for the item within this checklist
   label: string;
   description?: string;
   isMandatory?: boolean; // Defaults to true if not specified by the engine's logic
   /** Optional condition to determine if this item should be shown/considered. */
-  condition?: (context: OnboardingContext) => boolean;
+  condition?: (context: TContext) => boolean; // Use TContext
   meta?: Record<string, any>; // For custom data per item
 }
 
 /** Payload for a checklist step. */
-export interface ChecklistStepPayload extends BasePayload {
+export interface ChecklistStepPayload<
+  TContext extends OnboardingContext = OnboardingContext, // Add TContext
+> extends BasePayload {
   /** An array of item definitions for the checklist. */
-  items: ChecklistItemDefinition[];
+  items: ChecklistItemDefinition<TContext>[]; // Use generic ChecklistItemDefinition
   /**
    * The key under which the state of checklist items (e.g., Array<{id: string, isCompleted: boolean}>)
    * will be stored in the step's data within `flowData`.

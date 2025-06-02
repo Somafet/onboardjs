@@ -2,130 +2,87 @@
 
 import { OnboardingStep, OnboardingContext } from "../types";
 
-export interface EngineState {
-  currentStep: OnboardingStep | null;
-  context: OnboardingContext;
+export interface EngineState<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  currentStep: OnboardingStep<TContext> | null;
+  context: TContext;
   isFirstStep: boolean;
   isLastStep: boolean;
-  canGoNext: boolean; // Considers if nextStep exists and current step is valid (validity handled by UI)
-  canGoPrevious: boolean; // Considers if previousStep exists
+  canGoNext: boolean;
+  canGoPrevious: boolean;
   isSkippable: boolean;
-  /**
-   * Indicates if the engine is currently hydrating or restoring state.
-   */
+  isLoading: boolean;
   isHydrating: boolean;
-  isLoading: boolean; // For async operations within the engine
   error: Error | null;
   isCompleted: boolean;
 }
 
-export type EngineStateChangeListener = (state: EngineState) => void;
+export type EngineStateChangeListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = (state: EngineState<TContext>) => void;
+
 export type UnsubscribeFunction = () => void;
 
-export interface OnboardingEngineConfig {
-  steps: OnboardingStep[];
-  initialStepId?: string | number;
-  initialContext?: Partial<OnboardingContext>;
-  onFlowComplete?: (context: OnboardingContext) => void;
-  onStepChange?: (
-    newStep: OnboardingStep | null,
-    oldStep: OnboardingStep | null,
-    context: OnboardingContext
-  ) => void;
-  onDataLoad?: DataLoadListener;
-  onDataPersist?: DataPersistListener;
-
-  /**
-   * A callback invoked right at the start of clearing the onboarding flow.
-   * @returns A promise that resolves when all persisted data is cleared.
-   */
-  onClearPersistedData?: () => Promise<void> | void;
-}
-
-/**
- * Event object passed to listeners before an onboarding step changes.
- *
- * This event allows handlers to inspect the current and target steps,
- * determine the direction of navigation, and optionally prevent or redirect
- * the navigation.
- *
- * @property currentStep - The current onboarding step, or `null` if not set.
- * @property targetStepId - The ID of the step being navigated to, or `null`/`undefined` if not specified.
- * @property direction - The direction of navigation: `"next"`, `"previous"`, `"skip"`, `"goto"`, or `"initial"`.
- * @property cancel - Call this function to prevent the navigation from occurring.
- * @property redirect - Optionally call this function with a new target step ID to redirect the navigation.
- *   This will only take effect if `cancel()` is not called.
- */
-export interface BeforeStepChangeEvent {
-  currentStep: OnboardingStep | null;
+export interface BeforeStepChangeEvent<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  currentStep: OnboardingStep<TContext> | null;
   targetStepId: string | number | null | undefined;
   direction: "next" | "previous" | "skip" | "goto" | "initial";
-  /** Call this function to prevent the navigation. */
   cancel: () => void;
-  /**
-   * Optionally, provide a new targetStepId if you want to redirect the navigation
-   * instead of just cancelling. This will only be respected if cancel() is not called.
-   */
-  redirect?: (newTargetStepId: string | number | null) => void;
+  redirect: (newTargetId: string | number | null | undefined) => void;
 }
 
-/**
- * A listener function that is called before a step change occurs.
- *
- * @param event - The event object containing information about the impending step change.
- * @returns A promise that resolves when the listener has completed its work, or void for synchronous listeners.
- */
-export type BeforeStepChangeListener = (
-  event: BeforeStepChangeEvent
-) => Promise<void> | void;
+export type BeforeStepChangeListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>;
 
-export interface LoadedData {
-  flowData?: Record<string, any>;
-  currentStepId?: string | number | null;
-  /** Optional: Any other context fields the user wants to restore */
-  [key: string]: any;
-}
+export type StepChangeListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = (
+  newStep: OnboardingStep<TContext> | null,
+  oldStep: OnboardingStep<TContext> | null,
+  context: TContext
+) => void | Promise<void>;
 
-/**
- * A function type that asynchronously loads data and returns a promise
- * resolving to a {@link LoadedData} object, or `null`/`undefined` if no data is loaded.
- *
- * @returns {Promise<LoadedData | null | undefined>} A promise that resolves with the loaded data,
- *          or `null`/`undefined` if no data is available.
- */
-export type DataLoadListener = () => Promise<LoadedData | null | undefined>;
+export type FlowCompleteListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = (context: TContext) => void | Promise<void>;
 
-/**
- * A callback function that is invoked to persist onboarding data.
- *
- * @param context - The current onboarding context containing relevant state and data.
- * @param currentStepId - The identifier of the current onboarding step, or `null` if not applicable.
- * @returns A promise that resolves when persistence is complete, or void for synchronous operations.
- */
-export type DataPersistListener = (
-  context: OnboardingContext,
+export type LoadedData<TContext extends OnboardingContext = OnboardingContext> =
+  Partial<TContext> & {
+    currentStepId?: string | number | null;
+  };
+
+export type DataLoadListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = () =>
+  | Promise<LoadedData<TContext> | null | undefined>
+  | LoadedData<TContext>
+  | null
+  | undefined;
+
+export type DataPersistListener<
+  TContext extends OnboardingContext = OnboardingContext,
+> = (
+  context: TContext,
   currentStepId: string | number | null
 ) => Promise<void> | void;
 
-/**
- * A callback function that is invoked when an onboarding flow is completed.
- *
- * @param context - The current onboarding context at the time of completion.
- * @returns A promise that resolves when the listener has finished processing, or void for synchronous listeners.
- */
-export type FlowCompleteListener = (
-  context: OnboardingContext
-) => Promise<void> | void;
-
-/**
- * Callback type for listening to onboarding step changes.
- *
- * @param newStep - The new onboarding step that has become active, or `null` if there is no active step.
- * @param oldStep - The previous onboarding step that was active, or `null` if there was no previous step.
- * @param context - The current onboarding context providing additional information about the onboarding process.
- */
-export type StepChangeListener = (
-  newStep: OnboardingStep | null,
-  oldStep: OnboardingStep | null, // Engine needs to track oldStep for this event
-  context: OnboardingContext
-) => void;
+export interface OnboardingEngineConfig<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  steps: OnboardingStep<TContext>[];
+  initialStepId?: string | number;
+  initialContext?: Partial<TContext>;
+  onFlowComplete?: FlowCompleteListener<TContext>;
+  onStepChange?: (
+    newStep: OnboardingStep<TContext> | null,
+    oldStep: OnboardingStep<TContext> | null,
+    context: TContext
+  ) => void;
+  onDataLoad?: DataLoadListener<TContext>;
+  onDataPersist?: DataPersistListener<TContext>;
+  onClearPersistedData?: () => Promise<void> | void;
+}

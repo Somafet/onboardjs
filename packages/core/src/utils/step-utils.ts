@@ -5,14 +5,16 @@ import { OnboardingStep, OnboardingContext } from "../types";
 /**
  * Evaluates a step ID that can be a string, number or a function.
  */
-export function evaluateStepId(
+export function evaluateStepId<
+  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
+>(
   stepIdOrFn:
     | string
     | number
-    | ((context: OnboardingContext) => string | null | undefined)
+    | ((context: TContext) => string | number | null | undefined) // Use TContext
     | null
     | undefined,
-  context: OnboardingContext
+  context: TContext // Use TContext
 ): string | number | null | undefined {
   if (typeof stepIdOrFn === "function") {
     return stepIdOrFn(context);
@@ -23,10 +25,13 @@ export function evaluateStepId(
 /**
  * Finds a step by its ID in an array of steps.
  */
-export function findStepById(
-  steps: OnboardingStep[],
+export function findStepById<
+  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
+>(
+  steps: OnboardingStep<TContext>[], // Use generic OnboardingStep
   stepId: string | null | undefined | number
-): OnboardingStep | undefined {
-  if (!stepId) return undefined;
+): OnboardingStep<TContext> | undefined {
+  // Return generic OnboardingStep
+  if (stepId === null || stepId === undefined) return undefined; // Handle null/undefined explicitly
   return steps.find((s) => s.id === stepId);
 }

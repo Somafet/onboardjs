@@ -21,10 +21,12 @@ import {
   StepChangeListener,
 } from "./types";
 
-export class OnboardingEngine {
-  private steps: OnboardingStep[];
-  private currentStepInternal: OnboardingStep | null = null;
-  private contextInternal: OnboardingContext;
+export class OnboardingEngine<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  private steps: OnboardingStep<TContext>[];
+  private currentStepInternal: OnboardingStep<TContext> | null = null;
+  private contextInternal: TContext;
   private history: string[] = []; // For previous navigation
   private isLoadingInternal: boolean = false;
   private isHydratingInternal: boolean = true;
@@ -32,27 +34,30 @@ export class OnboardingEngine {
   private isCompletedInternal: boolean = false;
 
   // Listeners for state changes
-  private stateChangeListeners: Set<EngineStateChangeListener> = new Set();
-  private beforeStepChangeListeners: Set<BeforeStepChangeListener> = new Set();
-  private flowCompleteListeners: Set<FlowCompleteListener> = new Set();
-  private stepChangeListeners: Set<StepChangeListener> = new Set();
+  private stateChangeListeners: Set<EngineStateChangeListener<TContext>> =
+    new Set();
+  private beforeStepChangeListeners: Set<BeforeStepChangeListener<TContext>> =
+    new Set();
+  private flowCompleteListeners: Set<FlowCompleteListener<TContext>> =
+    new Set();
+  private stepChangeListeners: Set<StepChangeListener<TContext>> = new Set();
 
   // Onboarding engine instance configuration
-  private onFlowComplete?: FlowCompleteListener;
+  private onFlowComplete?: FlowCompleteListener<TContext>;
   private onStepChangeCallback?: (
-    newStep: OnboardingStep | null,
-    oldStep: OnboardingStep | null,
-    context: OnboardingContext
+    newStep: OnboardingStep<TContext> | null,
+    oldStep: OnboardingStep<TContext> | null,
+    context: TContext
   ) => void;
 
-  private onDataLoad?: DataLoadListener;
-  private onDataPersist?: DataPersistListener;
+  private onDataLoad?: DataLoadListener<TContext>;
+  private onDataPersist?: DataPersistListener<TContext>;
   private onClearPersistedData?: () => Promise<void> | void;
 
   private initializationPromise: Promise<void>;
   private resolveInitialization!: () => void; // Definite assignment assertion
 
-  constructor(config: OnboardingEngineConfig) {
+  constructor(config: OnboardingEngineConfig<TContext>) {
     this.initializationPromise = new Promise((resolve) => {
       this.resolveInitialization = resolve;
     });
@@ -60,22 +65,16 @@ export class OnboardingEngine {
     this.contextInternal = {
       flowData: {},
       ...config.initialContext, // Initial context from config
-    };
+    } as TContext;
     this.onFlowComplete = config.onFlowComplete;
     this.onStepChangeCallback = config.onStepChange;
     this.onDataLoad = config.onDataLoad; // Store
     this.onDataPersist = config.onDataPersist; // Store
     this.onClearPersistedData = config.onClearPersistedData;
 
-    // Don't notify listeners immediately, wait for potential hydration
-    // this.notifyStateChangeListeners(); // Remove this initial call
-
     this.initializeEngine(config.initialStepId, config.initialContext).finally(
       () => {
-        // This ensures resolveInitialization is called even if initializeEngine itself throws
-        // though errors within initializeEngine should ideally be caught and set to errorInternal
         console.log("[OnboardingEngine] Initialization complete.");
-
         this.resolveInitialization?.();
       }
     );
@@ -84,28 +83,15 @@ export class OnboardingEngine {
   /**
    * Initializes the onboarding engine by hydrating its state from an optional data loader,
    * merging any provided initial context and step configuration, and navigating to the appropriate initial step.
-   *
-   * This method:
-   * - Sets the engine into a hydrating state and notifies listeners.
-   * - Attempts to load persisted onboarding data via `onDataLoad` if available.
-   * - Merges loaded data with any provided initial context, giving precedence to loaded data.
-   * - Determines the effective initial step to navigate to, prioritizing loaded data, then config, then the first step.
-   * - Navigates to the determined initial step or marks the flow as complete if no steps are available.
-   * - Handles errors during data loading gracefully, setting an internal error and proceeding with default initialization.
-   * - Notifies listeners of state changes throughout the process.
-   *
-   * @param configInitialStepId - Optional step ID to use as the initial step if not provided by loaded data.
-   * @param configInitialContext - Optional partial onboarding context to merge with loaded data and defaults.
-   * @returns A promise that resolves when initialization is complete.
    */
   private async initializeEngine(
     configInitialStepId?: string | number,
-    configInitialContext?: Partial<OnboardingContext>
+    configInitialContext?: Partial<TContext>
   ): Promise<void> {
     this.isHydratingInternal = true;
     this.notifyStateChangeListeners(); // Notify that hydration is starting
 
-    let loadedData: LoadedData | null | undefined = null;
+    let loadedData: LoadedData<TContext> | null | undefined = null;
     let dataLoadError: Error | null = null;
 
     if (this.onDataLoad) {
@@ -131,7 +117,7 @@ export class OnboardingEngine {
               ...initialFlowDataFromConfig,
               ...loadedFlowData,
             },
-          };
+          } as TContext;
         } else {
           console.log("[OnboardingEngine] No data returned from onDataLoad.");
         }
@@ -174,7 +160,7 @@ export class OnboardingEngine {
           }
           return acc;
         }, {} as any)),
-    };
+    } as TContext;
 
     const effectiveInitialStepId =
       loadedData?.currentStepId !== undefined // Check if currentStepId was explicitly loaded (even if null)
@@ -209,21 +195,18 @@ export class OnboardingEngine {
 
   /**
    * Registers a listener function that will be called whenever the onboarding step changes.
-   *
-   * @param listener - The function to be invoked on step change events.
-   * @returns An unsubscribe function that, when called, removes the registered listener.
    */
   public addStepChangeListener(
-    listener: StepChangeListener
+    listener: StepChangeListener<TContext>
   ): UnsubscribeFunction {
     this.stepChangeListeners.add(listener);
     return () => this.stepChangeListeners.delete(listener);
   }
 
   private notifyStepChangeListeners(
-    newStep: OnboardingStep | null,
-    oldStep: OnboardingStep | null,
-    context: OnboardingContext
+    newStep: OnboardingStep<TContext> | null,
+    oldStep: OnboardingStep<TContext> | null,
+    context: TContext
   ): void {
     this.stepChangeListeners.forEach((listener) => {
       try {
@@ -236,12 +219,9 @@ export class OnboardingEngine {
 
   /**
    * Registers a listener to be called when a flow has completed.
-   *
-   * @param listener - The callback function to invoke when the flow completes.
-   * @returns A function that can be called to unsubscribe the listener.
    */
   public addFlowCompletedListener(
-    listener: FlowCompleteListener
+    listener: FlowCompleteListener<TContext>
   ): UnsubscribeFunction {
     this.flowCompleteListeners.add(listener);
     return () => this.flowCompleteListeners.delete(listener);
@@ -249,15 +229,8 @@ export class OnboardingEngine {
 
   /**
    * Notifies all registered flow completion listeners that the onboarding flow has completed.
-   *
-   * Iterates through each listener in `flowCompleteListeners` and invokes it with the provided
-   * `OnboardingContext`. Handles both synchronous and asynchronous listeners:
-   * - For synchronous listeners, any thrown errors are caught and logged.
-   * - For asynchronous listeners (those returning a Promise), any rejected promises are caught and logged.
-   *
-   * @param context - The current onboarding context to pass to each listener.
    */
-  private notifyFlowCompleteListeners(context: OnboardingContext): void {
+  private notifyFlowCompleteListeners(context: TContext): void {
     console.log(
       "[OnboardingEngine] Notifying flowCompleteListeners. Count:",
       this.flowCompleteListeners.size
@@ -284,16 +257,10 @@ export class OnboardingEngine {
 
   /**
    * Persists the current onboarding data if a persistence handler (`onDataPersist`) is defined.
-   *
-   * This method attempts to call the `onDataPersist` callback with the current context and step ID.
-   * If an error occurs during persistence, it logs the error but does not interrupt the main flow.
-   *
-   * @returns {Promise<void>} A promise that resolves when data persistence is complete or skipped.
    */
   private async persistDataIfNeeded(): Promise<void> {
     if (this.onDataPersist) {
       try {
-        // console.log('[OnboardingEngine] Persisting data...');
         await this.onDataPersist(
           this.contextInternal,
           this.currentStepInternal?.id || null
@@ -306,7 +273,11 @@ export class OnboardingEngine {
   }
 
   // Modified setState to call persistDataIfNeeded
-  private setState(updater: (prevState: EngineState) => Partial<EngineState>) {
+  private setState(
+    updater: (
+      prevState: EngineState<TContext>
+    ) => Partial<EngineState<TContext>>
+  ) {
     const currentState = this.getState();
     const changes = updater(currentState);
 
@@ -331,7 +302,6 @@ export class OnboardingEngine {
     this.notifyStateChangeListeners();
 
     // Persist data if context changed and not hydrating
-    // Or if other significant state like isCompleted changed (though persist is mainly for context)
     if (contextChanged && !this.isHydratingInternal) {
       this.persistDataIfNeeded();
     }
@@ -346,7 +316,7 @@ export class OnboardingEngine {
     let redirected = false;
 
     if (this.beforeStepChangeListeners.size > 0) {
-      const event: BeforeStepChangeEvent = {
+      const event: BeforeStepChangeEvent<TContext> = {
         currentStep: this.currentStepInternal,
         targetStepId: requestedTargetStepId,
         direction,
@@ -355,7 +325,6 @@ export class OnboardingEngine {
         },
         redirect: (newTargetId) => {
           if (!isCancelled) {
-            // Only allow redirect if not already cancelled
             finalTargetStepId = newTargetId;
             redirected = true;
             console.log(
@@ -371,30 +340,24 @@ export class OnboardingEngine {
           console.log(
             "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
           );
-          // Potentially notify about cancellation or update state? For now, just stops.
           this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
           return;
         }
       }
     }
 
-    // If redirected, the direction might conceptually change, but for now, we keep the original
-    // or the user of redirect needs to be aware of this.
-    // For simplicity, we'll use the original direction for history management if redirected.
-
     this.setState(() => ({ isLoading: true, error: null }));
 
     let nextCandidateStep = findStepById(this.steps, finalTargetStepId);
 
-    // ... (rest of the conditional step skipping logic - ensure it uses finalTargetStepId)
+    // Conditional step skipping logic
     while (
       nextCandidateStep &&
       nextCandidateStep.condition &&
       !nextCandidateStep.condition(this.contextInternal)
     ) {
       let skipToId: string | number | null | undefined;
-      // ... (conditional skipping logic as before, using finalTargetStepId for context)
-      const effectiveDirection = redirected ? "goto" : direction; // If redirected, treat as 'goto' for skipping logic
+      const effectiveDirection = redirected ? "goto" : direction;
       if (effectiveDirection === "previous") {
         skipToId = evaluateStepId(
           nextCandidateStep.previousStep,
@@ -410,7 +373,7 @@ export class OnboardingEngine {
         nextCandidateStep = undefined;
         break;
       }
-      finalTargetStepId = skipToId; // Update finalTargetStepId if skipping conditional steps
+      finalTargetStepId = skipToId;
       nextCandidateStep = findStepById(this.steps, finalTargetStepId);
     }
 
@@ -418,16 +381,16 @@ export class OnboardingEngine {
     this.currentStepInternal = nextCandidateStep || null;
 
     if (this.currentStepInternal) {
-      // --- Initialize checklist data on activation ---
+      // Initialize checklist data on activation
       if (this.currentStepInternal.type === "CHECKLIST") {
         this.getChecklistItemsState(
-          this.currentStepInternal as OnboardingStep & { type: "CHECKLIST" }
+          this.currentStepInternal as OnboardingStep<TContext> & {
+            type: "CHECKLIST";
+          }
         );
-        // This ensures flowData has the structure for the checklist items.
-        // The actual values will be preserved if they already exist.
       }
-      // --- End checklist initialization ---
-      // Adjust history logic based on original direction, even if redirected
+
+      // Adjust history logic based on original direction
       if (
         direction !== "previous" &&
         oldStep &&
@@ -436,14 +399,6 @@ export class OnboardingEngine {
         if (this.history[this.history.length - 1] !== oldStep.id) {
           this.history.push(String(oldStep.id));
         }
-      } else if (
-        direction === "previous" &&
-        this.currentStepInternal.id === this.history[this.history.length - 1]
-      ) {
-        // If going back to the immediate previous step in history, pop it.
-        // This handles the case where `previousStep` function might jump over history.
-        // This logic might need refinement based on desired history behavior with complex previousStep functions.
-        // For now, if the target matches the last history entry, pop it.
       }
 
       try {
@@ -458,7 +413,7 @@ export class OnboardingEngine {
         );
       }
     } else {
-      // Flow is completed, notify config level onFlowComplete if defined
+      // Flow is completed
       this.isCompletedInternal = true;
       const finalContext = this.contextInternal;
       if (
@@ -473,7 +428,7 @@ export class OnboardingEngine {
             "[OnboardingEngine] Error in config.onFlowComplete:",
             e
           );
-          this.errorInternal = e as Error; // Store error for UI
+          this.errorInternal = e as Error;
         }
       }
 
@@ -481,11 +436,10 @@ export class OnboardingEngine {
       this.notifyFlowCompleteListeners(finalContext);
 
       // Persist on completion
-      await this.persistDataIfNeeded(); // <--- ADDED PERSIST ON COMPLETION
+      await this.persistDataIfNeeded();
     }
 
     if (this.onStepChangeCallback) {
-      // The one from config
       this.onStepChangeCallback(
         this.currentStepInternal,
         oldStep,
@@ -496,12 +450,12 @@ export class OnboardingEngine {
       this.currentStepInternal,
       oldStep,
       this.contextInternal
-    ); // Notify all event listeners
+    );
 
-    this.setState(() => ({ isLoading: false })); // This will notify listeners
+    this.setState(() => ({ isLoading: false }));
   }
 
-  public getState(): EngineState {
+  public getState(): EngineState<TContext> {
     const currentStep = this.currentStepInternal;
     const context = this.contextInternal;
     let nextPossibleStepId: string | number | null | undefined;
@@ -536,7 +490,7 @@ export class OnboardingEngine {
   }
 
   public subscribeToStateChange(
-    listener: EngineStateChangeListener
+    listener: EngineStateChangeListener<TContext>
   ): UnsubscribeFunction {
     this.stateChangeListeners.add(listener);
     return () => this.stateChangeListeners.delete(listener);
@@ -544,12 +498,9 @@ export class OnboardingEngine {
 
   /**
    * Registers a listener function to be called before a step change occurs in the onboarding engine.
-   *
-   * @param listener - The function to be invoked before the step changes. It should conform to the `BeforeStepChangeListener` type.
-   * @returns An `UnsubscribeFunction` that, when called, removes the registered listener.
    */
   public onBeforeStepChange(
-    listener: BeforeStepChangeListener
+    listener: BeforeStepChangeListener<TContext>
   ): UnsubscribeFunction {
     this.beforeStepChangeListeners.add(listener);
     return () => this.beforeStepChangeListeners.delete(listener);
@@ -560,9 +511,9 @@ export class OnboardingEngine {
     this.stateChangeListeners.forEach((listener) => listener(state));
   }
 
-  // --- Helper to manage checklist item state initialization/retrieval ---
+  // Helper to manage checklist item state initialization/retrieval
   private getChecklistItemsState(
-    step: OnboardingStep & { type: "CHECKLIST" }
+    step: OnboardingStep<TContext> & { type: "CHECKLIST" }
   ): ChecklistItemState[] {
     const { dataKey, items: itemDefinitions } = step.payload;
     let currentItemStates = this.contextInternal.flowData[dataKey] as
@@ -573,7 +524,7 @@ export class OnboardingEngine {
       !currentItemStates ||
       currentItemStates.length !== itemDefinitions.length
     ) {
-      // Initialize or re-initialize if structure mismatch (e.g., definitions changed)
+      // Initialize or re-initialize if structure mismatch
       currentItemStates = itemDefinitions.map((def) => ({
         id: def.id,
         isCompleted: false, // Default to not completed
@@ -583,14 +534,12 @@ export class OnboardingEngine {
         ...this.contextInternal.flowData,
         [dataKey]: [...currentItemStates], // Store a copy
       };
-      // Consider notifying about this implicit data update if necessary
-      // this.notifyStateChangeListeners(); // Or a more specific event
     }
     return currentItemStates;
   }
 
   private isChecklistStepComplete(
-    step: OnboardingStep & { type: "CHECKLIST" }
+    step: OnboardingStep<TContext> & { type: "CHECKLIST" }
   ): boolean {
     const itemStates = this.getChecklistItemsState(step);
     const { items: itemDefinitions, minItemsToComplete } = step.payload;
@@ -621,11 +570,11 @@ export class OnboardingEngine {
     }
   }
 
-  // --- Public method to update a checklist item's status ---
+  // Public method to update a checklist item's status
   public async updateChecklistItem(
     itemId: string,
     isCompleted: boolean,
-    stepId?: string // Optional: if not current step, though usually for current
+    stepId?: string // Optional: if not current step
   ): Promise<void> {
     const targetStep = stepId
       ? findStepById(this.steps, stepId)
@@ -668,7 +617,7 @@ export class OnboardingEngine {
       newItemStates[itemIndex] = { ...newItemStates[itemIndex], isCompleted };
       itemStates = newItemStates;
     } else {
-      // Item state doesn't exist, create it (should ideally be pre-initialized by getChecklistItemsState)
+      // Item state doesn't exist, create it
       itemStates = [...itemStates, { id: itemId, isCompleted }];
     }
 
@@ -684,57 +633,39 @@ export class OnboardingEngine {
       await this.persistDataIfNeeded();
     }
 
-    // Call onStepComplete for the checklist step if it's now complete
-    // This is a bit tricky. onStepComplete is usually called on explicit next.
-    // For now, let's assume the UI layer will reflect this and the user clicks next.
-    // Or, we can emit a specific event.
-    // For now, just update data and notify. The `next()` method will do the check.
-
-    // Notify about data change
-    if (
-      this.currentStepInternal &&
-      this.currentStepInternal.id === targetStep.id &&
-      this.currentStepInternal.onStepComplete
-    ) {
-      // This is debatable. onStepComplete is usually for *leaving* the step.
-      // Let's assume the UI will handle enabling "Next" based on isChecklistStepComplete.
-    }
-
-    // Emit a specific event or rely on general state change
-    // Example: this.emit('checklistItemUpdated', { stepId: targetStep.id, itemId, isCompleted });
-    this.notifyStateChangeListeners(); // General state change will pick up flowData update
+    this.notifyStateChangeListeners();
   }
 
   public async next(stepSpecificData?: any): Promise<void> {
     if (!this.currentStepInternal || this.isLoadingInternal) return;
 
-    // --- CHECKLIST COMPLETION CHECK ---
+    // CHECKLIST COMPLETION CHECK
     if (this.currentStepInternal.type === "CHECKLIST") {
       if (
         !this.isChecklistStepComplete(
-          this.currentStepInternal as OnboardingStep & { type: "CHECKLIST" }
+          this.currentStepInternal as OnboardingStep<TContext> & {
+            type: "CHECKLIST";
+          }
         )
       ) {
         console.warn(
           `[OnboardingEngine] Cannot proceed from checklist step '${this.currentStepInternal.id}': Not all completion criteria met.`
         );
         this.errorInternal = new Error("Checklist criteria not met.");
-        this.notifyStateChangeListeners(); // Update UI with error
-        return; // Prevent navigation
+        this.notifyStateChangeListeners();
+        return;
       }
       // If complete, the stepSpecificData for a checklist should be its items' state
       const checklistPayload = this.currentStepInternal
         .payload as ChecklistStepPayload;
       stepSpecificData = {
-        ...stepSpecificData, // Allow other data to be passed
+        ...stepSpecificData,
         [checklistPayload.dataKey]:
           this.contextInternal.flowData[checklistPayload.dataKey] || [],
       };
     }
-    // --- END CHECKLIST COMPLETION CHECK ---
 
     this.setState(() => ({ isLoading: true, error: null }));
-    let contextUpdated = false;
     try {
       if (stepSpecificData && Object.keys(stepSpecificData).length > 0) {
         const newFlowData = {
@@ -746,27 +677,21 @@ export class OnboardingEngine {
           JSON.stringify(newFlowData)
         ) {
           this.contextInternal.flowData = newFlowData;
-          contextUpdated = true;
         }
       }
       if (this.currentStepInternal!.onStepComplete) {
-        // Assert currentStepInternal exists here
         await this.currentStepInternal!.onStepComplete(
           stepSpecificData || {},
           this.contextInternal
         );
-        // onStepComplete might also modify contextInternal.flowData
-        // We assume persistDataIfNeeded will be called after state notification
       }
 
       const currentStepId = this.currentStepInternal!.id;
-      // this.contextInternal.flowData[`_completed_${currentStepId}`] = true;
-      // Or a more structured approach:
       this.contextInternal.flowData._internal = {
         ...this.contextInternal.flowData._internal,
         completedSteps: {
           ...(this.contextInternal.flowData._internal?.completedSteps || {}),
-          [currentStepId]: Date.now(), // Store timestamp of completion
+          [currentStepId]: Date.now(),
         },
       };
 
@@ -779,7 +704,7 @@ export class OnboardingEngine {
               this.currentStepInternal.nextStep,
               this.contextInternal
             )
-          : undefined; // Treat missing nextStep prop as undefined
+          : undefined;
 
       if (definedNextStepTarget === undefined) {
         // If nextStep is not defined OR evaluates to undefined, default to next in array
@@ -792,19 +717,16 @@ export class OnboardingEngine {
             `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting to next in array: '${finalNextStepId}'`
           );
         } else {
-          finalNextStepId = null; // No explicit nextStep, and no more steps in array
+          finalNextStepId = null;
           console.log(
             `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing.`
           );
         }
       } else {
-        // Use the explicitly defined/evaluated nextStep (which could be a string ID or null)
         finalNextStepId = definedNextStepTarget;
       }
 
-      await this.navigateToStep(finalNextStepId, "next"); // This will eventually call setState and notify
-
-      // If data was directly merged here
+      await this.navigateToStep(finalNextStepId, "next");
       await this.persistDataIfNeeded();
     } catch (e: any) {
       this.errorInternal = e;
@@ -814,7 +736,6 @@ export class OnboardingEngine {
       );
       this.setState(() => ({ isLoading: false, error: e }));
     }
-    // isLoading will be set to false by navigateToStep or the catch block's setState
   }
 
   public async previous(): Promise<void> {
@@ -864,8 +785,7 @@ export class OnboardingEngine {
     }
 
     if (evaluatedSkipTarget === undefined) {
-      // 3. If both skipToStep and nextStep are undefined (or evaluate to undefined),
-      //    default to the next step in the array.
+      // 3. Default to the next step in the array
       const currentIndex = this.steps.findIndex(
         (s) => s.id === this.currentStepInternal!.id
       );
@@ -875,23 +795,20 @@ export class OnboardingEngine {
           `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting skip to next in array: '${finalSkipTargetId}'`
         );
       } else {
-        finalSkipTargetId = null; // No explicit target, no next in array, so complete on skip
+        finalSkipTargetId = null;
         console.log(
           `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing on skip.`
         );
       }
     } else {
-      // Use the explicitly defined/evaluated target (from skipToStep or nextStep)
       finalSkipTargetId = evaluatedSkipTarget;
     }
-    
+
     await this.navigateToStep(finalSkipTargetId, "skip");
   }
 
   public async goToStep(stepId: string, stepSpecificData?: any): Promise<void> {
     if (this.isLoadingInternal) return;
-    // Potentially call onStepComplete for the *current* step before jumping
-    // This depends on desired behavior. For now, we just jump.
     if (stepSpecificData) {
       this.contextInternal.flowData = {
         ...this.contextInternal.flowData,
@@ -901,15 +818,12 @@ export class OnboardingEngine {
     await this.navigateToStep(stepId, "goto");
   }
 
-  public async updateContext(
-    newContextData: Partial<OnboardingContext>
-  ): Promise<void> {
-    // Made async to align with persist
+  public async updateContext(newContextData: Partial<TContext>): Promise<void> {
     const oldContextJSON = JSON.stringify(this.contextInternal);
     this.contextInternal = { ...this.contextInternal, ...newContextData };
     if (newContextData.flowData) {
       this.contextInternal.flowData = {
-        ...(this.contextInternal.flowData || {}), // Ensure flowData exists
+        ...(this.contextInternal.flowData || {}),
         ...newContextData.flowData,
       };
     }
@@ -923,9 +837,8 @@ export class OnboardingEngine {
   }
 
   public async reset(
-    newConfig?: Partial<OnboardingEngineConfig>
+    newConfig?: Partial<OnboardingEngineConfig<TContext>>
   ): Promise<void> {
-    // Made async
     this.steps = newConfig?.steps || this.steps;
     // Preserve persistence listeners if not overridden by newConfig
     this.onDataLoad =
@@ -954,16 +867,14 @@ export class OnboardingEngine {
           "[OnboardingEngine] reset: Error during onClearPersistedData:",
           e
         );
-        // Decide if this error should halt the reset or just be logged
       }
     }
 
-    // Now, set a truly fresh context before calling initializeEngine
-    const resetInitialContext = newConfig?.initialContext || { flowData: {} };
-    this.contextInternal = { flowData: {}, ...resetInitialContext }; // Start fresh
+    // Set a truly fresh context before calling initializeEngine
+    const resetInitialContext =
+      newConfig?.initialContext || ({ flowData: {} } as Partial<TContext>);
+    this.contextInternal = { flowData: {}, ...resetInitialContext } as TContext;
 
-    // For reset, we don't persist the "empty" state immediately.
-    // We re-initialize, which might load data.
     this.currentStepInternal = null;
     this.history = [];
     this.isLoadingInternal = false;
@@ -971,6 +882,116 @@ export class OnboardingEngine {
     this.isCompletedInternal = false;
 
     await this.initializeEngine(newConfig?.initialStepId, resetInitialContext);
-    // initializeEngine will call notifyStateChangeListeners
+  }
+
+  // Add methods for plugin support
+  public getSteps(): OnboardingStep<TContext>[] {
+    return [...this.steps]; // Return a copy
+  }
+
+  // Plugin listener methods (these would be implemented based on your plugin system needs)
+  public addBeforeStepChangeListener(
+    listener: (
+      currentStep: OnboardingStep<TContext> | null,
+      nextStep: OnboardingStep<TContext>,
+      context: TContext
+    ) => void | Promise<void>
+  ): () => void {
+    // Convert to BeforeStepChangeListener format
+    const wrappedListener: BeforeStepChangeListener<TContext> = async (
+      event
+    ) => {
+      if (event.targetStepId) {
+        const nextStep = findStepById(this.steps, event.targetStepId);
+        if (nextStep) {
+          await listener(event.currentStep, nextStep, this.contextInternal);
+        }
+      }
+    };
+
+    this.beforeStepChangeListeners.add(wrappedListener);
+    return () => this.beforeStepChangeListeners.delete(wrappedListener);
+  }
+
+  public addAfterStepChangeListener(
+    listener: (
+      previousStep: OnboardingStep<TContext> | null,
+      currentStep: OnboardingStep<TContext> | null,
+      context: TContext
+    ) => void | Promise<void>
+  ): () => void {
+    return this.addStepChangeListener(listener);
+  }
+
+  public addStepActiveListener(
+    listener: (
+      step: OnboardingStep<TContext>,
+      context: TContext
+    ) => void | Promise<void>
+  ): () => void {
+    const wrappedListener: StepChangeListener<TContext> = (
+      newStep,
+      oldStep,
+      context
+    ) => {
+      if (newStep && newStep !== oldStep) {
+        try {
+          const result = listener(newStep, context);
+          if (result instanceof Promise) {
+            result.catch((err) =>
+              console.error(
+                "[OnboardingEngine] Error in step active listener:",
+                err
+              )
+            );
+          }
+        } catch (err) {
+          console.error(
+            "[OnboardingEngine] Error in step active listener:",
+            err
+          );
+        }
+      }
+    };
+
+    this.stepChangeListeners.add(wrappedListener);
+    return () => this.stepChangeListeners.delete(wrappedListener);
+  }
+
+  public addStepCompleteListener(
+    listener: (
+      step: OnboardingStep<TContext>,
+      stepData: any,
+      context: TContext
+    ) => void | Promise<void>
+  ): () => void {
+    // This would need to be implemented based on when you consider a step "complete"
+    // For now, return a no-op
+    return () => {};
+  }
+
+  public addFlowCompleteListener(
+    listener: (context: TContext) => void | Promise<void>
+  ): () => void {
+    return this.addFlowCompletedListener(listener);
+  }
+
+  public addContextUpdateListener(
+    listener: (
+      oldContext: TContext,
+      newContext: TContext
+    ) => void | Promise<void>
+  ): () => void {
+    // This would need to be implemented to track context changes
+    // For now, return a no-op
+    return () => {};
+  }
+
+  public addErrorListener(
+    listener: (error: Error, context: TContext) => void | Promise<void>
+  ): () => void {
+    // This would need to be implemented to track errors
+    // For now, return a no-op
+    return () => {};
   }
 }
