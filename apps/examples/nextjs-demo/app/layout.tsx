@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-import { OnboardingProvider } from "@onboardjs/react";
-import { demoOnboardingSteps } from "@/config/onboardingConfig";
+import OnboardingProviderWrapper from "@/components/onboarding/OnboardingProviderWrapper";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -23,20 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${lexend.variable} antialiased font-lexend`}>
-        <OnboardingProvider
-          steps={demoOnboardingSteps}
-          // Enable localStorage persistence for this demo
-          localStoragePersistence={{
-            key: "onboardjsDemo_v1_progress",
-            ttl: 1000 * 60 * 60 * 24,
-          }}
-          // Use the custom persistence handlers to implement your own logic
-          // customOnDataLoad={() => { return fetch('/api/load-onboarding-data') }} // Load data from your API or Db
-          // customOnDataPersist={} // Persist data to your API or Db
-          // customOnClearPeristedData={} // Handle clearing the persisted data (e.g., on onboarding flow reset)
-        >
-          {children}
-        </OnboardingProvider>
+        <OnboardingProviderWrapper>{children}</OnboardingProviderWrapper>
         <Toaster />
       </body>
     </html>

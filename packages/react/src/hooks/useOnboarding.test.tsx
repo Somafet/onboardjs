@@ -267,10 +267,12 @@ describe("useOnboarding", () => {
     const mockUnsubscribeFlow = vi.fn();
     const mockUnsubscribeStep = vi.fn();
     
-    vi.spyOn(result.current.engine!, 'addFlowCompletedListener')
-      .mockReturnValue(mockUnsubscribeFlow);
-    vi.spyOn(result.current.engine!, 'addStepChangeListener')
-      .mockReturnValue(mockUnsubscribeStep);
+    vi.spyOn(result.current.engine!, "addEventListener").mockReturnValue(
+      mockUnsubscribeFlow
+    );
+    vi.spyOn(result.current.engine!, "addEventListener").mockReturnValue(
+      mockUnsubscribeStep
+    );
 
     unmount();
 

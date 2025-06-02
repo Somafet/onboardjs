@@ -189,9 +189,9 @@ export class OnboardingEngine<
     context: TContext
   ) => void;
 
-  private onDataLoad?: DataLoadListener<TContext>;
-  private onDataPersist?: DataPersistListener<TContext>;
-  private onClearPersistedData?: () => Promise<void> | void;
+  private loadData?: DataLoadListener<TContext>;
+  private persistData?: DataPersistListener<TContext>;
+  private clearPersistedData?: () => Promise<void> | void;
 
   private initializationPromise: Promise<void>;
   private resolveInitialization!: () => void; // Definite assignment assertion
@@ -207,9 +207,9 @@ export class OnboardingEngine<
     } as TContext;
     this.onFlowComplete = config.onFlowComplete;
     this.onStepChangeCallback = config.onStepChange;
-    this.onDataLoad = config.onDataLoad; // Store
-    this.onDataPersist = config.onDataPersist; // Store
-    this.onClearPersistedData = config.onClearPersistedData;
+    this.loadData = config.loadData; // Store
+    this.persistData = config.persistData; // Store
+    this.clearPersistedData = config.clearPersistedData;
 
     this.initializeEngine(config.initialStepId, config.initialContext).finally(
       () => {
@@ -227,46 +227,6 @@ export class OnboardingEngine<
     listener: EventListenerMap<TContext>[T]
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener(eventType, listener);
-  }
-
-  /**
-   * Legacy method - use addEventListener('stepChange', listener) instead
-   * @deprecated Use addEventListener('stepChange', listener) instead
-   */
-  public addStepChangeListener(
-    listener: StepChangeListener<TContext>
-  ): UnsubscribeFunction {
-    return this.addEventListener("stepChange", listener);
-  }
-
-  /**
-   * Legacy method - use addEventListener('flowComplete', listener) instead
-   * @deprecated Use addEventListener('flowComplete', listener) instead
-   */
-  public addFlowCompletedListener(
-    listener: FlowCompleteListener<TContext>
-  ): UnsubscribeFunction {
-    return this.addEventListener("flowComplete", listener);
-  }
-
-  /**
-   * Legacy method - use addEventListener('stateChange', listener) instead
-   * @deprecated Use addEventListener('stateChange', listener) instead
-   */
-  public subscribeToStateChange(
-    listener: EngineStateChangeListener<TContext>
-  ): UnsubscribeFunction {
-    return this.addEventListener("stateChange", listener);
-  }
-
-  /**
-   * Legacy method - use addEventListener('beforeStepChange', listener) instead
-   * @deprecated Use addEventListener('beforeStepChange', listener) instead
-   */
-  public onBeforeStepChange(
-    listener: BeforeStepChangeListener<TContext>
-  ): UnsubscribeFunction {
-    return this.addEventListener("beforeStepChange", listener);
   }
 
   // Plugin compatibility methods
@@ -343,6 +303,33 @@ export class OnboardingEngine<
   }
 
   /**
+   * Allow plugins to override the data loading handler
+   */
+  public setDataLoadHandler(
+    handler: DataLoadListener<TContext> | undefined
+  ): void {
+    this.loadData = handler;
+  }
+
+  /**
+   * Allow plugins to override the data persistence handler
+   */
+  public setDataPersistHandler(
+    handler: DataPersistListener<TContext> | undefined
+  ): void {
+    this.persistData = handler;
+  }
+
+  /**
+   * Allow plugins to override the data clearing handler
+   */
+  public setClearPersistedDataHandler(
+    handler: (() => Promise<void> | void) | undefined
+  ): void {
+    this.clearPersistedData = handler;
+  }
+
+  /**
    * Initializes the onboarding engine by hydrating its state from an optional data loader,
    * merging any provided initial context and step configuration, and navigating to the appropriate initial step.
    */
@@ -356,10 +343,10 @@ export class OnboardingEngine<
     let loadedData: LoadedData<TContext> | null | undefined = null;
     let dataLoadError: Error | null = null;
 
-    if (this.onDataLoad) {
+    if (this.loadData) {
       try {
         console.log("[OnboardingEngine] Attempting to load data...");
-        loadedData = await this.onDataLoad();
+        loadedData = await this.loadData();
         if (loadedData) {
           console.log(
             "[OnboardingEngine] Data loaded successfully:",
@@ -381,10 +368,10 @@ export class OnboardingEngine<
             },
           } as TContext;
         } else {
-          console.log("[OnboardingEngine] No data returned from onDataLoad.");
+          console.log("[OnboardingEngine] No data returned from loadData.");
         }
       } catch (e: any) {
-        console.error("[OnboardingEngine] Error during onDataLoad:", e);
+        console.error("[OnboardingEngine] Error during loadData:", e);
         dataLoadError = new Error(
           `Failed to load onboarding state: ${e.message}`
         );
@@ -405,7 +392,7 @@ export class OnboardingEngine<
       return;
     }
 
-    // Proceed with normal initialization if onDataLoad was successful or not provided
+    // Proceed with normal initialization if loadData was successful or not provided
     this.contextInternal = {
       // Ensure context is finalized after potential load
       ...this.contextInternal,
@@ -504,17 +491,17 @@ export class OnboardingEngine<
   }
 
   /**
-   * Persists the current onboarding data if a persistence handler (`onDataPersist`) is defined.
+   * Persists the current onboarding data if a persistence handler (`persistData`) is defined.
    */
   private async persistDataIfNeeded(): Promise<void> {
-    if (this.onDataPersist) {
+    if (this.persistData) {
       try {
-        await this.onDataPersist(
+        await this.persistData(
           this.contextInternal,
           this.currentStepInternal?.id || null
         );
       } catch (e: any) {
-        console.error("[OnboardingEngine] Error during onDataPersist:", e);
+        console.error("[OnboardingEngine] Error during persistData:", e);
         this.notifyErrorListeners(e);
         // Optionally set an error state or notify, but don't block core functionality
       }
@@ -1118,14 +1105,12 @@ export class OnboardingEngine<
   ): Promise<void> {
     this.steps = newConfig?.steps || this.steps;
     // Preserve persistence listeners if not overridden by newConfig
-    this.onDataLoad =
-      newConfig?.onDataLoad !== undefined
-        ? newConfig.onDataLoad
-        : this.onDataLoad;
-    this.onDataPersist =
-      newConfig?.onDataPersist !== undefined
-        ? newConfig.onDataPersist
-        : this.onDataPersist;
+    this.loadData =
+      newConfig?.loadData !== undefined ? newConfig.loadData : this.loadData;
+    this.persistData =
+      newConfig?.persistData !== undefined
+        ? newConfig.persistData
+        : this.persistData;
     this.onFlowComplete =
       newConfig?.onFlowComplete !== undefined
         ? newConfig.onFlowComplete
@@ -1135,13 +1120,13 @@ export class OnboardingEngine<
         ? newConfig.onStepChange
         : this.onStepChangeCallback;
 
-    if (this.onClearPersistedData) {
+    if (this.clearPersistedData) {
       try {
         console.log("[OnboardingEngine] reset: Clearing persisted data...");
-        await this.onClearPersistedData();
+        await this.clearPersistedData();
       } catch (e) {
         console.error(
-          "[OnboardingEngine] reset: Error during onClearPersistedData:",
+          "[OnboardingEngine] reset: Error during clearPersistedData:",
           e
         );
         this.notifyErrorListeners(e as Error);

@@ -10,6 +10,7 @@ import {
   // Persistence related types if needed by render prop directly
   DataLoadListener,
   DataPersistListener,
+  OnboardingPlugin,
 } from "@onboardjs/core";
 import {
   OnboardingProvider,
@@ -129,7 +130,19 @@ const HeadlessFlowRendererInternal: React.FC<{
     updateContext,
     currentStep: state.currentStep,
     isLoading,
-    renderStepContent, // Provide this helper
+    renderStepContent,
+    installPlugin: function (plugin: OnboardingPlugin): Promise<void> {
+      throw new Error("Function not implemented.");
+    },
+    uninstallPlugin: function (pluginName: string): Promise<void> {
+      throw new Error("Function not implemented.");
+    },
+    getInstalledPlugins: function (): OnboardingPlugin[] {
+      throw new Error("Function not implemented.");
+    },
+    isPluginInstalled: function (pluginName: string): boolean {
+      throw new Error("Function not implemented.");
+    },
   });
 };
 

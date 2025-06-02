@@ -57,6 +57,9 @@ export interface EventListenerMap<
   beforeStepChange: BeforeStepChangeListener<TContext>;
   stepChange: StepChangeListener<TContext>;
   flowComplete: FlowCompleteListener<TContext>;
+  dataLoad: DataLoadListener<TContext>;
+  dataPersist: DataPersistListener<TContext>;
+  clearPersistedData: () => void | Promise<void>;
   stepActive: (
     step: OnboardingStep<TContext>,
     context: TContext
@@ -105,7 +108,20 @@ export interface OnboardingEngineConfig<
     oldStep: OnboardingStep<TContext> | null,
     context: TContext
   ) => void;
-  onDataLoad?: DataLoadListener<TContext>;
-  onDataPersist?: DataPersistListener<TContext>;
-  onClearPersistedData?: () => Promise<void> | void;
+
+  /**
+   * The function that should load the initial data for the onboarding flow.
+   */
+  loadData?: DataLoadListener<TContext>;
+
+  /**
+   * The function that should persist the current state of the onboarding flow.
+   */
+  persistData?: DataPersistListener<TContext>;
+
+  /**
+   * Optional function to clear any persisted data, e.g. from local storage or a database.
+   * This can be useful for resetting the onboarding state.
+   */
+  clearPersistedData?: () => Promise<void> | void;
 }

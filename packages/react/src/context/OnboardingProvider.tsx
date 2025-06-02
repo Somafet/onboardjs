@@ -12,17 +12,17 @@ import React, {
 import {
   OnboardingEngine,
   EngineState,
-  // OnboardingStep, // Not directly used in this file's top-level logic
   OnboardingContext as CoreOnboardingContext,
   OnboardingEngineConfig,
   DataLoadListener,
   DataPersistListener,
   LoadedData,
+  OnboardingPlugin, // Add plugin imports
+  PluginManager,
+  PluginManagerImpl,
 } from "@onboardjs/core";
 
 // Define the actions type based on OnboardingEngine methods
-// This makes it more maintainable if engine methods change.
-// Note: Return types are Promise<void> because our wrapped actions are async.
 export interface OnboardingActions {
   next: (stepSpecificData?: any) => Promise<void>;
   previous: () => Promise<void>;
@@ -32,13 +32,19 @@ export interface OnboardingActions {
     newContextData: Partial<CoreOnboardingContext>
   ) => Promise<void>;
   reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
+  // Add plugin management actions
+  installPlugin: (plugin: OnboardingPlugin) => Promise<void>;
+  uninstallPlugin: (pluginName: string) => Promise<void>;
+  getInstalledPlugins: () => OnboardingPlugin[];
+  isPluginInstalled: (pluginName: string) => boolean;
 }
 
 export interface OnboardingContextValue extends OnboardingActions {
   engine: OnboardingEngine | null;
   state: EngineState | null;
-  isLoading: boolean; // Combined loading state (engine + component interactions)
+  isLoading: boolean;
   setComponentLoading: (loading: boolean) => void;
+  pluginManager: PluginManager | null; // Expose plugin manager
 }
 
 export const OnboardingContext = createContext<
@@ -46,40 +52,24 @@ export const OnboardingContext = createContext<
 >(undefined);
 
 export interface LocalStoragePersistenceOptions {
-  /** A unique key for storing this onboarding flow's progress in localStorage. */
   key: string;
-  /**
-   * Optional: Time in milliseconds after which the persisted data is considered stale and ignored.
-   * If not set, data does not expire.
-   */
   ttl?: number;
 }
 
 export interface OnboardingProviderProps
   extends Omit<OnboardingEngineConfig, "onDataLoad" | "onDataPersist"> {
-  // Omit core persistence props
   children: ReactNode;
-  /**
-   * Configuration for enabling localStorage persistence.
-   * If provided, the flow's progress will be saved to and loaded from localStorage.
-   */
   localStoragePersistence?: LocalStoragePersistenceOptions;
-  /**
-   * For advanced scenarios: Directly provide your own onDataLoad function.
-   * If provided, this will be used INSTEAD of localStoragePersistence.
-   */
   customOnDataLoad?: DataLoadListener;
-  /**
-   * For advanced scenarios: Directly provide your own onDataPersist function.
-   * If provided, this will be used INSTEAD of localStoragePersistence.
-   */
   customOnDataPersist?: DataPersistListener;
-
-  /**
-   * Optional custom function to clear persisted data.
-   * If provided, this will be used INSTEAD of the default localStorage clearing logic.
-   */
   customOnClearPeristedData?: () => void;
+  // Add plugin support
+  plugins?: OnboardingPlugin[]; // Initial plugins to install
+  /**
+   * Whether to enable plugin management features.
+   * If true, allows installing/uninstalling plugins dynamically.
+   */
+  enablePluginManager?: boolean;
 }
 
 export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
@@ -92,13 +82,21 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   localStoragePersistence,
   customOnDataLoad,
   customOnDataPersist,
-  customOnClearPeristedData, // Optional custom clear function
+  customOnClearPeristedData,
+  plugins,
+  enablePluginManager = true, // Default to enabled
 }) => {
   const [engine, setEngine] = useState<OnboardingEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
   const [componentLoading, setComponentLoading] = useState(false);
+  const [pluginManager, setPluginManager] = useState<PluginManager | null>(
+    null
+  );
 
-  // --- Persistence Logic ---
+  // Use a stable reference for plugins to avoid unnecessary re-renders
+  const stablePlugins = useMemo(() => plugins || [], [plugins]);
+
+  // Persistence logic (unchanged)
   const onDataLoadHandler = useCallback(async (): Promise<
     LoadedData | null | undefined
   > => {
@@ -126,17 +124,21 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           `[OnboardJS] Loaded from localStorage (key: "${key}"):`,
           savedState.data
         );
-        return savedState.data as LoadedData; // The actual LoadedData object is nested
+        return savedState.data as LoadedData;
       }
     } catch (error) {
       console.error(
         `[OnboardJS] Error loading from localStorage (key: "${key}"):`,
         error
       );
-      window.localStorage.removeItem(key); // Clear corrupted data
+      window.localStorage.removeItem(key);
     }
     return null;
-  }, [localStoragePersistence, customOnDataLoad]);
+  }, [
+    localStoragePersistence?.key,
+    localStoragePersistence?.ttl,
+    customOnDataLoad,
+  ]);
 
   const onDataPersistHandler = useCallback(
     async (
@@ -154,14 +156,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         const dataToSave: LoadedData = {
           flowData: context.flowData,
           currentStepId: currentStepId,
-          // You could add other top-level context fields here if needed
         };
         const stateToStore = {
           timestamp: Date.now(),
           data: dataToSave,
         };
         window.localStorage.setItem(key, JSON.stringify(stateToStore));
-        // console.log(`[OnboardJS] Persisted to localStorage (key: "${key}")`);
       } catch (error) {
         console.error(
           `[OnboardJS] Error persisting to localStorage (key: "${key}"):`,
@@ -169,7 +169,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         );
       }
     },
-    [localStoragePersistence, customOnDataPersist]
+    [localStoragePersistence?.key, customOnDataPersist]
   );
 
   const onClearPeristedData = useCallback(() => {
@@ -188,8 +188,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         error
       );
     }
-  }, [localStoragePersistence]);
-  // --- End Persistence Logic ---
+  }, [localStoragePersistence?.key]);
 
   const onFlowComplete = useCallback(
     (context: CoreOnboardingContext) => {
@@ -203,7 +202,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     },
     [passedOnFlowComplete]
   );
-
   useEffect(() => {
     const engineConfig: OnboardingEngineConfig = {
       steps,
@@ -220,13 +218,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         }
       },
       onStepChange,
-      onDataLoad:
+      // Only set these if no plugins will override them
+      loadData:
         customOnDataLoad ||
         (localStoragePersistence ? onDataLoadHandler : undefined),
-      onDataPersist:
+      persistData:
         customOnDataPersist ||
         (localStoragePersistence ? onDataPersistHandler : undefined),
-      onClearPersistedData:
+      clearPersistedData:
         customOnClearPeristedData ||
         (localStoragePersistence ? onClearPeristedData : undefined),
     };
@@ -234,54 +233,85 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     const newEngine = new OnboardingEngine(engineConfig);
     setEngine(newEngine);
 
-    // The engine's constructor now calls initializeEngine, which is async
-    // and calls notifyStateChangeListeners at various points (start of hydration, end of init).
-    // The subscription below should pick up these notifications.
-    // We can also set an initial state, but it might be the "hydrating" state.
-    // The subscription is key to getting the *final* initial state after async ops.
+    // Initialize plugin manager and install plugins
+    let newPluginManager: PluginManager | null = null;
+    if (enablePluginManager) {
+      newPluginManager = new PluginManagerImpl(newEngine);
+      setPluginManager(newPluginManager); // Install plugins in order (latest takes precedence)
+      if (stablePlugins.length > 0) {
+        Promise.all(
+          stablePlugins.map(async (plugin) => {
+            try {
+              console.log(
+                "[OnboardingProvider] Installing plugin:",
+                plugin.name
+              );
 
-    // Set an initial state immediately. This will likely be the "isHydrating: true" state.
-    // This ensures `engineState` is not null while the engine initializes.
+              await newPluginManager!.install(plugin);
+              console.log(
+                `[OnboardingProvider] Installed plugin: ${plugin.name}@${plugin.version}`
+              );
+            } catch (error) {
+              console.error(
+                `[OnboardingProvider] Failed to install plugin ${plugin.name}:`,
+                error
+              );
+            }
+          })
+        ).catch((error) => {
+          console.error(
+            "[OnboardingProvider] Error installing plugins:",
+            error
+          );
+        });
+      }
+    }
+
     setEngineState(newEngine.getState());
 
-    const unsubscribe = newEngine.subscribeToStateChange((newState) => {
-      console.log(
-        "[OnboardingProvider] Engine state changed, updating React state:",
-        newState
-      );
-      setEngineState(newState);
-    });
-
-    // Set initial state once after engine is created and potentially hydrated
-    // The engine's initializeEngine method now handles setting initial state and notifying.
-    // So, we just need to ensure our listener picks up the first state.
-    // If the engine notifies immediately after construction (even if hydrating), this is fine.
-    // If not, we might need to grab the state once after a tick or after hydration promise.
-    // For now, relying on the engine's internal notification from initializeEngine.
+    const unsubscribe = newEngine.addEventListener(
+      "stateChange",
+      (newState) => {
+        setEngineState(newState);
+      }
+    );
 
     return () => {
       unsubscribe();
-      // newEngine.dispose(); // If you add a dispose method to the engine for cleanup
+      if (newPluginManager) {
+        newPluginManager.cleanup().catch((error) => {
+          console.error(
+            "[OnboardingProvider] Error cleaning up plugins:",
+            error
+          );
+        });
+      }
     };
   }, [
     steps,
     initialStepId,
     initialContext,
-    localStoragePersistence,
-    onDataLoadHandler,
-    onDataPersistHandler,
-    onFlowComplete,
+    localStoragePersistence?.key, // Only depend on the key, not the whole object
+    localStoragePersistence?.ttl,
+    customOnDataLoad,
+    customOnDataPersist,
+    customOnClearPeristedData,
+    passedOnFlowComplete, // Use the original prop, not the wrapped callback
     onStepChange,
+    stablePlugins,
+    enablePluginManager,
+    // Don't include the callback handlers themselves - they're now stable due to dependency fixes
   ]);
+
   const isLoading = useMemo(
     () =>
       componentLoading ||
       (engineState?.isLoading ?? false) ||
       (engineState?.isHydrating ?? false),
-    [componentLoading, engineState?.isLoading, engineState?.isHydrating] // Add isHydrating
+    [componentLoading, engineState?.isLoading, engineState?.isHydrating]
   );
 
-  // Individual action functions
+  // Individual action functions (unchanged)
   const next = useCallback(
     async (data?: any) => {
       if (!engine) return;
@@ -331,7 +361,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const updateContext = useCallback(
     async (newContextData: Partial<CoreOnboardingContext>) => {
       if (!engine) return;
-      await engine.updateContext(newContextData); // engine.updateContext is already async
+      await engine.updateContext(newContextData);
     },
     [engine]
   );
@@ -343,38 +373,84 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       try {
         await engine.reset(newConfig);
       } finally {
-        // engine.reset is already async
         setComponentLoading(false);
       }
     },
     [engine]
   );
 
+  // Plugin management actions
+  const installPlugin = useCallback(
+    async (plugin: OnboardingPlugin) => {
+      if (!pluginManager) {
+        throw new Error("Plugin manager is not enabled");
+      }
+      await pluginManager.install(plugin);
+    },
+    [pluginManager]
+  );
+
+  const uninstallPlugin = useCallback(
+    async (pluginName: string) => {
+      if (!pluginManager) {
+        throw new Error("Plugin manager is not enabled");
+      }
+      await pluginManager.uninstall(pluginName);
+    },
+    [pluginManager]
+  );
+
+  const getInstalledPlugins = useCallback(() => {
+    if (!pluginManager) {
+      return [];
+    }
+    return pluginManager.getInstalledPlugins();
+  }, [pluginManager]);
+
+  const isPluginInstalled = useCallback(
+    (pluginName: string) => {
+      if (!pluginManager) {
+        return false;
+      }
+      return pluginManager.isInstalled(pluginName);
+    },
+    [pluginManager]
+  );
+
   const value = useMemo(
     (): OnboardingContextValue => ({
-      // Explicitly type the return of useMemo
       engine,
       state: engineState,
       isLoading,
       setComponentLoading,
+      pluginManager,
       skip,
       next,
       reset,
       previous,
       goToStep,
       updateContext,
+      installPlugin,
+      uninstallPlugin,
+      getInstalledPlugins,
+      isPluginInstalled,
     }),
     [
       engine,
       engineState,
       isLoading,
       setComponentLoading,
+      pluginManager,
       skip,
       next,
       reset,
       previous,
       goToStep,
       updateContext,
+      installPlugin,
+      uninstallPlugin,
+      getInstalledPlugins,
+      isPluginInstalled,
     ]
   );
 
