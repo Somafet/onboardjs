@@ -34,13 +34,13 @@ export type StepDataForStep<
         : Record<string, any>
       : Record<string, any>;
 
-type SkipableStep = {
+type SkipableStep<TContext extends OnboardingContext = OnboardingContext> = {
   isSkippable: true;
   skipToStep:
     | string
     | number
     | null
-    | ((context: OnboardingContext) => string | null | undefined)
+    | ((context: TContext) => string | null | undefined) // Use TContext
     | undefined;
 };
 
@@ -55,6 +55,7 @@ type NonSkipableStep = {
 export type BaseOnboardingStep<
   TStepType extends string = string,
   TPayload = any,
+  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
 > = {
   /** A unique identifier for this step. */
   id: string | number;
@@ -62,7 +63,7 @@ export type BaseOnboardingStep<
     | string
     | number
     | null
-    | ((context: OnboardingContext) => string | null | undefined)
+    | ((context: TContext) => string | null | undefined) // Use TContext
     | undefined;
   /**
    * Determines the ID of the previous step.
@@ -72,14 +73,14 @@ export type BaseOnboardingStep<
     | string
     | number
     | null
-    | ((context: OnboardingContext) => string | null | undefined)
+    | ((context: TContext) => string | null | undefined) // Use TContext
     | undefined;
-  onStepActive?: (context: OnboardingContext) => Promise<void> | void;
+  onStepActive?: (context: TContext) => Promise<void> | void; // Use TContext
   onStepComplete?: (
     stepData: StepDataForStep<TStepType, TPayload>,
-    context: OnboardingContext
+    context: TContext // Use TContext
   ) => Promise<void> | void;
-  condition?: (context: OnboardingContext) => boolean;
+  condition?: (context: TContext) => boolean; // Use TContext
   /** Arbitrary metadata for custom use cases or extensions. */
   meta?: Record<string, any>;
-} & (SkipableStep | NonSkipableStep);
+} & (SkipableStep<TContext> | NonSkipableStep); // Pass TContext to SkipableStep
