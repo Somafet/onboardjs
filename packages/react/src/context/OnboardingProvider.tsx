@@ -14,8 +14,8 @@ import {
   EngineState,
   OnboardingContext as CoreOnboardingContext,
   OnboardingEngineConfig,
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
   LoadedData,
   OnboardingPlugin, // Add plugin imports
   PluginManager,
@@ -32,11 +32,6 @@ export interface OnboardingActions {
     newContextData: Partial<CoreOnboardingContext>
   ) => Promise<void>;
   reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
-  // Add plugin management actions
-  installPlugin: (plugin: OnboardingPlugin) => Promise<void>;
-  uninstallPlugin: (pluginName: string) => Promise<void>;
-  getInstalledPlugins: () => OnboardingPlugin[];
-  isPluginInstalled: (pluginName: string) => boolean;
 }
 
 export interface OnboardingContextValue extends OnboardingActions {
@@ -44,7 +39,6 @@ export interface OnboardingContextValue extends OnboardingActions {
   state: EngineState | null;
   isLoading: boolean;
   setComponentLoading: (loading: boolean) => void;
-  pluginManager: PluginManager | null; // Expose plugin manager
 }
 
 export const OnboardingContext = createContext<
@@ -57,14 +51,12 @@ export interface LocalStoragePersistenceOptions {
 }
 
 export interface OnboardingProviderProps
-  extends Omit<OnboardingEngineConfig, "onDataLoad" | "onDataPersist"> {
+  extends Omit<OnboardingEngineConfig, "loadData" | "persistData"> {
   children: ReactNode;
   localStoragePersistence?: LocalStoragePersistenceOptions;
-  customOnDataLoad?: DataLoadListener;
-  customOnDataPersist?: DataPersistListener;
+  customOnDataLoad?: DataLoadFn;
+  customOnDataPersist?: DataPersistFn;
   customOnClearPeristedData?: () => void;
-  // Add plugin support
-  plugins?: OnboardingPlugin[]; // Initial plugins to install
   /**
    * Whether to enable plugin management features.
    * If true, allows installing/uninstalling plugins dynamically.
@@ -89,9 +81,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const [engine, setEngine] = useState<OnboardingEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
   const [componentLoading, setComponentLoading] = useState(false);
-  const [pluginManager, setPluginManager] = useState<PluginManager | null>(
-    null
-  );
 
   // Use a stable reference for plugins to avoid unnecessary re-renders
   const stablePlugins = useMemo(() => plugins || [], [plugins]);
@@ -232,41 +221,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     const newEngine = new OnboardingEngine(engineConfig);
     setEngine(newEngine);
-
-    // Initialize plugin manager and install plugins
-    let newPluginManager: PluginManager | null = null;
-    if (enablePluginManager) {
-      newPluginManager = new PluginManagerImpl(newEngine);
-      setPluginManager(newPluginManager); // Install plugins in order (latest takes precedence)
-      if (stablePlugins.length > 0) {
-        Promise.all(
-          stablePlugins.map(async (plugin) => {
-            try {
-              console.log(
-                "[OnboardingProvider] Installing plugin:",
-                plugin.name
-              );
-
-              await newPluginManager!.install(plugin);
-              console.log(
-                `[OnboardingProvider] Installed plugin: ${plugin.name}@${plugin.version}`
-              );
-            } catch (error) {
-              console.error(
-                `[OnboardingProvider] Failed to install plugin ${plugin.name}:`,
-                error
-              );
-            }
-          })
-        ).catch((error) => {
-          console.error(
-            "[OnboardingProvider] Error installing plugins:",
-            error
-          );
-        });
-      }
-    }
-
     setEngineState(newEngine.getState());
 
     const unsubscribe = newEngine.addEventListener(
@@ -276,17 +230,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       }
     );
 
-    return () => {
-      unsubscribe();
-      if (newPluginManager) {
-        newPluginManager.cleanup().catch((error) => {
-          console.error(
-            "[OnboardingProvider] Error cleaning up plugins:",
-            error
-          );
-        });
-      }
-    };
+    return () => unsubscribe();
   }, [
     steps,
     initialStepId,
@@ -379,78 +323,30 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     [engine]
   );
 
-  // Plugin management actions
-  const installPlugin = useCallback(
-    async (plugin: OnboardingPlugin) => {
-      if (!pluginManager) {
-        throw new Error("Plugin manager is not enabled");
-      }
-      await pluginManager.install(plugin);
-    },
-    [pluginManager]
-  );
-
-  const uninstallPlugin = useCallback(
-    async (pluginName: string) => {
-      if (!pluginManager) {
-        throw new Error("Plugin manager is not enabled");
-      }
-      await pluginManager.uninstall(pluginName);
-    },
-    [pluginManager]
-  );
-
-  const getInstalledPlugins = useCallback(() => {
-    if (!pluginManager) {
-      return [];
-    }
-    return pluginManager.getInstalledPlugins();
-  }, [pluginManager]);
-
-  const isPluginInstalled = useCallback(
-    (pluginName: string) => {
-      if (!pluginManager) {
-        return false;
-      }
-      return pluginManager.isInstalled(pluginName);
-    },
-    [pluginManager]
-  );
-
   const value = useMemo(
     (): OnboardingContextValue => ({
       engine,
       state: engineState,
       isLoading,
       setComponentLoading,
-      pluginManager,
       skip,
       next,
       reset,
       previous,
       goToStep,
       updateContext,
-      installPlugin,
-      uninstallPlugin,
-      getInstalledPlugins,
-      isPluginInstalled,
     }),
     [
       engine,
       engineState,
       isLoading,
       setComponentLoading,
-      pluginManager,
       skip,
       next,
       reset,
       previous,
       goToStep,
       updateContext,
-      installPlugin,
-      uninstallPlugin,
-      getInstalledPlugins,
-      isPluginInstalled,
     ]
   );
 

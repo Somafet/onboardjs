@@ -183,22 +183,30 @@ describe("HeadlessOnboardingFlow", () => {
 
     it("should allow resetting the flow", async () => {
       render(
-        <HeadlessOnboardingFlow {...defaultProps} initialStepId="step3">
-          {({ currentStep, reset }) => (
+        <HeadlessOnboardingFlow {...defaultProps} initialStepId="step2">
+          {({ currentStep, reset, next }) => (
             <div>
               <span data-testid="current-step">{currentStep?.id}</span>
+              <button onClick={() => next()}>Next</button>
+
               <button onClick={() => reset()}>Reset</button>
             </div>
           )}
         </HeadlessOnboardingFlow>
       );
 
-      expect(screen.getByTestId("current-step")).toHaveTextContent("step3");
+      expect(screen.getByTestId("current-step")).toHaveTextContent("step2");
+
+      fireEvent.click(screen.getByText("Next"));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("current-step")).toHaveTextContent("step3");
+      });
 
       fireEvent.click(screen.getByText("Reset"));
 
       await waitFor(() => {
-        expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
+        expect(screen.getByTestId("current-step")).toHaveTextContent("step2");
       });
     });
   });

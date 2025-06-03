@@ -8,8 +8,8 @@ import {
   EngineState,
   OnboardingStep as CoreOnboardingStep,
   // Persistence related types if needed by render prop directly
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
   OnboardingPlugin,
 } from "@onboardjs/core";
 import {
@@ -39,8 +39,8 @@ interface HeadlessOnboardingFlowProps
   stepComponentRegistry: StepComponentRegistry; // Still needed for the default renderStepContent helper
 
   localStoragePersistence?: LocalStoragePersistenceOptions;
-  customOnDataLoad?: DataLoadListener;
-  customOnDataPersist?: DataPersistListener;
+  customOnDataLoad?: DataLoadFn;
+  customOnDataPersist?: DataPersistFn;
 }
 
 // Internal component that consumes the context and calls the render prop
@@ -131,18 +131,6 @@ const HeadlessFlowRendererInternal: React.FC<{
     currentStep: state.currentStep,
     isLoading,
     renderStepContent,
-    installPlugin: function (plugin: OnboardingPlugin): Promise<void> {
-      throw new Error("Function not implemented.");
-    },
-    uninstallPlugin: function (pluginName: string): Promise<void> {
-      throw new Error("Function not implemented.");
-    },
-    getInstalledPlugins: function (): OnboardingPlugin[] {
-      throw new Error("Function not implemented.");
-    },
-    isPluginInstalled: function (pluginName: string): boolean {
-      throw new Error("Function not implemented.");
-    },
   });
 };
 
