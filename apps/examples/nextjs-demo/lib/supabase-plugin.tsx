@@ -175,9 +175,12 @@ export class SupabasePlugin extends BasePlugin<
     return null;
   }
 
-  private extractContextData(context: OnboardingContext): Record<string, any> {
+  private extractContextData(
+    context: OnboardingContext
+  ): Record<string, unknown> {
     // Extract non-flowData context for storage
-    const { flowData, ...contextData } = context;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { flowData: _, ...contextData } = context;
     return contextData;
   }
 }

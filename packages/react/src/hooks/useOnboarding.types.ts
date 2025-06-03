@@ -2,7 +2,7 @@
 import {
   OnboardingEngine,
   EngineState,
-  OnboardingContext as CoreOnboardingContext,
+  OnboardingContext,
   DataLoadFn,
   DataPersistFn,
   BeforeStepChangeListener,
@@ -26,7 +26,7 @@ export interface UseOnboardingOptions {
   onStepChange?: (
     newStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
     oldStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
-    context: CoreOnboardingContext
+    context: OnboardingContext
   ) => void;
 
   /**

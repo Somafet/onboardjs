@@ -4,21 +4,18 @@
 import React, { ReactNode, useCallback, useEffect, useState } from "react";
 import {
   OnboardingEngineConfig,
-  OnboardingContext as CoreOnboardingContext,
   EngineState,
   OnboardingStep as CoreOnboardingStep,
   // Persistence related types if needed by render prop directly
   DataLoadFn,
   DataPersistFn,
-  OnboardingPlugin,
 } from "@onboardjs/core";
 import {
   OnboardingProvider,
   LocalStoragePersistenceOptions, // Assuming this is exported
-  OnboardingContextValue,
   OnboardingActions, // Assuming this is exported
 } from "./context/OnboardingProvider";
-import { StepComponentRegistry, StepComponentProps } from "./types";
+import { StepComponentRegistry } from "./types";
 import { useOnboarding } from "./hooks/useOnboarding";
 
 // Props for the render function provided by the user

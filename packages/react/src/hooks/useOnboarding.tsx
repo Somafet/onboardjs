@@ -4,10 +4,7 @@
 import { useContext, useEffect, useRef } from "react";
 import { OnboardingContext } from "../context/OnboardingProvider";
 import { UseOnboardingOptions } from "./useOnboarding.types";
-import {
-  OnboardingContext as CoreOnboardingContext,
-  OnboardingPlugin,
-} from "@onboardjs/core";
+import { OnboardingContext as CoreOnboardingContext } from "@onboardjs/core";
 
 export const useOnboarding = (options?: UseOnboardingOptions) => {
   const contextValue = useContext(OnboardingContext);

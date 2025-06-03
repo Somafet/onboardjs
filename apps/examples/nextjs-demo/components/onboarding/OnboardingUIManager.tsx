@@ -2,11 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  useOnboarding,
-  StepComponentRegistry,
-  OnboardingStep,
-} from "@onboardjs/react";
+import { useOnboarding, StepComponentRegistry } from "@onboardjs/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,6 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Loader2, PartyPopperIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { OnboardingStep } from "@onboardjs/core";
 
 interface OnboardingUIManagerProps {
   stepsConfig: OnboardingStep[];
