@@ -107,7 +107,8 @@ export class ErrorHandler<TContext extends OnboardingContext> {
     context: ErrorContext;
     engineContext: TContext;
   }> {
-    if (count <= 0) { // Add this condition
+    if (count <= 0) {
+      // Add this condition
       return [];
     }
     return this.errorHistory.slice(-count);

@@ -1,5 +1,14 @@
 // src/engine/services/__tests__/ErrorHandler.test.ts
-import { describe, it, expect, beforeEach, vi, afterEach, Mock, MockInstance } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  vi,
+  afterEach,
+  Mock,
+  MockInstance,
+} from "vitest";
 import { OnboardingContext } from "../types";
 import { ErrorHandler } from "./ErrorHandler";
 import { EventManager } from "./EventManager";
@@ -12,7 +21,7 @@ interface TestContext extends OnboardingContext {
 }
 
 // Define the mock function for EventManager.notifyListeners at a higher scope
-let mockNotifyListenersFn= vi.fn();
+let mockNotifyListenersFn = vi.fn();
 
 vi.mock("../EventManager", () => {
   // Initialize the mock function here so it's defined when the factory runs
@@ -33,13 +42,14 @@ vi.mock("../StateManager", () => ({
 
 describe("ErrorHandler", () => {
   let mockEventManagerInstance: EventManager<TestContext>; // Instance of mocked EventManager
-  let manualMockStateManager: { // Manually created mock object for StateManager
+  let manualMockStateManager: {
+    // Manually created mock object for StateManager
     setError: Mock<() => void>; // This will be a spy
     // Add other StateManager methods here if ErrorHandler uses them
   };
   let errorHandler: ErrorHandler<TestContext>;
-  let consoleErrorSpy: MockInstance
-  let dateNowSpy: MockInstance
+  let consoleErrorSpy: MockInstance;
+  let dateNowSpy: MockInstance;
 
   const mockEngineContext: TestContext = {
     flowData: { someKey: "someValue" },
@@ -63,11 +73,11 @@ describe("ErrorHandler", () => {
     // and the manual mock object for StateManager.
     errorHandler = new ErrorHandler<TestContext>(
       mockEventManagerInstance,
-      manualMockStateManager as unknown as StateManager<TestContext> // Cast for type compatibility
+      manualMockStateManager as unknown as StateManager<TestContext>, // Cast for type compatibility
     );
 
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(1234567890000); // Consistent timestamp
+    dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(1234567890000); // Consistent timestamp
   });
 
   afterEach(() => {
@@ -88,7 +98,12 @@ describe("ErrorHandler", () => {
     it("should process an Error instance correctly", () => {
       const error = new Error("Original error message");
       error.stack = "Custom stack trace";
-      const returnedError = errorHandler.handleError(error, testOperation, mockEngineContext, testStepId);
+      const returnedError = errorHandler.handleError(
+        error,
+        testOperation,
+        mockEngineContext,
+        testStepId,
+      );
 
       expect(returnedError).toBe(error);
       expect(returnedError.message).toBe("Original error message");
@@ -96,7 +111,12 @@ describe("ErrorHandler", () => {
 
     it("should convert a non-Error unknown to an Error instance", () => {
       const errorString = "This is a string error";
-      const returnedError = errorHandler.handleError(errorString, testOperation, mockEngineContext, testStepId);
+      const returnedError = errorHandler.handleError(
+        errorString,
+        testOperation,
+        mockEngineContext,
+        testStepId,
+      );
 
       expect(returnedError).toBeInstanceOf(Error);
       expect(returnedError.message).toBe(errorString);
@@ -104,7 +124,12 @@ describe("ErrorHandler", () => {
 
     it("should add the error to errorHistory with correct context", () => {
       const error = new Error("History test");
-      errorHandler.handleError(error, testOperation, mockEngineContext, testStepId);
+      errorHandler.handleError(
+        error,
+        testOperation,
+        mockEngineContext,
+        testStepId,
+      );
 
       const history = errorHandler.getErrorHistory();
       expect(history).toHaveLength(1);
@@ -121,7 +146,11 @@ describe("ErrorHandler", () => {
     it("should trim errorHistory if it exceeds maxHistorySize", () => {
       const maxHistorySize = 50; // Default from class, or access via (errorHandler as any).maxHistorySize
       for (let i = 0; i < maxHistorySize + 5; i++) {
-        errorHandler.handleError(new Error(`Error ${i}`), `op${i}`, mockEngineContext);
+        errorHandler.handleError(
+          new Error(`Error ${i}`),
+          `op${i}`,
+          mockEngineContext,
+        );
       }
       expect(errorHandler.getErrorHistory()).toHaveLength(maxHistorySize);
       expect(errorHandler.getErrorHistory()[0].error.message).toBe("Error 5");
@@ -134,7 +163,10 @@ describe("ErrorHandler", () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         `[OnboardingEngine] ${testOperation}:`,
         error,
-        expect.objectContaining({ operation: testOperation, timestamp: 1234567890000 })
+        expect.objectContaining({
+          operation: testOperation,
+          timestamp: 1234567890000,
+        }),
       );
     });
 
@@ -150,15 +182,19 @@ describe("ErrorHandler", () => {
       const error = new Error("EventManager test");
       errorHandler.handleError(error, testOperation, mockEngineContext);
       // Assert against the shared mock function used by the EventManager instance
-      expect(mockNotifyListenersFn).toHaveBeenCalledWith("error", error, mockEngineContext);
+      expect(mockNotifyListenersFn).toHaveBeenCalledWith(
+        "error",
+        error,
+        mockEngineContext,
+      );
     });
 
     it("should handle errors without a stack trace gracefully", () => {
-        const error = new Error("No stack error");
-        delete error.stack; // Simulate an error without a stack
-        errorHandler.handleError(error, testOperation, mockEngineContext);
-        const history = errorHandler.getErrorHistory();
-        expect(history[0].context.stack).toBeUndefined();
+      const error = new Error("No stack error");
+      delete error.stack; // Simulate an error without a stack
+      errorHandler.handleError(error, testOperation, mockEngineContext);
+      const history = errorHandler.getErrorHistory();
+      expect(history[0].context.stack).toBeUndefined();
     });
   });
 
@@ -168,8 +204,12 @@ describe("ErrorHandler", () => {
 
     it("should return the result of a successful async operation", async () => {
       const asyncOperation = vi.fn().mockResolvedValue(successResult);
-      const result = await errorHandler.safeExecute(asyncOperation, operationName, mockEngineContext);
-      
+      const result = await errorHandler.safeExecute(
+        asyncOperation,
+        operationName,
+        mockEngineContext,
+      );
+
       expect(result).toBe(successResult);
       expect(asyncOperation).toHaveBeenCalledTimes(1);
       expect(errorHandler.hasErrors()).toBe(false);
@@ -181,8 +221,13 @@ describe("ErrorHandler", () => {
       // No need to spy on errorHandler.handleError, its effects are tested elsewhere
       // We just check if an error is added to history as a side effect.
 
-      const result = await errorHandler.safeExecute(failingAsyncOperation, operationName, mockEngineContext, "stepX");
-      
+      const result = await errorHandler.safeExecute(
+        failingAsyncOperation,
+        operationName,
+        mockEngineContext,
+        "stepX",
+      );
+
       expect(result).toBeNull();
       expect(failingAsyncOperation).toHaveBeenCalledTimes(1);
       expect(errorHandler.hasErrors()).toBe(true);
@@ -198,8 +243,12 @@ describe("ErrorHandler", () => {
 
     it("should return the result of a successful sync operation", () => {
       const syncOperation = vi.fn().mockReturnValue(successResult);
-      const result = errorHandler.safeExecuteSync(syncOperation, operationName, mockEngineContext);
-      
+      const result = errorHandler.safeExecuteSync(
+        syncOperation,
+        operationName,
+        mockEngineContext,
+      );
+
       expect(result).toBe(successResult);
       expect(syncOperation).toHaveBeenCalledTimes(1);
       expect(errorHandler.hasErrors()).toBe(false);
@@ -207,10 +256,17 @@ describe("ErrorHandler", () => {
 
     it("should call handleError and return null if sync operation throws", () => {
       const error = new Error("Sync op failed");
-      const failingSyncOperation = vi.fn(() => { throw error; });
+      const failingSyncOperation = vi.fn(() => {
+        throw error;
+      });
 
-      const result = errorHandler.safeExecuteSync(failingSyncOperation, operationName, mockEngineContext, "stepY");
-      
+      const result = errorHandler.safeExecuteSync(
+        failingSyncOperation,
+        operationName,
+        mockEngineContext,
+        "stepY",
+      );
+
       expect(result).toBeNull();
       expect(failingSyncOperation).toHaveBeenCalledTimes(1);
       expect(errorHandler.hasErrors()).toBe(true);
@@ -226,17 +282,32 @@ describe("ErrorHandler", () => {
       // Clear history from parent beforeEach if any, then populate for these specific tests
       errorHandler.clearErrorHistory();
       dateNowSpy.mockReturnValue(1234567890000);
-      errorHandler.handleError(new Error("Error A"), "opA", mockEngineContext, "step1");
+      errorHandler.handleError(
+        new Error("Error A"),
+        "opA",
+        mockEngineContext,
+        "step1",
+      );
       dateNowSpy.mockReturnValue(1234567890001);
-      errorHandler.handleError(new Error("Error B"), "opB", mockEngineContext, "step2");
+      errorHandler.handleError(
+        new Error("Error B"),
+        "opB",
+        mockEngineContext,
+        "step2",
+      );
       dateNowSpy.mockReturnValue(1234567890002);
-      errorHandler.handleError(new Error("Error C"), "opA", mockEngineContext, "step1");
+      errorHandler.handleError(
+        new Error("Error C"),
+        "opA",
+        mockEngineContext,
+        "step1",
+      );
     });
 
     it("getErrorHistory should return a copy of the error history", () => {
       const history1 = errorHandler.getErrorHistory();
       expect(history1).toHaveLength(3);
-      
+
       history1.pop(); // Modify returned copy
       expect(history1).toHaveLength(2);
       expect(errorHandler.getErrorHistory()).toHaveLength(3); // Internal history unchanged
@@ -256,9 +327,9 @@ describe("ErrorHandler", () => {
     });
 
     it("getRecentErrors should return empty array if count is 0 or negative", () => {
-        // Fix applied in ErrorHandler.ts for this
-        expect(errorHandler.getRecentErrors(0)).toEqual([]);
-        expect(errorHandler.getRecentErrors(-1)).toEqual([]);
+      // Fix applied in ErrorHandler.ts for this
+      expect(errorHandler.getRecentErrors(0)).toEqual([]);
+      expect(errorHandler.getRecentErrors(-1)).toEqual([]);
     });
 
     it("clearErrorHistory should empty the error history", () => {
@@ -272,7 +343,11 @@ describe("ErrorHandler", () => {
       expect(errorHandler.hasErrors()).toBe(true); // From scoped beforeEach
       errorHandler.clearErrorHistory();
       expect(errorHandler.hasErrors()).toBe(false);
-      errorHandler.handleError(new Error("New Error"), "opD", mockEngineContext);
+      errorHandler.handleError(
+        new Error("New Error"),
+        "opD",
+        mockEngineContext,
+      );
       expect(errorHandler.hasErrors()).toBe(true);
     });
 
