@@ -64,6 +64,7 @@ describe("OnboardingEngine", () => {
   describe("Initialization", () => {
     it("should initialize with first step when no initial step is specified", async () => {
       engine = new OnboardingEngine(basicConfig);
+      await engine.ready(); // Ensure engine is fully initialized
 
       // Wait for initialization to complete
 
@@ -150,6 +151,7 @@ describe("OnboardingEngine", () => {
       const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+      await engine.ready();
 
       await engine.updateContext({ flowData: { newData: "value" } });
 
@@ -171,6 +173,8 @@ describe("OnboardingEngine", () => {
       const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+
+      await engine.ready(); // Ensure engine is fully initialized
 
       await engine.updateContext({ flowData: { test: "data" } });
 
@@ -230,6 +234,7 @@ describe("OnboardingEngine", () => {
       const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+      await engine.ready();
 
       await engine.updateContext({ flowData: { newData: "value" } });
 
@@ -1114,6 +1119,7 @@ describe("OnboardingEngine", () => {
       const onStepChange = vi.fn();
       const configWithPersist = { ...basicConfig, persistData };
       engine = new OnboardingEngine(configWithPersist);
+      await engine.ready();
 
       await engine.reset({
         persistData: vi.fn(),
@@ -1136,6 +1142,7 @@ describe("OnboardingEngine", () => {
         ...basicConfig,
         clearPersistedData: clearPersistedData,
       });
+      await engine.ready();
 
       await engine.reset();
 
@@ -1208,6 +1215,7 @@ describe("OnboardingEngine", () => {
         ...basicConfig,
         clearPersistedData: clearPersistedData,
       });
+      await engine.ready();
 
       await engine.reset();
 

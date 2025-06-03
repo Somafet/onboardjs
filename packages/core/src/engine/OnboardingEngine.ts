@@ -7,164 +7,24 @@ import {
   ChecklistItemState,
 } from "../types";
 import { evaluateStepId, findStepById } from "../utils/step-utils";
+import { EventManager } from "./EventManager";
 import {
   EngineState,
-  EngineStateChangeListener,
   UnsubscribeFunction,
   OnboardingEngineConfig,
   BeforeStepChangeListener,
   BeforeStepChangeEvent,
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
   LoadedData,
   FlowCompleteListener,
-  StepChangeListener,
   EventListenerMap,
 } from "./types";
 
-/**
- * Unified event listener handler with consistent error management
- */
-class EventManager<TContext extends OnboardingContext = OnboardingContext> {
-  private listeners: Map<keyof EventListenerMap<TContext>, Set<any>> =
-    new Map();
-
-  constructor() {
-    // Initialize listener sets for each event type
-    const eventTypes: (keyof EventListenerMap<TContext>)[] = [
-      "stateChange",
-      "beforeStepChange",
-      "stepChange",
-      "flowComplete",
-      "stepActive",
-      "stepComplete",
-      "contextUpdate",
-      "error",
-    ];
-
-    eventTypes.forEach((eventType) => {
-      this.listeners.set(eventType, new Set());
-    });
-  }
-
-  /**
-   * Add an event listener with unified error handling
-   */
-  addEventListener<T extends keyof EventListenerMap<TContext>>(
-    eventType: T,
-    listener: EventListenerMap<TContext>[T]
-  ): UnsubscribeFunction {
-    const listenerSet = this.listeners.get(eventType);
-    if (!listenerSet) {
-      throw new Error(`Unknown event type: ${String(eventType)}`);
-    }
-
-    listenerSet.add(listener);
-    return () => listenerSet.delete(listener);
-  }
-
-  /**
-   * Notify all listeners for a specific event with consistent error handling
-   */
-  notifyListeners<T extends keyof EventListenerMap<TContext>>(
-    eventType: T,
-    ...args: Parameters<EventListenerMap<TContext>[T]>
-  ): void {
-    const listenerSet = this.listeners.get(eventType);
-    if (!listenerSet) return;
-
-    listenerSet.forEach((listener) => {
-      try {
-        const result = (listener as any)(...args);
-        if (result instanceof Promise) {
-          result.catch((err) => {
-            // Use legacy error message format for backward compatibility
-            const legacyEventName =
-              eventType === "flowComplete"
-                ? "async onFlowHasCompleted"
-                : this.getLegacyEventName(eventType);
-            console.error(`Error in ${legacyEventName} listener:`, err);
-          });
-        }
-      } catch (err) {
-        // Use legacy error message format for backward compatibility
-        const legacyEventName =
-          eventType === "flowComplete"
-            ? "sync onFlowHasCompleted"
-            : this.getLegacyEventName(eventType);
-        console.error(`Error in ${legacyEventName} listener:`, err);
-      }
-    });
-  }
-
-  /**
-   * Get legacy event name for error messages to maintain backward compatibility
-   */
-  private getLegacyEventName<T extends keyof EventListenerMap<TContext>>(
-    eventType: T
-  ): string {
-    switch (eventType) {
-      case "stepChange":
-        return "stepChange";
-      case "stateChange":
-        return "stateChange";
-      case "beforeStepChange":
-        return "beforeStepChange";
-      case "stepActive":
-        return "stepActive";
-      case "stepComplete":
-        return "stepComplete";
-      case "contextUpdate":
-        return "contextUpdate";
-      case "error":
-        return "error";
-      default:
-        return String(eventType);
-    }
-  }
-
-  /**
-   * Notify listeners with promise resolution for sequential execution
-   */
-  async notifyListenersSequential<T extends keyof EventListenerMap<TContext>>(
-    eventType: T,
-    ...args: Parameters<EventListenerMap<TContext>[T]>
-  ): Promise<void> {
-    const listenerSet = this.listeners.get(eventType);
-    if (!listenerSet) return;
-
-    for (const listener of listenerSet) {
-      try {
-        const result = (listener as any)(...args);
-        if (result instanceof Promise) {
-          await result;
-        }
-      } catch (err) {
-        console.error(
-          `[OnboardingEngine] Error in sequential ${String(eventType)} listener:`,
-          err
-        );
-        throw err; // Re-throw for beforeStepChange cancellation logic
-      }
-    }
-  }
-
-  /**
-   * Get the number of listeners for an event type
-   */
-  getListenerCount<T extends keyof EventListenerMap<TContext>>(
-    eventType: T
-  ): number {
-    return this.listeners.get(eventType)?.size || 0;
-  }
-
-  /**
-   * Clear all listeners
-   */
-  clearAllListeners(): void {
-    this.listeners.forEach((listenerSet) => listenerSet.clear());
-  }
-}
+import {
+  OnboardingPlugin, // Added for 'use' method type
+} from "../plugins/types"; // Added for 'use' method type
+import { PluginManagerImpl } from "../plugins/PluginManager"; // Added
 
 export class OnboardingEngine<
   TContext extends OnboardingContext = OnboardingContext,
@@ -174,12 +34,14 @@ export class OnboardingEngine<
   private contextInternal: TContext;
   private history: string[] = []; // For previous navigation
   private isLoadingInternal: boolean = false;
-  private isHydratingInternal: boolean = true;
+  private isHydratingInternal: boolean = true; // Default to true until start()
   private errorInternal: Error | null = null;
   private isCompletedInternal: boolean = false;
 
   // Unified event manager
   private eventManager: EventManager<TContext> = new EventManager();
+  // Plugin manager for handling plugins
+  private pluginManager: PluginManagerImpl<TContext>;
 
   // Onboarding engine instance configuration
   private onFlowComplete?: FlowCompleteListener<TContext>;
@@ -189,34 +51,51 @@ export class OnboardingEngine<
     context: TContext
   ) => void;
 
-  private loadData?: DataLoadListener<TContext>;
-  private persistData?: DataPersistListener<TContext>;
+  private loadData?: DataLoadFn<TContext>;
+  private persistData?: DataPersistFn<TContext>;
   private clearPersistedData?: () => Promise<void> | void;
 
   private initializationPromise: Promise<void>;
   private resolveInitialization!: () => void; // Definite assignment assertion
+  private rejectInitialization!: (reason?: any) => void;
+  private initialConfig: OnboardingEngineConfig<TContext>; // Store the complete initial configuration
 
   constructor(config: OnboardingEngineConfig<TContext>) {
-    this.initializationPromise = new Promise((resolve) => {
-      this.resolveInitialization = resolve;
-    });
+    this.initialConfig = config; // Store the complete initial configuration
     this.steps = config.steps;
+
     this.contextInternal = {
       flowData: {},
-      ...config.initialContext, // Initial context from config
+      ...(config.initialContext || {}),
     } as TContext;
-    this.onFlowComplete = config.onFlowComplete;
-    this.onStepChangeCallback = config.onStepChange;
-    this.loadData = config.loadData; // Store
-    this.persistData = config.persistData; // Store
-    this.clearPersistedData = config.clearPersistedData;
+    if (!this.contextInternal.flowData) {
+      this.contextInternal.flowData = {} as any; // Ensure flowData exists
+    }
 
-    this.initializeEngine(config.initialStepId, config.initialContext).finally(
-      () => {
-        console.log("[OnboardingEngine] Initialization complete.");
-        this.resolveInitialization?.();
+    this.pluginManager = new PluginManagerImpl<TContext>(this);
+    this.initializationPromise = new Promise((resolve, reject) => {
+      this.resolveInitialization = resolve;
+      this.rejectInitialization = reject;
+    });
+
+    // Automatically start the initialization process.
+    // The actual outcome (success/failure) will be reflected in the initializationPromise.
+    this.initializeEngine().catch((error) => {
+      // This top-level catch in the constructor is a safety net.
+      // initializeEngine should ideally handle its own promise rejection.
+      console.error(
+        "[OnboardingEngine] Unhandled error during constructor-initiated initialization:",
+        error
+      );
+      if (!this.initializationPromise) {
+        // If promise somehow not made or already settled, this is a severe issue.
+        // For robustness, ensure error state is set if possible.
+        this.errorInternal =
+          error instanceof Error ? error : new Error(String(error));
+        this.isHydratingInternal = false;
+        this.isLoadingInternal = false;
       }
-    );
+    });
   }
 
   /**
@@ -305,9 +184,7 @@ export class OnboardingEngine<
   /**
    * Allow plugins to override the data loading handler
    */
-  public setDataLoadHandler(
-    handler: DataLoadListener<TContext> | undefined
-  ): void {
+  public setDataLoadHandler(handler: DataLoadFn<TContext> | undefined): void {
     this.loadData = handler;
   }
 
@@ -315,7 +192,7 @@ export class OnboardingEngine<
    * Allow plugins to override the data persistence handler
    */
   public setDataPersistHandler(
-    handler: DataPersistListener<TContext> | undefined
+    handler: DataPersistFn<TContext> | undefined
   ): void {
     this.persistData = handler;
   }
@@ -330,114 +207,176 @@ export class OnboardingEngine<
   }
 
   /**
-   * Initializes the onboarding engine by hydrating its state from an optional data loader,
-   * merging any provided initial context and step configuration, and navigating to the appropriate initial step.
+   * Core initialization method. Orchestrates plugin installation,
+   * data loading, and navigation to the initial step.
+   * Called by the constructor.
    */
-  private async initializeEngine(
-    configInitialStepId?: string | number,
-    configInitialContext?: Partial<TContext>
-  ): Promise<void> {
+  private async initializeEngine(): Promise<void> {
     this.isHydratingInternal = true;
-    this.notifyStateChangeListeners(); // Notify that hydration is starting
+    this.isLoadingInternal = true;
+    this.errorInternal = null;
+    this.notifyStateChangeListeners();
 
-    let loadedData: LoadedData<TContext> | null | undefined = null;
-    let dataLoadError: Error | null = null;
-
-    if (this.loadData) {
-      try {
-        console.log("[OnboardingEngine] Attempting to load data...");
-        loadedData = await this.loadData();
-        if (loadedData) {
-          console.log(
-            "[OnboardingEngine] Data loaded successfully:",
-            loadedData
-          );
-          // Merge loaded flowData with initialContext.flowData, loaded takes precedence
-          const initialFlowDataFromConfig =
-            configInitialContext?.flowData || {};
-          const loadedFlowData = loadedData.flowData || {};
-
-          this.contextInternal = {
-            ...this.contextInternal, // Keep other initial context fields
-            ...configInitialContext, // Apply config initial context
-            ...loadedData, // Apply all loaded data (could overwrite currentUser etc. if provided)
-            flowData: {
-              // Careful merge of flowData
-              ...initialFlowDataFromConfig,
-              ...loadedFlowData,
-            },
-          } as TContext;
-        } else {
-          console.log("[OnboardingEngine] No data returned from loadData.");
-        }
-      } catch (e: any) {
-        console.error("[OnboardingEngine] Error during loadData:", e);
-        dataLoadError = new Error(
-          `Failed to load onboarding state: ${e.message}`
-        );
-        // Proceed with default initialization if loading fails
-      }
-    }
-
-    this.isHydratingInternal = false;
-    // At this point, contextInternal is set up either from defaults or loaded data.
-
-    if (dataLoadError) {
-      this.errorInternal = dataLoadError;
-      this.currentStepInternal = null; // No current step if loading failed critically
-      this.isCompletedInternal = false; // Not completed, but in an error state
-      this.isLoadingInternal = false; // Not actively loading anymore
-      this.notifyErrorListeners(dataLoadError);
-      this.notifyStateChangeListeners(); // Notify with the hydration error
-      return;
-    }
-
-    // Proceed with normal initialization if loadData was successful or not provided
-    this.contextInternal = {
-      // Ensure context is finalized after potential load
-      ...this.contextInternal,
-      ...configInitialContext,
-      flowData: {
-        ...(configInitialContext?.flowData || {}),
-        ...(loadedData?.flowData || {}),
-        ...(this.contextInternal.flowData || {}), // Ensure existing flowData (if any from constructor) is not lost if loadedData is sparse
-      },
-      // Apply other top-level loadedData fields if they exist
-      ...(loadedData &&
-        Object.keys(loadedData).reduce((acc, key) => {
-          if (key !== "flowData" && key !== "currentStepId") {
-            acc[key] = loadedData[key];
+    try {
+      // 1. Install plugins
+      if (this.initialConfig.plugins && this.initialConfig.plugins.length > 0) {
+        // ... (plugin installation logic) ...
+        for (const plugin of this.initialConfig.plugins) {
+          try {
+            await this.pluginManager.install(plugin);
+          } catch (pluginInstallError: any) {
+            const errorMessage = `Plugin installation failed for "${plugin.name}": ${pluginInstallError.message || pluginInstallError}`;
+            console.error(`[OnboardingEngine] ${errorMessage}`);
+            throw new Error(errorMessage);
           }
-          return acc;
-        }, {} as any)),
-    } as TContext;
+        }
+      }
 
-    const effectiveInitialStepId =
-      loadedData?.currentStepId !== undefined // Check if currentStepId was explicitly loaded (even if null)
-        ? loadedData.currentStepId
-        : configInitialStepId ||
-          (this.steps.length > 0 ? this.steps[0].id : null);
+      // 2. Apply handlers
+      this.loadData = this.loadData ?? this.initialConfig.loadData;
+      this.persistData = this.persistData ?? this.initialConfig.persistData;
+      this.clearPersistedData =
+        this.clearPersistedData ?? this.initialConfig.clearPersistedData;
+      this.onFlowComplete =
+        this.onFlowComplete ?? this.initialConfig.onFlowComplete;
+      this.onStepChangeCallback =
+        this.onStepChangeCallback ?? this.initialConfig.onStepChange;
 
-    console.log(
-      "[OnboardingEngine] Effective initial step ID:",
-      effectiveInitialStepId
-    );
+      const configInitialStepId = this.initialConfig.initialStepId;
+      const configInitialContext =
+        this.initialConfig.initialContext || ({} as Partial<TContext>);
 
-    if (effectiveInitialStepId) {
-      // navigateToStep will set isLoading to true, then false, and notify listeners
-      await this.navigateToStep(effectiveInitialStepId, "initial");
-    } else {
-      // If no steps and no initial step, flow is complete.
-      this.isCompletedInternal = true;
-      this.isLoadingInternal = false;
+      let loadedData: LoadedData<TContext> | null | undefined = null;
+      let dataLoadError: Error | null = null;
 
-      this.notifyStateChangeListeners(); // Notify final state after potential completion
+      if (this.loadData) {
+        try {
+          console.log(
+            "[OnboardingEngine] Attempting to load data (potentially via plugin)..."
+          );
+          loadedData = await this.loadData();
+          // ... (logging)
+        } catch (e: any) {
+          console.error("[OnboardingEngine] Error during loadData:", e);
+          dataLoadError = new Error(
+            `Failed to load onboarding state: ${e.message}`
+          );
+        }
+      }
+
+      // Build context (this part is fine to run always, to establish a base context)
+      let newContextBase = {
+        ...(configInitialContext as TContext),
+        flowData: { ...(configInitialContext.flowData || {}) },
+      };
+      if (loadedData) {
+        const {
+          flowData: loadedFlowData,
+          currentStepId: _loadedStepId,
+          ...otherLoadedProps
+        } = loadedData;
+        newContextBase = {
+          ...newContextBase,
+          ...otherLoadedProps,
+          flowData: {
+            ...(newContextBase.flowData || {}),
+            ...(loadedFlowData || {}),
+          },
+        } as TContext;
+      }
+      this.contextInternal = newContextBase;
+
+      // *** MODIFIED SECTION ***
+      if (dataLoadError) {
+        this.errorInternal = dataLoadError;
+        this.currentStepInternal = null; // Correctly set to null
+        this.isCompletedInternal = false; // Not completed due to error
+        this.notifyErrorListeners(dataLoadError);
+        // Even with a loadData error, we consider the engine "initialized"
+        // but in an error state. The ready() promise will resolve.
+        // If a loadData error should prevent ready() from resolving,
+        // you would 'throw dataLoadError;' here to be caught by the outer catch,
+        // which would then call rejectInitialization.
+        // For now, let's stick to resolving but being in an error state.
+        this.resolveInitialization();
+      } else {
+        // No data load error, proceed with normal step initialization
+        const effectiveInitialStepId =
+          loadedData?.currentStepId !== undefined
+            ? loadedData.currentStepId
+            : configInitialStepId ||
+              (this.steps.length > 0 ? this.steps[0].id : null);
+
+        console.log(
+          "[OnboardingEngine] Effective initial step ID:",
+          effectiveInitialStepId
+        );
+
+        if (effectiveInitialStepId) {
+          await this.navigateToStep(effectiveInitialStepId, "initial");
+        } else {
+          this.isCompletedInternal = this.steps.length === 0;
+          if (this.steps.length > 0) {
+            console.warn(
+              "[OnboardingEngine] No effective initial step ID, but steps exist. Flow may not start."
+            );
+          }
+        }
+        this.resolveInitialization(); // Signal successful initialization
+      }
+      // *** END OF MODIFIED SECTION ***
+    } catch (error: any) {
+      // Catches errors from plugin install or other unexpected issues
+      console.error(
+        "[OnboardingEngine] Critical error during engine initialization:",
+        error
+      );
+      this.errorInternal =
+        error instanceof Error
+          ? error
+          : new Error(String(error.message || error));
+      if (this.errorInternal) this.notifyErrorListeners(this.errorInternal); // Ensure error is notified
+      this.currentStepInternal = null; // Ensure no current step on critical failure
+      this.rejectInitialization(this.errorInternal);
+    } finally {
+      this.isHydratingInternal = false;
+      if (
+        this.errorInternal ||
+        this.isCompletedInternal ||
+        (!this.currentStepInternal && this.isLoadingInternal) // If no step and still loading, stop loading
+      ) {
+        this.isLoadingInternal = false;
+      }
+      this.notifyStateChangeListeners();
+      console.log("[OnboardingEngine] Initialization attempt finished.");
     }
   }
 
   /**
-   * Waits for the onboarding engine to be fully initialized and ready for use.
-   * @returns A promise that resolves when the onboarding engine is fully initialized and ready for use.
+   * Installs a plugin into the onboarding engine.
+   * Typically used for plugins not provided in the initial configuration,
+   * or for adding plugins after a reset.
+   */
+  public async use(plugin: OnboardingPlugin<TContext>): Promise<this> {
+    // Consider if engine is already initialized.
+    // Plugins added late might not affect initial load but can hook into ongoing events.
+    try {
+      await this.pluginManager.install(plugin);
+    } catch (error) {
+      console.error(
+        `[OnboardingEngine] Failed to install plugin "${plugin.name}" via use():`,
+        error
+      );
+      throw error;
+    }
+    return this;
+  }
+
+  /**
+   * Waits for the onboarding engine to be fully initialized.
+   * This promise resolves when plugins are installed, data is loaded,
+   * and the initial step is determined.
+   * @returns A promise that resolves when ready, or rejects on critical initialization failure.
    */
   public async ready(): Promise<void> {
     return this.initializationPromise;
@@ -494,6 +433,7 @@ export class OnboardingEngine<
    * Persists the current onboarding data if a persistence handler (`persistData`) is defined.
    */
   private async persistDataIfNeeded(): Promise<void> {
+    if (this.isHydratingInternal) return; // Don't persist during initial hydration
     if (this.persistData) {
       try {
         await this.persistData(
@@ -532,7 +472,6 @@ export class OnboardingEngine<
     if (changes.isCompleted !== undefined)
       this.isCompletedInternal = changes.isCompleted;
     if (changes.context) {
-      // Check if context actually changed to avoid unnecessary persists
       if (
         JSON.stringify(this.contextInternal) !== JSON.stringify(changes.context)
       ) {
@@ -543,7 +482,6 @@ export class OnboardingEngine<
 
     this.notifyStateChangeListeners();
 
-    // Notify context update listeners if context changed
     if (contextChanged && !this.isHydratingInternal) {
       this.notifyContextUpdateListeners(oldContext, this.contextInternal);
       this.persistDataIfNeeded();
@@ -788,30 +726,25 @@ export class OnboardingEngine<
   ): boolean {
     const itemStates = this.getChecklistItemsState(step);
     const { items: itemDefinitions, minItemsToComplete } = step.payload;
-
     let completedCount = 0;
     let mandatoryPending = 0;
 
     for (const def of itemDefinitions) {
-      // Skip item if its condition is not met
       if (def.condition && !def.condition(this.contextInternal)) {
         continue;
       }
-
       const state = itemStates.find((s) => s.id === def.id);
-      const isMandatory = def.isMandatory !== false; // Defaults to true
-
+      const isMandatory = def.isMandatory !== false;
       if (state?.isCompleted) {
         completedCount++;
       } else if (isMandatory) {
         mandatoryPending++;
       }
     }
-
     if (typeof minItemsToComplete === "number") {
       return completedCount >= minItemsToComplete;
     } else {
-      return mandatoryPending === 0; // All mandatory items must be completed
+      return mandatoryPending === 0;
     }
   }
 
@@ -1088,10 +1021,6 @@ export class OnboardingEngine<
     }
     const newContextJSON = JSON.stringify(this.contextInternal);
 
-    console.log("Old context:", oldContextJSON);
-    console.log("New context:", newContextJSON);
-    console.log("isSame:", oldContextJSON === newContextJSON);
-
     // Only notify and persist if something actually changed
     if (oldContextJSON !== newContextJSON) {
       this.notifyContextUpdateListeners(oldContext, this.contextInternal);
@@ -1101,50 +1030,115 @@ export class OnboardingEngine<
   }
 
   public async reset(
-    newConfig?: Partial<OnboardingEngineConfig<TContext>>
+    newConfigInput?: Partial<OnboardingEngineConfig<TContext>>
   ): Promise<void> {
-    this.steps = newConfig?.steps || this.steps;
-    // Preserve persistence listeners if not overridden by newConfig
-    this.loadData =
-      newConfig?.loadData !== undefined ? newConfig.loadData : this.loadData;
-    this.persistData =
-      newConfig?.persistData !== undefined
-        ? newConfig.persistData
-        : this.persistData;
-    this.onFlowComplete =
-      newConfig?.onFlowComplete !== undefined
-        ? newConfig.onFlowComplete
-        : this.onFlowComplete;
-    this.onStepChangeCallback =
-      newConfig?.onStepChange !== undefined
-        ? newConfig.onStepChange
-        : this.onStepChangeCallback;
+    console.log("[OnboardingEngine] Resetting engine...");
 
-    if (this.clearPersistedData) {
+    // Capture the currently active clearPersistedData handler
+    const activeClearPersistedDataHandler = this.clearPersistedData;
+
+    // 1. Cleanup existing plugins and their event listeners/overrides.
+    // Plugins might have set their own data handlers. Cleaning them up
+    // ensures that after reset, we start fresh with handlers from
+    // the new/current initialConfig or newly installed plugins.
+    await this.pluginManager.cleanup();
+
+    // Reset engine's own direct handlers to undefined.
+    // They will be re-established by the subsequent initializeEngine call,
+    // either from initialConfig or by plugins installed during that re-initialization.
+    this.loadData = undefined;
+    this.persistData = undefined;
+    this.clearPersistedData = undefined; // Will be repopulated by initializeEngine
+    this.onFlowComplete = undefined;
+    this.onStepChangeCallback = undefined;
+
+    // 2. Update initialConfig if a new one is provided.
+    // This new initialConfig will be used by the subsequent initializeEngine call.
+    if (newConfigInput) {
+      const currentInitialContext =
+        this.initialConfig.initialContext ?? ({} as TContext);
+      const newInitialContextInput =
+        newConfigInput.initialContext ?? ({} as TContext);
+      const mergedInitialContext = {
+        ...currentInitialContext,
+        ...newInitialContextInput,
+        flowData: {
+          ...(currentInitialContext.flowData || {}),
+          ...(newInitialContextInput.flowData || {}),
+        },
+      };
+      this.initialConfig = {
+        ...this.initialConfig, // Keep old values not in newConfigInput
+        ...newConfigInput, // Override with newConfigInput values
+        initialContext: mergedInitialContext, // Apply merged context
+      };
+    }
+    // Ensure essential parts of initialConfig are (re)set from the potentially updated initialConfig
+    this.steps = this.initialConfig.steps || [];
+    this.initialConfig.initialContext =
+      this.initialConfig.initialContext ||
+      ({
+        flowData: {},
+      } as TContext);
+    // If newConfigInput provided new plugins, they are now in this.initialConfig.plugins
+    // and will be installed by the upcoming initializeEngine call.
+
+    // 3. Call the captured clearPersistedData handler (if it existed at the start of reset)
+    if (activeClearPersistedDataHandler) {
       try {
-        console.log("[OnboardingEngine] reset: Clearing persisted data...");
-        await this.clearPersistedData();
+        console.log(
+          "[OnboardingEngine] reset: Clearing persisted data using the handler active before reset..."
+        );
+        await activeClearPersistedDataHandler();
       } catch (e) {
         console.error(
           "[OnboardingEngine] reset: Error during clearPersistedData:",
           e
         );
-        this.notifyErrorListeners(e as Error);
+        if (e instanceof Error) this.notifyErrorListeners(e); // Notify if it's an error instance
       }
     }
 
-    // Set a truly fresh context before calling initializeEngine
-    const resetInitialContext =
-      newConfig?.initialContext || ({ flowData: {} } as Partial<TContext>);
-    this.contextInternal = { flowData: {}, ...resetInitialContext } as TContext;
-
+    // 4. Reset internal state variables
     this.currentStepInternal = null;
     this.history = [];
-    this.isLoadingInternal = false;
+    this.isLoadingInternal = false; // Will be set true by initializeEngine
+    this.isHydratingInternal = true; // Will be set true by initializeEngine
     this.errorInternal = null;
     this.isCompletedInternal = false;
 
-    await this.initializeEngine(newConfig?.initialStepId, resetInitialContext);
+    // Reset context to the effective initial context from the (potentially new) initialConfig
+    this.contextInternal = {
+      flowData: {}, // Start fresh for flowData
+      ...(this.initialConfig.initialContext || {}), // Apply other initial context fields
+    } as TContext;
+    // Ensure flowData object exists, potentially copying from initialConfig if structure is complex
+    if (
+      !this.contextInternal.flowData &&
+      this.initialConfig.initialContext?.flowData
+    ) {
+      this.contextInternal.flowData = {
+        ...this.initialConfig.initialContext.flowData,
+      };
+    } else if (!this.contextInternal.flowData) {
+      this.contextInternal.flowData = {} as any;
+    }
+
+    // 5. Re-create the initialization promise for the upcoming re-initialization
+    this.initializationPromise = new Promise((resolve, reject) => {
+      this.resolveInitialization = resolve;
+      this.rejectInitialization = reject;
+    });
+
+    // 6. Re-initialize the engine. This will:
+    //    - Install plugins from the (new/current) initialConfig.plugins.
+    //    - Set data handlers (this.loadData, this.persistData, this.clearPersistedData etc.)
+    //      from initialConfig, or as set by plugins during their new install.
+    //    - Load data and navigate to the initial step.
+    //    The `initializeEngine` method itself handles resolving/rejecting the new promise.
+    await this.initializeEngine(); // This will also re-apply this.clearPersistedData from initialConfig
+
+    console.log("[OnboardingEngine] Engine has been reset and re-initialized.");
   }
 
   // Add methods for plugin support
