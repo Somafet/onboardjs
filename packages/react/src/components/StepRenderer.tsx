@@ -55,7 +55,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
       setCurrentActiveStepData(mergedData);
       setIsCurrentActiveStepValid(isValid);
     },
-    []
+    [],
   );
 
   if ((isLoading && !currentStep) || !state) {
@@ -89,7 +89,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
       componentLookupKey = payload.componentKey;
     } else {
       console.error(
-        `Step type is CUSTOM_COMPONENT but payload.componentKey is missing for step ID: ${currentStep.id}`
+        `Step type is CUSTOM_COMPONENT but payload.componentKey is missing for step ID: ${currentStep.id}`,
       );
       return (
         <div style={{ color: "red", padding: "20px" }}>

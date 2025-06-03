@@ -14,7 +14,7 @@ export function evaluateStepId<
     | ((context: TContext) => string | number | null | undefined) // Use TContext
     | null
     | undefined,
-  context: TContext // Use TContext
+  context: TContext, // Use TContext
 ): string | number | null | undefined {
   if (typeof stepIdOrFn === "function") {
     return stepIdOrFn(context);
@@ -29,7 +29,7 @@ export function findStepById<
   TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
 >(
   steps: OnboardingStep<TContext>[], // Use generic OnboardingStep
-  stepId: string | null | undefined | number
+  stepId: string | null | undefined | number,
 ): OnboardingStep<TContext> | undefined {
   // Return generic OnboardingStep
   if (stepId === null || stepId === undefined) return undefined; // Handle null/undefined explicitly

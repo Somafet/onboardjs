@@ -42,30 +42,34 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 ## Development Setup
 
 1. **Fork the repository** and clone your fork:
-    ```bash
-    git clone https://github.com/Somafet/onboardjs.git
-    cd onboardjs
-    ```
+
+   ```bash
+   git clone https://github.com/Somafet/onboardjs.git
+   cd onboardjs
+   ```
 
 2. **Install dependencies** (we recommend [pnpm](https://pnpm.io/)):
-    ```bash
-    pnpm install
-    ```
+
+   ```bash
+   pnpm install
+   ```
 
 3. **Build all packages:**
-    ```bash
-    pnpm build
-    ```
+
+   ```bash
+   pnpm build
+   ```
 
 4. **Run tests:**
-    ```bash
-    pnpm test
-    ```
+
+   ```bash
+   pnpm test
+   ```
 
 5. **Start Storybook (for UI work):**
-    ```bash
-    pnpm --filter storybook storybook
-    ```
+   ```bash
+   pnpm --filter storybook storybook
+   ```
 
 ---
 
@@ -82,9 +86,10 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 ## Pull Request Process
 
 1. **Create a branch** for your change:
-    ```bash
-    git checkout -b (feature or bug)/your-feature-name
-    ```
+
+   ```bash
+   git checkout -b (feature or bug)/your-feature-name
+   ```
 
 2. **Make your changes** and commit them.
 

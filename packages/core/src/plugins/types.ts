@@ -16,7 +16,7 @@ export interface OnboardingPlugin<
   dependencies?: string[];
   /** Install function called when plugin is added to engine */
   install: (
-    engine: OnboardingEngine<TContext>
+    engine: OnboardingEngine<TContext>,
   ) => PluginCleanup | Promise<PluginCleanup>;
 }
 
@@ -46,27 +46,27 @@ export interface PluginHooks<
   beforeStepChange?: (
     currentStep: OnboardingStep<TContext> | null,
     nextStep: OnboardingStep<TContext>,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
 
   /** Called after step change */
   afterStepChange?: (
     previousStep: OnboardingStep<TContext> | null,
     currentStep: OnboardingStep<TContext> | null,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
 
   /** Called when step becomes active */
   onStepActive?: (
     step: OnboardingStep<TContext>,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
 
   /** Called when step is completed */
   onStepComplete?: (
     step: OnboardingStep<TContext>,
     stepData: any,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
 
   /** Called when flow is completed */
@@ -75,7 +75,7 @@ export interface PluginHooks<
   /** Called when context is updated */
   onContextUpdate?: (
     oldContext: TContext,
-    newContext: TContext
+    newContext: TContext,
   ) => void | Promise<void>;
 
   /** Called on engine errors */

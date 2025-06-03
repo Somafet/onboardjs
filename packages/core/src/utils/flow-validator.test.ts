@@ -7,21 +7,21 @@ describe("validateFlow", () => {
   const expectIssueWithMessage = (
     issues: ValidationIssue[],
     messagePart: string,
-    level: "error" | "warning" = "error"
+    level: "error" | "warning" = "error",
   ) => {
     expect(
       issues.some(
-        (issue) => issue.message.includes(messagePart) && issue.level === level
-      )
+        (issue) => issue.message.includes(messagePart) && issue.level === level,
+      ),
     ).toBe(true);
   };
 
   const expectNoIssueWithMessage = (
     issues: ValidationIssue[],
-    messagePart: string
+    messagePart: string,
   ) => {
     expect(issues.some((issue) => issue.message.includes(messagePart))).toBe(
-      false
+      false,
     );
   };
 
@@ -64,7 +64,7 @@ describe("validateFlow", () => {
     expectIssueWithMessage(
       issues,
       "onboarding flow has no steps defined",
-      "warning"
+      "warning",
     );
   });
 
@@ -121,7 +121,7 @@ describe("validateFlow", () => {
     expect(issues.length).toBe(1);
     expectIssueWithMessage(
       issues,
-      "Step 'custom1' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'"
+      "Step 'custom1' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'",
     );
   });
 
@@ -137,7 +137,7 @@ describe("validateFlow", () => {
     expect(issues.length).toBe(1);
     expectIssueWithMessage(
       issues,
-      "Step 'custom1' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'"
+      "Step 'custom1' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'",
     );
   });
 
@@ -155,7 +155,7 @@ describe("validateFlow", () => {
     expectIssueWithMessage(
       issues,
       "Step 'step1' has a 'nextStep' property pointing to a non-existent step ID: 'nonExistentStep'",
-      "warning"
+      "warning",
     );
     expect(issues[0].relatedStepId).toBe("nonExistentStep");
   });
@@ -175,7 +175,7 @@ describe("validateFlow", () => {
     expectIssueWithMessage(
       issues,
       "Step 'step1' has a 'skipToStep' property pointing to a non-existent step ID: 'nonExistentSkipTarget'",
-      "warning"
+      "warning",
     );
   });
 
@@ -261,18 +261,18 @@ describe("validateFlow", () => {
     expectIssueWithMessage(
       issues,
       "pointing to a non-existent step ID: 's_non_existent'",
-      "warning"
+      "warning",
     );
     expectIssueWithMessage(
       issues,
-      "Step 's2' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'"
+      "Step 's2' is of type 'CUSTOM_COMPONENT' but is missing 'payload.componentKey'",
     );
     expectIssueWithMessage(issues, "Duplicate step ID found: 's1'");
     expectIssueWithMessage(issues, "Step 's3' is missing a 'type'");
     expectIssueWithMessage(
       issues,
       "pointing to a non-existent step ID: 's_skip_non_existent'",
-      "warning"
+      "warning",
     );
   });
 
@@ -329,7 +329,7 @@ describe("validateFlow", () => {
     expect(issues.length).toBe(1);
     expectIssueWithMessage(
       issues,
-      "Step 'singleChoice1' is of type 'SINGLE_CHOICE' but has no valid 'options'."
+      "Step 'singleChoice1' is of type 'SINGLE_CHOICE' but has no valid 'options'.",
     );
   });
 
@@ -349,7 +349,7 @@ describe("validateFlow", () => {
     expect(issues.length).toBe(1);
     expectIssueWithMessage(
       issues,
-      "Step 'multipleChoice1' is of type 'MULTIPLE_CHOICE' but has no valid 'options'."
+      "Step 'multipleChoice1' is of type 'MULTIPLE_CHOICE' but has no valid 'options'.",
     );
   });
 });

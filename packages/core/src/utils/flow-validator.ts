@@ -15,7 +15,7 @@ export interface ValidationIssue {
 }
 
 export function validateFlow(
-  steps: OnboardingStep[]
+  steps: OnboardingStep[],
   // Optional context for validating dynamic parts, though harder to do statically
   // context?: Partial<OnboardingContext>
 ): ValidationIssue[] {

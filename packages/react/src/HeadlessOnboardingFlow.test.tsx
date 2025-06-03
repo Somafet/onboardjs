@@ -40,7 +40,7 @@ describe("HeadlessOnboardingFlow", () => {
               <span data-testid="loading">{props.isLoading.toString()}</span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
       expect(screen.getByTestId("render-prop-content")).toBeInTheDocument();
       expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
@@ -52,7 +52,7 @@ describe("HeadlessOnboardingFlow", () => {
       render(
         <HeadlessOnboardingFlow {...defaultProps}>
           {renderFn}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(renderFn).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ describe("HeadlessOnboardingFlow", () => {
           reset: expect.any(Function),
           updateContext: expect.any(Function),
           renderStepContent: expect.any(Function),
-        })
+        }),
       );
     });
     it("should provide current step information", () => {
@@ -80,13 +80,13 @@ describe("HeadlessOnboardingFlow", () => {
               <span data-testid="step-title">{currentStep?.payload.title}</span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("step-id")).toHaveTextContent("step1");
       expect(screen.getByTestId("step-type")).toHaveTextContent("INFORMATION");
       expect(screen.getByTestId("step-title")).toHaveTextContent(
-        "Welcome Step"
+        "Welcome Step",
       );
     });
   });
@@ -101,7 +101,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => next()}>Next</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
       expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
 
@@ -121,7 +121,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => previous()}>Previous</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("current-step")).toHaveTextContent("step2");
@@ -144,7 +144,7 @@ describe("HeadlessOnboardingFlow", () => {
               </button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       await waitFor(() => {
@@ -169,7 +169,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => goToStep("step3")}>Go to Step 3</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
@@ -192,7 +192,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => reset()}>Reset</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("current-step")).toHaveTextContent("step2");
@@ -228,7 +228,7 @@ describe("HeadlessOnboardingFlow", () => {
               <span data-testid="context-age">{state?.context?.user?.age}</span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("context-name")).toHaveTextContent("John");
@@ -252,7 +252,7 @@ describe("HeadlessOnboardingFlow", () => {
               </button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("context-name")).toHaveTextContent("Test User");
@@ -261,7 +261,7 @@ describe("HeadlessOnboardingFlow", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("context-name")).toHaveTextContent(
-          "Updated User"
+          "Updated User",
         );
       });
     });
@@ -274,7 +274,7 @@ describe("HeadlessOnboardingFlow", () => {
           {({ renderStepContent }) => (
             <div data-testid="step-content">{renderStepContent()}</div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
       expect(screen.getByTestId("step-content")).toBeInTheDocument();
       expect(screen.getByText("Information Component")).toBeInTheDocument();
@@ -302,7 +302,7 @@ describe("HeadlessOnboardingFlow", () => {
           {({ renderStepContent }) => (
             <div data-testid="step-content">{renderStepContent()}</div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByText("Custom Component")).toBeInTheDocument();
@@ -335,17 +335,17 @@ describe("HeadlessOnboardingFlow", () => {
           {({ renderStepContent }) => (
             <div data-testid="step-content">{renderStepContent()}</div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       await waitFor(() => {
         expect(
-          screen.getByText("Step Component Not Found")
+          screen.getByText("Step Component Not Found"),
         ).toBeInTheDocument();
         expect(consoleSpy).toHaveBeenCalledWith(
           expect.stringContaining(
-            "No component registered for step type/key: NONEXISTENT_COMPONENT"
-          )
+            "No component registered for step type/key: NONEXISTENT_COMPONENT",
+          ),
         );
       });
 
@@ -362,7 +362,7 @@ describe("HeadlessOnboardingFlow", () => {
               {renderStepContent() || "No content"}
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByText("No content")).toBeInTheDocument();
@@ -378,7 +378,7 @@ describe("HeadlessOnboardingFlow", () => {
               <span data-testid="loading-state">{isLoading.toString()}</span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       const loadingState = screen.getByTestId("loading-state");
@@ -453,7 +453,7 @@ describe("HeadlessOnboardingFlow", () => {
           {({ currentStep }) => (
             <span data-testid="current-step">{currentStep?.id}</span>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       await waitFor(() => {
@@ -478,7 +478,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => next()}>Complete</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       fireEvent.click(screen.getByText("Complete"));
@@ -501,7 +501,7 @@ describe("HeadlessOnboardingFlow", () => {
               <button onClick={() => next()}>Next</button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       fireEvent.click(screen.getByText("Next"));
@@ -526,7 +526,7 @@ describe("HeadlessOnboardingFlow", () => {
           {({ renderStepContent }) => (
             <div data-testid="step-content">{renderStepContent()}</div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByText("Step Component Not Found")).toBeInTheDocument();
@@ -546,7 +546,7 @@ describe("HeadlessOnboardingFlow", () => {
               </button>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       const currentStep = screen.getByTestId("current-step").textContent;
@@ -556,7 +556,7 @@ describe("HeadlessOnboardingFlow", () => {
       // Should remain on current step if navigation fails
       await waitFor(() => {
         expect(screen.getByTestId("current-step")).toHaveTextContent(
-          currentStep!
+          currentStep!,
         );
       });
     });
@@ -576,7 +576,7 @@ describe("HeadlessOnboardingFlow", () => {
               </span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("current-step")).toHaveTextContent("none");
@@ -615,14 +615,14 @@ describe("HeadlessOnboardingFlow", () => {
               </span>
             </div>
           )}
-        </HeadlessOnboardingFlow>
+        </HeadlessOnboardingFlow>,
       );
 
       expect(screen.getByTestId("step-title")).toHaveTextContent(
-        "Complex Form"
+        "Complex Form",
       );
       expect(screen.getByTestId("component-key")).toHaveTextContent(
-        "CUSTOM_COMPONENT"
+        "CUSTOM_COMPONENT",
       );
     });
   });

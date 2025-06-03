@@ -26,7 +26,7 @@ export interface UseOnboardingOptions {
   onStepChange?: (
     newStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
     oldStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
-    context: OnboardingContext
+    context: OnboardingContext,
   ) => void;
 
   /**

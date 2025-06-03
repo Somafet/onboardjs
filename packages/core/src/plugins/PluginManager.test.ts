@@ -13,9 +13,9 @@ const createMockPlugin = (
   version: string = "1.0.0",
   dependencies: string[] = [],
   installFn?: (
-    engine: OnboardingEngine<OnboardingContext>
+    engine: OnboardingEngine<OnboardingContext>,
   ) => PluginCleanup | Promise<PluginCleanup>,
-  description?: string
+  description?: string,
 ): OnboardingPlugin<OnboardingContext> => {
   return {
     name,
@@ -53,7 +53,7 @@ describe("PluginManagerImpl", () => {
         "test-plugin",
         "1.0.0",
         [],
-        mockInstallFn
+        mockInstallFn,
       );
 
       await pluginManager.install(plugin);
@@ -63,7 +63,7 @@ describe("PluginManagerImpl", () => {
       expect(pluginManager.getInstalledPlugins()).toHaveLength(1);
       expect(pluginManager.getPlugin("test-plugin")).toBe(plugin);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
-        "[PluginManager] Installed plugin: test-plugin@1.0.0"
+        "[PluginManager] Installed plugin: test-plugin@1.0.0",
       );
     });
 
@@ -73,7 +73,7 @@ describe("PluginManagerImpl", () => {
         "cleanup-plugin",
         "1.0.0",
         [],
-        async () => mockCleanupFn // Install returns the mockCleanupFn
+        async () => mockCleanupFn, // Install returns the mockCleanupFn
       );
 
       await pluginManager.install(plugin);
@@ -86,7 +86,7 @@ describe("PluginManagerImpl", () => {
       await pluginManager.install(plugin); // First install
 
       await expect(pluginManager.install(plugin)).rejects.toThrowError(
-        'Plugin "duplicate-plugin" is already installed'
+        'Plugin "duplicate-plugin" is already installed',
       );
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1); // Only for the first successful install
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe("PluginManagerImpl", () => {
         "missing-dep",
       ]);
       await expect(pluginManager.install(pluginWithDep)).rejects.toThrowError(
-        'Plugin "dependent-plugin" requires dependency "missing-dep" which is not installed'
+        'Plugin "dependent-plugin" requires dependency "missing-dep" which is not installed',
       );
       expect(pluginManager.isInstalled("dependent-plugin")).toBe(false);
       // This error is thrown before the try-catch in PluginManagerImpl's install that logs to console.error
@@ -124,16 +124,16 @@ describe("PluginManagerImpl", () => {
         "error-plugin",
         "1.0.0",
         [],
-        erroringInstallFn
+        erroringInstallFn,
       );
 
       await expect(pluginManager.install(plugin)).rejects.toThrowError(
-        "Plugin install failed intentionally"
+        "Plugin install failed intentionally",
       );
       expect(pluginManager.isInstalled("error-plugin")).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[PluginManager] Failed to install plugin "error-plugin":',
-        expect.any(Error)
+        expect.any(Error),
       );
       expect(consoleDebugSpy).not.toHaveBeenCalled(); // Install failed, so no success debug log
     });
@@ -148,7 +148,7 @@ describe("PluginManagerImpl", () => {
         "async-install-plugin",
         "1.0.0",
         [],
-        asyncInstallFn
+        asyncInstallFn,
       );
 
       await pluginManager.install(plugin);
@@ -170,7 +170,7 @@ describe("PluginManagerImpl", () => {
         "sync-install-plugin",
         "1.0.0",
         [],
-        syncInstallFn
+        syncInstallFn,
       );
 
       // PluginManager's install is async due to `await plugin.install()`,
@@ -192,7 +192,7 @@ describe("PluginManagerImpl", () => {
         "uninstall-test",
         "1.0.0",
         [],
-        async () => mockCleanupFn
+        async () => mockCleanupFn,
       );
       await pluginManager.install(plugin); // Install first
 
@@ -202,7 +202,7 @@ describe("PluginManagerImpl", () => {
       expect(pluginManager.isInstalled("uninstall-test")).toBe(false);
       expect(pluginManager.getInstalledPlugins()).toHaveLength(0);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
-        "[PluginManager] Uninstalled plugin: uninstall-test"
+        "[PluginManager] Uninstalled plugin: uninstall-test",
       );
     });
 
@@ -214,7 +214,7 @@ describe("PluginManagerImpl", () => {
         "async-cleanup-plugin",
         "1.0.0",
         [],
-        async () => mockAsyncCleanupFn
+        async () => mockAsyncCleanupFn,
       );
       await pluginManager.install(plugin);
       await pluginManager.uninstall("async-cleanup-plugin");
@@ -227,7 +227,7 @@ describe("PluginManagerImpl", () => {
         "sync-cleanup-plugin",
         "1.0.0",
         [],
-        () => mockSyncCleanupFn // Sync install returns sync cleanup
+        () => mockSyncCleanupFn, // Sync install returns sync cleanup
       );
       await pluginManager.install(plugin);
       await pluginManager.uninstall("sync-cleanup-plugin");
@@ -236,7 +236,7 @@ describe("PluginManagerImpl", () => {
 
     it("should throw an error if trying to uninstall a non-existent plugin", async () => {
       await expect(
-        pluginManager.uninstall("non-existent")
+        pluginManager.uninstall("non-existent"),
       ).rejects.toThrowError('Plugin "non-existent" is not installed');
       expect(consoleErrorSpy).not.toHaveBeenCalled(); // Error is thrown by PluginManager before try-catch
     });
@@ -249,7 +249,7 @@ describe("PluginManagerImpl", () => {
       await pluginManager.install(mainPlugin);
 
       await expect(pluginManager.uninstall("dep-A")).rejects.toThrowError(
-        'Cannot uninstall "dep-A" because it is required by: main-B'
+        'Cannot uninstall "dep-A" because it is required by: main-B',
       );
       expect(pluginManager.isInstalled("dep-A")).toBe(true); // Should still be installed
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -264,13 +264,13 @@ describe("PluginManagerImpl", () => {
         "dep-C",
         "1.0.0",
         [],
-        async () => depCleanup
+        async () => depCleanup,
       );
       const mainPluginForTest = createMockPlugin(
         "main-D",
         "1.0.0",
         ["dep-C"],
-        async () => mainCleanup
+        async () => mainCleanup,
       );
 
       await pluginManager.install(depPluginForTest);
@@ -293,19 +293,19 @@ describe("PluginManagerImpl", () => {
         "error-cleanup-plugin",
         "1.0.0",
         [],
-        async () => erroringCleanupFn
+        async () => erroringCleanupFn,
       );
       await pluginManager.install(plugin);
 
       await expect(
-        pluginManager.uninstall("error-cleanup-plugin")
+        pluginManager.uninstall("error-cleanup-plugin"),
       ).rejects.toThrowError("Plugin cleanup failed intentionally");
 
       // Plugin should still be removed from the manager's internal list
       expect(pluginManager.isInstalled("error-cleanup-plugin")).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[PluginManager] Failed to uninstall plugin "error-cleanup-plugin":',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -314,11 +314,11 @@ describe("PluginManagerImpl", () => {
         "no-cleanup-plugin",
         "1.0.0",
         [],
-        async () => () => undefined // Install returns undefined, meaning no cleanup
+        async () => () => undefined, // Install returns undefined, meaning no cleanup
       );
       await pluginManager.install(plugin);
       await expect(
-        pluginManager.uninstall("no-cleanup-plugin")
+        pluginManager.uninstall("no-cleanup-plugin"),
       ).resolves.toBeUndefined();
       expect(pluginManager.isInstalled("no-cleanup-plugin")).toBe(false);
     });
@@ -361,19 +361,19 @@ describe("PluginManagerImpl", () => {
     it("should call the cleanup function for all installed plugins", async () => {
       const cleanup1 = vi.fn(async () => {});
       const cleanup2 = vi.fn(
-        async () => await new Promise((r) => setTimeout(r, 5))
+        async () => await new Promise((r) => setTimeout(r, 5)),
       );
       const plugin1 = createMockPlugin(
         "cleanup-A",
         "1.0.0",
         [],
-        async () => cleanup1
+        async () => cleanup1,
       );
       const plugin2 = createMockPlugin(
         "cleanup-B",
         "1.0.0",
         [],
-        async () => cleanup2
+        async () => cleanup2,
       );
 
       await pluginManager.install(plugin1);
@@ -409,19 +409,19 @@ describe("PluginManagerImpl", () => {
         "good1",
         "1.0.0",
         [],
-        async () => successfulCleanup
+        async () => successfulCleanup,
       );
       const pluginBad = createMockPlugin(
         "bad",
         "1.0.0",
         [],
-        async () => failingCleanup
+        async () => failingCleanup,
       );
       const pluginGood2 = createMockPlugin(
         "good2",
         "1.0.0",
         [],
-        () => anotherSuccessfulSyncCleanup
+        () => anotherSuccessfulSyncCleanup,
       );
 
       await pluginManager.install(pluginGood1);
@@ -431,7 +431,7 @@ describe("PluginManagerImpl", () => {
       expect(pluginManager.getInstalledPlugins()).toHaveLength(3);
 
       await expect(pluginManager.cleanup()).rejects.toThrow(
-        "Async Cleanup Failed"
+        "Async Cleanup Failed",
       );
 
       // All cleanup functions should have been called because Promise.all initiates all promises/calls
@@ -456,13 +456,13 @@ describe("PluginManagerImpl", () => {
         "p-async",
         "1.0.0",
         [],
-        async () => asyncCleanup
+        async () => asyncCleanup,
       );
       const pluginSync = createMockPlugin(
         "p-sync",
         "1.0.0",
         [],
-        () => syncCleanup
+        () => syncCleanup,
       );
 
       await pluginManager.install(pluginAsync);
@@ -488,13 +488,13 @@ describe("PluginManagerImpl", () => {
         "with-cleanup",
         "1.0.0",
         [],
-        async () => cleanupForOne
+        async () => cleanupForOne,
       );
       const pluginWithoutCleanup = createMockPlugin(
         "no-cleanup",
         "1.0.0",
         [],
-        async () => () => undefined // Install returns undefined
+        async () => () => undefined, // Install returns undefined
       );
 
       await pluginManager.install(pluginWithCleanup);

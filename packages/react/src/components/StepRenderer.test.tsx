@@ -19,13 +19,13 @@ describe("StepRenderer", () => {
 
   it("should render the current step using the step component registry", async () => {
     renderWithOnboardingProvider(
-      <StepRenderer stepComponentRegistry={mockStepComponents} />
+      <StepRenderer stepComponentRegistry={mockStepComponents} />,
     );
 
     await waitFor(() => {
       expect(screen.getByTestId("information-step")).toBeInTheDocument();
       expect(
-        screen.getByText("Welcome to the onboarding flow!")
+        screen.getByText("Welcome to the onboarding flow!"),
       ).toBeInTheDocument();
     });
   });
@@ -37,7 +37,7 @@ describe("StepRenderer", () => {
       <StepRenderer
         stepComponentRegistry={mockStepComponents}
         LoadingComponent={LoadingComponent}
-      />
+      />,
     );
 
     // The provider might initially be loading
@@ -62,7 +62,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           steps: [], // Empty steps array
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -81,7 +81,7 @@ describe("StepRenderer", () => {
       <StepRenderer
         stepComponentRegistry={mockStepComponents}
         ErrorComponent={ErrorComponent}
-      />
+      />,
     );
 
     // For now, just verify the component renders without the error state
@@ -92,7 +92,7 @@ describe("StepRenderer", () => {
 
   it("should handle step navigation with next button", async () => {
     renderWithOnboardingProvider(
-      <StepRenderer stepComponentRegistry={mockStepComponents} />
+      <StepRenderer stepComponentRegistry={mockStepComponents} />,
     );
 
     await waitFor(() => {
@@ -116,7 +116,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           initialStepId: "step2", // Start at step 2
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -161,7 +161,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           steps: skippableSteps,
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -185,7 +185,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           initialStepId: "step4", // Start at last step
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -204,7 +204,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           initialStepId: "step2", // Start at choice step
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -232,7 +232,7 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           initialStepId: "step2",
         },
-      }
+      },
     );
 
     await waitFor(() => {
@@ -257,15 +257,15 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           initialStepId: "step2", // SINGLE_CHOICE step
         },
-      }
+      },
     );
 
     // Should still render something (likely an error or fallback)
     await waitFor(() => {
       expect(
         screen.getByText(
-          `Error: Component for step type "SINGLE_CHOICE" not found.`
-        )
+          `Error: Component for step type "SINGLE_CHOICE" not found.`,
+        ),
       ).toBeInTheDocument();
     });
 
@@ -303,20 +303,20 @@ describe("StepRenderer", () => {
         onboardingConfig: {
           steps: customSteps,
         },
-      }
+      },
     );
 
     await waitFor(() => {
       expect(screen.getByTestId("custom1-component-step")).toBeInTheDocument();
       expect(
-        screen.getByText("Component Key: MyCustomComponent")
+        screen.getByText("Component Key: MyCustomComponent"),
       ).toBeInTheDocument();
     });
   });
 
   it("should reset step data when step changes", async () => {
     renderWithOnboardingProvider(
-      <StepRenderer stepComponentRegistry={mockStepComponents} />
+      <StepRenderer stepComponentRegistry={mockStepComponents} />,
     );
 
     await waitFor(() => {

@@ -218,7 +218,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
 
 export function renderWithOnboardingProvider(
   ui: React.ReactElement,
-  options: CustomRenderOptions = {}
+  options: CustomRenderOptions = {},
 ) {
   const {
     onboardingConfig = {},
@@ -249,7 +249,7 @@ export function renderWithOnboardingProvider(
 // Alternative render function for tests that don't need provider
 export function renderWithTestUtils(
   ui: React.ReactElement,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ) {
   return render(ui, options);
 }

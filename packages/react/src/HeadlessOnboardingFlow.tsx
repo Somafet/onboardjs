@@ -84,7 +84,7 @@ const HeadlessFlowRendererInternal: React.FC<{
 
     if (!ComponentToRender) {
       console.error(
-        `No component registered for step type/key: ${step.type === "CUSTOM_COMPONENT" ? (step.payload as any)?.componentKey : step.type}`
+        `No component registered for step type/key: ${step.type === "CUSTOM_COMPONENT" ? (step.payload as any)?.componentKey : step.type}`,
       );
       return <div>Step Component Not Found</div>;
     }

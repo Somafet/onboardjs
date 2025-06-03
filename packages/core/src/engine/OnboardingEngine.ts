@@ -48,7 +48,7 @@ export class OnboardingEngine<
   private onStepChangeCallback?: (
     newStep: OnboardingStep<TContext> | null,
     oldStep: OnboardingStep<TContext> | null,
-    context: TContext
+    context: TContext,
   ) => void;
 
   private loadData?: DataLoadFn<TContext>;
@@ -57,7 +57,7 @@ export class OnboardingEngine<
 
   private initializationPromise: Promise<void>;
   private resolveInitialization!: () => void; // Definite assignment assertion
-  private rejectInitialization!: (reason?: any) => void;
+  private rejectInitialization!: (reason?: unknown) => void;
   private initialConfig: OnboardingEngineConfig<TContext>; // Store the complete initial configuration
 
   constructor(config: OnboardingEngineConfig<TContext>) {
@@ -69,7 +69,7 @@ export class OnboardingEngine<
       ...(config.initialContext || {}),
     } as TContext;
     if (!this.contextInternal.flowData) {
-      this.contextInternal.flowData = {} as any; // Ensure flowData exists
+      this.contextInternal.flowData = {};
     }
 
     this.pluginManager = new PluginManagerImpl<TContext>(this);
@@ -85,7 +85,7 @@ export class OnboardingEngine<
       // initializeEngine should ideally handle its own promise rejection.
       console.error(
         "[OnboardingEngine] Unhandled error during constructor-initiated initialization:",
-        error
+        error,
       );
       if (!this.initializationPromise) {
         // If promise somehow not made or already settled, this is a severe issue.
@@ -103,7 +103,7 @@ export class OnboardingEngine<
    */
   public addEventListener<T extends keyof EventListenerMap<TContext>>(
     eventType: T,
-    listener: EventListenerMap<TContext>[T]
+    listener: EventListenerMap<TContext>[T],
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener(eventType, listener);
   }
@@ -113,12 +113,12 @@ export class OnboardingEngine<
     listener: (
       currentStep: OnboardingStep<TContext> | null,
       nextStep: OnboardingStep<TContext>,
-      context: TContext
-    ) => void | Promise<void>
+      context: TContext,
+    ) => void | Promise<void>,
   ): UnsubscribeFunction {
     // Convert to BeforeStepChangeListener format
     const wrappedListener: BeforeStepChangeListener<TContext> = async (
-      event
+      event,
     ) => {
       if (event.targetStepId) {
         const nextStep = findStepById(this.steps, event.targetStepId);
@@ -135,8 +135,8 @@ export class OnboardingEngine<
     listener: (
       previousStep: OnboardingStep<TContext> | null,
       currentStep: OnboardingStep<TContext> | null,
-      context: TContext
-    ) => void | Promise<void>
+      context: TContext,
+    ) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("stepChange", listener);
   }
@@ -144,8 +144,8 @@ export class OnboardingEngine<
   public addStepActiveListener(
     listener: (
       step: OnboardingStep<TContext>,
-      context: TContext
-    ) => void | Promise<void>
+      context: TContext,
+    ) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("stepActive", listener);
   }
@@ -153,15 +153,15 @@ export class OnboardingEngine<
   public addStepCompleteListener(
     listener: (
       step: OnboardingStep<TContext>,
-      stepData: any,
-      context: TContext
-    ) => void | Promise<void>
+      stepData: unknown,
+      context: TContext,
+    ) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("stepComplete", listener);
   }
 
   public addFlowCompleteListener(
-    listener: (context: TContext) => void | Promise<void>
+    listener: (context: TContext) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("flowComplete", listener);
   }
@@ -169,14 +169,14 @@ export class OnboardingEngine<
   public addContextUpdateListener(
     listener: (
       oldContext: TContext,
-      newContext: TContext
-    ) => void | Promise<void>
+      newContext: TContext,
+    ) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("contextUpdate", listener);
   }
 
   public addErrorListener(
-    listener: (error: Error, context: TContext) => void | Promise<void>
+    listener: (error: Error, context: TContext) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("error", listener);
   }
@@ -192,7 +192,7 @@ export class OnboardingEngine<
    * Allow plugins to override the data persistence handler
    */
   public setDataPersistHandler(
-    handler: DataPersistFn<TContext> | undefined
+    handler: DataPersistFn<TContext> | undefined,
   ): void {
     this.persistData = handler;
   }
@@ -201,7 +201,7 @@ export class OnboardingEngine<
    * Allow plugins to override the data clearing handler
    */
   public setClearPersistedDataHandler(
-    handler: (() => Promise<void> | void) | undefined
+    handler: (() => Promise<void> | void) | undefined,
   ): void {
     this.clearPersistedData = handler;
   }
@@ -224,8 +224,12 @@ export class OnboardingEngine<
         for (const plugin of this.initialConfig.plugins) {
           try {
             await this.pluginManager.install(plugin);
-          } catch (pluginInstallError: any) {
-            const errorMessage = `Plugin installation failed for "${plugin.name}": ${pluginInstallError.message || pluginInstallError}`;
+          } catch (pluginInstallError) {
+            const error =
+              pluginInstallError instanceof Error
+                ? pluginInstallError.message
+                : String(pluginInstallError);
+            const errorMessage = `Plugin installation failed for "${plugin.name}": ${error}`;
             console.error(`[OnboardingEngine] ${errorMessage}`);
             throw new Error(errorMessage);
           }
@@ -252,14 +256,15 @@ export class OnboardingEngine<
       if (this.loadData) {
         try {
           console.log(
-            "[OnboardingEngine] Attempting to load data (potentially via plugin)..."
+            "[OnboardingEngine] Attempting to load data (potentially via plugin)...",
           );
           loadedData = await this.loadData();
           // ... (logging)
-        } catch (e: any) {
+        } catch (e) {
           console.error("[OnboardingEngine] Error during loadData:", e);
+          const error = e instanceof Error ? e : new Error(String(e));
           dataLoadError = new Error(
-            `Failed to load onboarding state: ${e.message}`
+            `Failed to load onboarding state: ${error.message}`,
           );
         }
       }
@@ -272,6 +277,7 @@ export class OnboardingEngine<
       if (loadedData) {
         const {
           flowData: loadedFlowData,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           currentStepId: _loadedStepId,
           ...otherLoadedProps
         } = loadedData;
@@ -286,7 +292,6 @@ export class OnboardingEngine<
       }
       this.contextInternal = newContextBase;
 
-      // *** MODIFIED SECTION ***
       if (dataLoadError) {
         this.errorInternal = dataLoadError;
         this.currentStepInternal = null; // Correctly set to null
@@ -309,7 +314,7 @@ export class OnboardingEngine<
 
         console.log(
           "[OnboardingEngine] Effective initial step ID:",
-          effectiveInitialStepId
+          effectiveInitialStepId,
         );
 
         if (effectiveInitialStepId) {
@@ -318,23 +323,20 @@ export class OnboardingEngine<
           this.isCompletedInternal = this.steps.length === 0;
           if (this.steps.length > 0) {
             console.warn(
-              "[OnboardingEngine] No effective initial step ID, but steps exist. Flow may not start."
+              "[OnboardingEngine] No effective initial step ID, but steps exist. Flow may not start.",
             );
           }
         }
         this.resolveInitialization(); // Signal successful initialization
       }
-      // *** END OF MODIFIED SECTION ***
-    } catch (error: any) {
+    } catch (e) {
       // Catches errors from plugin install or other unexpected issues
+      const error = e instanceof Error ? e : new Error(String(e));
       console.error(
         "[OnboardingEngine] Critical error during engine initialization:",
-        error
+        error,
       );
-      this.errorInternal =
-        error instanceof Error
-          ? error
-          : new Error(String(error.message || error));
+      this.errorInternal = error;
       if (this.errorInternal) this.notifyErrorListeners(this.errorInternal); // Ensure error is notified
       this.currentStepInternal = null; // Ensure no current step on critical failure
       this.rejectInitialization(this.errorInternal);
@@ -365,7 +367,7 @@ export class OnboardingEngine<
     } catch (error) {
       console.error(
         `[OnboardingEngine] Failed to install plugin "${plugin.name}" via use():`,
-        error
+        error,
       );
       throw error;
     }
@@ -385,7 +387,7 @@ export class OnboardingEngine<
   private notifyStepChangeListeners(
     newStep: OnboardingStep<TContext> | null,
     oldStep: OnboardingStep<TContext> | null,
-    context: TContext
+    context: TContext,
   ): void {
     this.eventManager.notifyListeners("stepChange", newStep, oldStep, context);
   }
@@ -393,7 +395,7 @@ export class OnboardingEngine<
   private notifyFlowCompleteListeners(context: TContext): void {
     console.log(
       "[OnboardingEngine] Notifying flowCompleteListeners. Count:",
-      this.eventManager.getListenerCount("flowComplete")
+      this.eventManager.getListenerCount("flowComplete"),
     );
     this.eventManager.notifyListeners("flowComplete", context);
   }
@@ -405,22 +407,22 @@ export class OnboardingEngine<
 
   private notifyStepActiveListeners(
     step: OnboardingStep<TContext>,
-    context: TContext
+    context: TContext,
   ): void {
     this.eventManager.notifyListeners("stepActive", step, context);
   }
 
   private notifyStepCompleteListeners(
     step: OnboardingStep<TContext>,
-    stepData: any,
-    context: TContext
+    stepData: unknown,
+    context: TContext,
   ): void {
     this.eventManager.notifyListeners("stepComplete", step, stepData, context);
   }
 
   private notifyContextUpdateListeners(
     oldContext: TContext,
-    newContext: TContext
+    newContext: TContext,
   ): void {
     this.eventManager.notifyListeners("contextUpdate", oldContext, newContext);
   }
@@ -438,11 +440,12 @@ export class OnboardingEngine<
       try {
         await this.persistData(
           this.contextInternal,
-          this.currentStepInternal?.id || null
+          this.currentStepInternal?.id || null,
         );
-      } catch (e: any) {
-        console.error("[OnboardingEngine] Error during persistData:", e);
-        this.notifyErrorListeners(e);
+      } catch (e) {
+        const error = e instanceof Error ? e : new Error(String(e));
+        console.error("[OnboardingEngine] Error during persistData:", error);
+        this.notifyErrorListeners(error);
         // Optionally set an error state or notify, but don't block core functionality
       }
     }
@@ -451,8 +454,8 @@ export class OnboardingEngine<
   // Modified setState to call persistDataIfNeeded
   private setState(
     updater: (
-      prevState: EngineState<TContext>
-    ) => Partial<EngineState<TContext>>
+      prevState: EngineState<TContext>,
+    ) => Partial<EngineState<TContext>>,
   ) {
     const currentState = this.getState();
     const oldContext = { ...this.contextInternal };
@@ -490,7 +493,7 @@ export class OnboardingEngine<
 
   private async navigateToStep(
     requestedTargetStepId: string | number | null | undefined,
-    direction: "next" | "previous" | "skip" | "goto" | "initial" = "goto"
+    direction: "next" | "previous" | "skip" | "goto" | "initial" = "goto",
   ): Promise<void> {
     let isCancelled = false;
     let finalTargetStepId = requestedTargetStepId;
@@ -509,7 +512,7 @@ export class OnboardingEngine<
             finalTargetStepId = newTargetId;
             redirected = true;
             console.log(
-              `[OnboardingEngine] Navigation redirected to ${newTargetId} by beforeStepChange listener.`
+              `[OnboardingEngine] Navigation redirected to ${newTargetId} by beforeStepChange listener.`,
             );
           }
         },
@@ -519,11 +522,11 @@ export class OnboardingEngine<
         // Execute listeners sequentially to allow promise resolution
         await this.eventManager.notifyListenersSequential(
           "beforeStepChange",
-          event
+          event,
         );
         if (isCancelled) {
           console.log(
-            "[OnboardingEngine] Navigation cancelled by beforeStepChange listener."
+            "[OnboardingEngine] Navigation cancelled by beforeStepChange listener.",
           );
           this.setState(() => ({ isLoading: false })); // Ensure loading state is reset
           return;
@@ -531,7 +534,7 @@ export class OnboardingEngine<
       } catch (error) {
         console.error(
           "[OnboardingEngine] Error in beforeStepChange listener:",
-          error
+          error,
         );
         this.errorInternal = error as Error; // Capture error for state
         this.notifyErrorListeners(error as Error);
@@ -553,12 +556,12 @@ export class OnboardingEngine<
       if (effectiveDirection === "previous") {
         skipToId = evaluateStepId(
           nextCandidateStep.previousStep,
-          this.contextInternal
+          this.contextInternal,
         );
       } else {
         skipToId = evaluateStepId(
           nextCandidateStep.nextStep,
-          this.contextInternal
+          this.contextInternal,
         );
       }
       if (!skipToId) {
@@ -578,7 +581,7 @@ export class OnboardingEngine<
         this.getChecklistItemsState(
           this.currentStepInternal as OnboardingStep<TContext> & {
             type: "CHECKLIST";
-          }
+          },
         );
       }
 
@@ -600,14 +603,15 @@ export class OnboardingEngine<
         // Notify step active listeners
         this.notifyStepActiveListeners(
           this.currentStepInternal,
-          this.contextInternal
+          this.contextInternal,
         );
-      } catch (e: any) {
-        this.errorInternal = e;
-        this.notifyErrorListeners(e);
+      } catch (e) {
+        const error = e instanceof Error ? e : new Error(String(e));
+        this.errorInternal = error;
+        this.notifyErrorListeners(error);
         console.error(
           `Error in onStepActive for ${this.currentStepInternal.id}:`,
-          e
+          e,
         );
       }
     } else {
@@ -624,7 +628,7 @@ export class OnboardingEngine<
         } catch (e) {
           console.error(
             "[OnboardingEngine] Error in config.onFlowComplete:",
-            e
+            e,
           );
           this.errorInternal = e as Error;
           this.notifyErrorListeners(e as Error);
@@ -643,18 +647,22 @@ export class OnboardingEngine<
         this.onStepChangeCallback(
           this.currentStepInternal,
           oldStep,
-          this.contextInternal
+          this.contextInternal,
         );
-      } catch (e: any) {
-        console.error("[OnboardingEngine] Error in onStepChangeCallback:", e);
-        this.notifyErrorListeners(e);
+      } catch (e) {
+        const error = e instanceof Error ? e : new Error(String(e));
+        console.error(
+          "[OnboardingEngine] Error in onStepChangeCallback:",
+          error,
+        );
+        this.notifyErrorListeners(error);
       }
     }
 
     this.notifyStepChangeListeners(
       this.currentStepInternal,
       oldStep,
-      this.contextInternal
+      this.contextInternal,
     );
 
     this.setState(() => ({ isLoading: false }));
@@ -669,7 +677,7 @@ export class OnboardingEngine<
       nextPossibleStepId = evaluateStepId(currentStep.nextStep, context);
       previousPossibleStepId = evaluateStepId(
         currentStep.previousStep,
-        context
+        context,
       );
     }
 
@@ -696,7 +704,7 @@ export class OnboardingEngine<
 
   // Helper to manage checklist item state initialization/retrieval
   private getChecklistItemsState(
-    step: OnboardingStep<TContext> & { type: "CHECKLIST" }
+    step: OnboardingStep<TContext> & { type: "CHECKLIST" },
   ): ChecklistItemState[] {
     const { dataKey, items: itemDefinitions } = step.payload;
     let currentItemStates = this.contextInternal.flowData[dataKey] as
@@ -722,7 +730,7 @@ export class OnboardingEngine<
   }
 
   private isChecklistStepComplete(
-    step: OnboardingStep<TContext> & { type: "CHECKLIST" }
+    step: OnboardingStep<TContext> & { type: "CHECKLIST" },
   ): boolean {
     const itemStates = this.getChecklistItemsState(step);
     const { items: itemDefinitions, minItemsToComplete } = step.payload;
@@ -752,7 +760,7 @@ export class OnboardingEngine<
   public async updateChecklistItem(
     itemId: string,
     isCompleted: boolean,
-    stepId?: string // Optional: if not current step
+    stepId?: string, // Optional: if not current step
   ): Promise<void> {
     const targetStep = stepId
       ? findStepById(this.steps, stepId)
@@ -760,12 +768,12 @@ export class OnboardingEngine<
 
     if (!targetStep || targetStep.type !== "CHECKLIST") {
       const error = new Error(
-        "Target step for checklist item update is invalid."
+        "Target step for checklist item update is invalid.",
       );
       console.error(
         `[OnboardingEngine] Cannot update checklist item: Step '${
           stepId || this.currentStepInternal?.id
-        }' not found or not a CHECKLIST step.`
+        }' not found or not a CHECKLIST step.`,
       );
       this.errorInternal = error;
       this.notifyErrorListeners(error);
@@ -786,7 +794,7 @@ export class OnboardingEngine<
     const itemDefExists = payload.items.some((def) => def.id === itemId);
     if (!itemDefExists) {
       console.warn(
-        `[OnboardingEngine] Attempted to update non-existent checklist item '${itemId}' for step '${targetStep.id}'.`
+        `[OnboardingEngine] Attempted to update non-existent checklist item '${itemId}' for step '${targetStep.id}'.`,
       );
       return;
     }
@@ -825,12 +833,12 @@ export class OnboardingEngine<
         !this.isChecklistStepComplete(
           this.currentStepInternal as OnboardingStep<TContext> & {
             type: "CHECKLIST";
-          }
+          },
         )
       ) {
         const error = new Error("Checklist criteria not met.");
         console.warn(
-          `[OnboardingEngine] Cannot proceed from checklist step '${this.currentStepInternal.id}': Not all completion criteria met.`
+          `[OnboardingEngine] Cannot proceed from checklist step '${this.currentStepInternal.id}': Not all completion criteria met.`,
         );
         this.errorInternal = error;
         this.notifyErrorListeners(error);
@@ -865,7 +873,7 @@ export class OnboardingEngine<
       if (this.currentStepInternal!.onStepComplete) {
         await this.currentStepInternal!.onStepComplete(
           stepSpecificData || {},
-          this.contextInternal
+          this.contextInternal,
         );
       }
 
@@ -873,7 +881,7 @@ export class OnboardingEngine<
       this.notifyStepCompleteListeners(
         this.currentStepInternal!,
         stepSpecificData || {},
-        this.contextInternal
+        this.contextInternal,
       );
 
       const currentStepId = this.currentStepInternal!.id;
@@ -892,24 +900,24 @@ export class OnboardingEngine<
         this.currentStepInternal.nextStep !== undefined
           ? evaluateStepId(
               this.currentStepInternal.nextStep,
-              this.contextInternal
+              this.contextInternal,
             )
           : undefined;
 
       if (definedNextStepTarget === undefined) {
         // If nextStep is not defined OR evaluates to undefined, default to next in array
         const currentIndex = this.steps.findIndex(
-          (s) => s.id === this.currentStepInternal!.id
+          (s) => s.id === this.currentStepInternal!.id,
         );
         if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
           finalNextStepId = this.steps[currentIndex + 1].id;
           console.log(
-            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting to next in array: '${finalNextStepId}'`
+            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting to next in array: '${finalNextStepId}'`,
           );
         } else {
           finalNextStepId = null;
           console.log(
-            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing.`
+            `[OnboardingEngine] next(): nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing.`,
           );
         }
       } else {
@@ -918,14 +926,15 @@ export class OnboardingEngine<
 
       await this.navigateToStep(finalNextStepId, "next");
       await this.persistDataIfNeeded();
-    } catch (e: any) {
-      this.errorInternal = e;
-      this.notifyErrorListeners(e);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      this.errorInternal = error;
+      this.notifyErrorListeners(error);
       console.error(
         `Error in next() for step ${this.currentStepInternal.id}:`,
-        e
+        e,
       );
-      this.setState(() => ({ isLoading: false, error: e }));
+      this.setState(() => ({ isLoading: false, error }));
     }
   }
 
@@ -960,7 +969,7 @@ export class OnboardingEngine<
       this.currentStepInternal.skipToStep !== undefined
         ? evaluateStepId(
             this.currentStepInternal.skipToStep,
-            this.contextInternal
+            this.contextInternal,
           )
         : undefined;
 
@@ -970,7 +979,7 @@ export class OnboardingEngine<
         this.currentStepInternal.nextStep !== undefined
           ? evaluateStepId(
               this.currentStepInternal.nextStep,
-              this.contextInternal
+              this.contextInternal,
             )
           : undefined;
     }
@@ -978,17 +987,17 @@ export class OnboardingEngine<
     if (evaluatedSkipTarget === undefined) {
       // 3. Default to the next step in the array
       const currentIndex = this.steps.findIndex(
-        (s) => s.id === this.currentStepInternal!.id
+        (s) => s.id === this.currentStepInternal!.id,
       );
       if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
         finalSkipTargetId = this.steps[currentIndex + 1].id;
         console.log(
-          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting skip to next in array: '${finalSkipTargetId}'`
+          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, defaulting skip to next in array: '${finalSkipTargetId}'`,
         );
       } else {
         finalSkipTargetId = null;
         console.log(
-          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing on skip.`
+          `[OnboardingEngine] skip(): skipToStep/nextStep for '${this.currentStepInternal!.id}' was undefined, no next in array, completing on skip.`,
         );
       }
     } else {
@@ -998,7 +1007,10 @@ export class OnboardingEngine<
     await this.navigateToStep(finalSkipTargetId, "skip");
   }
 
-  public async goToStep(stepId: string, stepSpecificData?: any): Promise<void> {
+  public async goToStep(
+    stepId: string,
+    stepSpecificData?: unknown,
+  ): Promise<void> {
     if (this.isLoadingInternal) return;
     if (stepSpecificData) {
       this.contextInternal.flowData = {
@@ -1030,7 +1042,7 @@ export class OnboardingEngine<
   }
 
   public async reset(
-    newConfigInput?: Partial<OnboardingEngineConfig<TContext>>
+    newConfigInput?: Partial<OnboardingEngineConfig<TContext>>,
   ): Promise<void> {
     console.log("[OnboardingEngine] Resetting engine...");
 
@@ -1087,13 +1099,13 @@ export class OnboardingEngine<
     if (activeClearPersistedDataHandler) {
       try {
         console.log(
-          "[OnboardingEngine] reset: Clearing persisted data using the handler active before reset..."
+          "[OnboardingEngine] reset: Clearing persisted data using the handler active before reset...",
         );
         await activeClearPersistedDataHandler();
       } catch (e) {
         console.error(
           "[OnboardingEngine] reset: Error during clearPersistedData:",
-          e
+          e,
         );
         if (e instanceof Error) this.notifyErrorListeners(e); // Notify if it's an error instance
       }
@@ -1121,7 +1133,7 @@ export class OnboardingEngine<
         ...this.initialConfig.initialContext.flowData,
       };
     } else if (!this.contextInternal.flowData) {
-      this.contextInternal.flowData = {} as any;
+      this.contextInternal.flowData = {};
     }
 
     // 5. Re-create the initialization promise for the upcoming re-initialization

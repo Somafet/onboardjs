@@ -21,7 +21,7 @@ export interface FormFieldValidation {
   pattern?: { value: RegExp; message: string };
   custom?: (
     value: any,
-    allFormData: Record<string, any>
+    allFormData: Record<string, any>,
   ) => string | null | Promise<string | null>;
 }
 

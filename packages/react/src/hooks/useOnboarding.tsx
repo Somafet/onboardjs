@@ -69,7 +69,7 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
         if (onStepChangeRef.current) {
           onStepChangeRef.current(newStep, oldStep, context);
         }
-      }
+      },
     );
     return () => {
       if (unsubscribe) unsubscribe();

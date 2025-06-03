@@ -44,7 +44,7 @@ export type StepChangeListener<
 > = (
   newStep: OnboardingStep<TContext> | null,
   oldStep: OnboardingStep<TContext> | null,
-  context: TContext
+  context: TContext,
 ) => void | Promise<void>;
 
 export type FlowCompleteListener<
@@ -63,16 +63,16 @@ export interface EventListenerMap<
   clearPersistedData: () => void | Promise<void>;
   stepActive: (
     step: OnboardingStep<TContext>,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
   stepComplete: (
     step: OnboardingStep<TContext>,
     stepData: any,
-    context: TContext
+    context: TContext,
   ) => void | Promise<void>;
   contextUpdate: (
     oldContext: TContext,
-    newContext: TContext
+    newContext: TContext,
   ) => void | Promise<void>;
   error: (error: Error, context: TContext) => void | Promise<void>;
 }
@@ -93,7 +93,7 @@ export type DataPersistFn<
   TContext extends OnboardingContext = OnboardingContext,
 > = (
   context: TContext,
-  currentStepId: string | number | null
+  currentStepId: string | number | null,
 ) => Promise<void> | void;
 
 export interface OnboardingEngineConfig<
@@ -106,7 +106,7 @@ export interface OnboardingEngineConfig<
   onStepChange?: (
     newStep: OnboardingStep<TContext> | null,
     oldStep: OnboardingStep<TContext> | null,
-    context: TContext
+    context: TContext,
   ) => void;
 
   /**

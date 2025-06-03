@@ -157,12 +157,12 @@ const engine = new OnboardingEngine({
   onStepChange: (newStep, oldStep, context) => {
     if (newStep) {
       console.log(
-        `Moved to step: ${newStep.payload.title} (ID: ${newStep.id})`
+        `Moved to step: ${newStep.payload.title} (ID: ${newStep.id})`,
       );
     }
     if (oldStep) {
       console.log(
-        `Came from step: ${oldStep.payload.title} (ID: ${oldStep.id})`
+        `Came from step: ${oldStep.payload.title} (ID: ${oldStep.id})`,
       );
     }
   },

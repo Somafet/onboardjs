@@ -26,7 +26,7 @@ export interface OnboardingActions {
   skip: () => Promise<void>;
   goToStep: (stepId: string, stepSpecificData?: any) => Promise<void>;
   updateContext: (
-    newContextData: Partial<CoreOnboardingContext>
+    newContextData: Partial<CoreOnboardingContext>,
   ) => Promise<void>;
   reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
 }
@@ -100,7 +100,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         if (ttl && savedState.timestamp) {
           if (Date.now() - savedState.timestamp > ttl) {
             console.log(
-              `[OnboardJS] localStorage data for key "${key}" expired. Ignoring.`
+              `[OnboardJS] localStorage data for key "${key}" expired. Ignoring.`,
             );
             window.localStorage.removeItem(key);
             return null;
@@ -108,14 +108,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         }
         console.log(
           `[OnboardJS] Loaded from localStorage (key: "${key}"):`,
-          savedState.data
+          savedState.data,
         );
         return savedState.data as LoadedData;
       }
     } catch (error) {
       console.error(
         `[OnboardJS] Error loading from localStorage (key: "${key}"):`,
-        error
+        error,
       );
       window.localStorage.removeItem(key);
     }
@@ -129,7 +129,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const onDataPersistHandler = useCallback(
     async (
       context: CoreOnboardingContext,
-      currentStepId: string | number | null
+      currentStepId: string | number | null,
     ): Promise<void> => {
       if (customOnDataPersist) {
         return customOnDataPersist(context, currentStepId);
@@ -151,11 +151,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       } catch (error) {
         console.error(
           `[OnboardJS] Error persisting to localStorage (key: "${key}"):`,
-          error
+          error,
         );
       }
     },
-    [localStoragePersistence?.key, customOnDataPersist]
+    [localStoragePersistence?.key, customOnDataPersist],
   );
 
   const onClearPeristedData = useCallback(() => {
@@ -166,12 +166,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     try {
       window.localStorage.removeItem(key);
       console.log(
-        `[OnboardJS] Cleared localStorage (key: "${key}") on clear request.`
+        `[OnboardJS] Cleared localStorage (key: "${key}") on clear request.`,
       );
     } catch (error) {
       console.error(
         `[OnboardJS] Error clearing localStorage (key: "${key}"):`,
-        error
+        error,
       );
     }
   }, [localStoragePersistence?.key]);
@@ -182,11 +182,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         passedOnFlowComplete(context);
       } else {
         console.warn(
-          "[OnboardingProvider] No onFlowComplete handler provided. Flow completed without custom action."
+          "[OnboardingProvider] No onFlowComplete handler provided. Flow completed without custom action.",
         );
       }
     },
-    [passedOnFlowComplete]
+    [passedOnFlowComplete],
   );
   useEffect(() => {
     const engineConfig: OnboardingEngineConfig = {
@@ -200,7 +200,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         if (localStoragePersistence && typeof window !== "undefined") {
           window.localStorage.removeItem(localStoragePersistence.key);
           console.log(
-            `[OnboardJS] Cleared localStorage (key: "${localStoragePersistence.key}") on flow completion.`
+            `[OnboardJS] Cleared localStorage (key: "${localStoragePersistence.key}") on flow completion.`,
           );
         }
       },
@@ -225,7 +225,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       "stateChange",
       (newState) => {
         setEngineState(newState);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -250,7 +250,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       componentLoading ||
       (engineState?.isLoading ?? false) ||
       (engineState?.isHydrating ?? false),
-    [componentLoading, engineState?.isLoading, engineState?.isHydrating]
+    [componentLoading, engineState?.isLoading, engineState?.isHydrating],
   );
 
   // Individual action functions (unchanged)
@@ -264,7 +264,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         setComponentLoading(false);
       }
     },
-    [engine]
+    [engine],
   );
 
   const previous = useCallback(async () => {
@@ -297,7 +297,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         setComponentLoading(false);
       }
     },
-    [engine]
+    [engine],
   );
 
   const updateContext = useCallback(
@@ -305,7 +305,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!engine) return;
       await engine.updateContext(newContextData);
     },
-    [engine]
+    [engine],
   );
 
   const reset = useCallback(
@@ -318,7 +318,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         setComponentLoading(false);
       }
     },
-    [engine]
+    [engine],
   );
 
   const value = useMemo(
@@ -345,7 +345,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       previous,
       goToStep,
       updateContext,
-    ]
+    ],
   );
 
   return (

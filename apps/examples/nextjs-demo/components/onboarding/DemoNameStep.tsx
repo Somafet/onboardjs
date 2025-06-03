@@ -26,7 +26,7 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
 }) => {
   // Track field values and errors locally
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
-    {}
+    {},
   );
   const [fieldValues, setFieldValues] = React.useState<Record<string, string>>(
     () =>
@@ -38,8 +38,8 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
             coreContext?.flowData?.[field.key] ??
             "",
         }),
-        {}
-      )
+        {},
+      ),
   );
 
   const handleOnChange = (fieldKey: string, value: string) => {

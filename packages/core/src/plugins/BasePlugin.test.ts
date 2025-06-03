@@ -240,40 +240,40 @@ describe("BasePlugin", () => {
       const unsubError = vi.fn();
 
       vi.mocked(mockEngine.addBeforeStepChangeListener).mockReturnValue(
-        unsubBefore
+        unsubBefore,
       );
       vi.mocked(mockEngine.addAfterStepChangeListener).mockReturnValue(
-        unsubAfter
+        unsubAfter,
       );
       vi.mocked(mockEngine.addStepActiveListener).mockReturnValue(unsubActive);
       vi.mocked(mockEngine.addStepCompleteListener).mockReturnValue(
-        unsubComplete
+        unsubComplete,
       );
       vi.mocked(mockEngine.addFlowCompleteListener).mockReturnValue(unsubFlow);
       vi.mocked(mockEngine.addContextUpdateListener).mockReturnValue(
-        unsubContext
+        unsubContext,
       );
       vi.mocked(mockEngine.addErrorListener).mockReturnValue(unsubError);
 
       await plugin.install(mockEngine);
 
       expect(mockEngine.addBeforeStepChangeListener).toHaveBeenCalledWith(
-        mockBeforeStepChange
+        mockBeforeStepChange,
       );
       expect(mockEngine.addAfterStepChangeListener).toHaveBeenCalledWith(
-        mockAfterStepChange
+        mockAfterStepChange,
       );
       expect(mockEngine.addStepActiveListener).toHaveBeenCalledWith(
-        mockOnStepActive
+        mockOnStepActive,
       );
       expect(mockEngine.addStepCompleteListener).toHaveBeenCalledWith(
-        mockOnStepComplete
+        mockOnStepComplete,
       );
       expect(mockEngine.addFlowCompleteListener).toHaveBeenCalledWith(
-        mockOnFlowComplete
+        mockOnFlowComplete,
       );
       expect(mockEngine.addContextUpdateListener).toHaveBeenCalledWith(
-        mockOnContextUpdate
+        mockOnContextUpdate,
       );
       expect(mockEngine.addErrorListener).toHaveBeenCalledWith(mockOnError);
 
@@ -301,7 +301,7 @@ describe("BasePlugin", () => {
       expect(mockEngine.addBeforeStepChangeListener).not.toHaveBeenCalled();
       expect(mockEngine.addAfterStepChangeListener).not.toHaveBeenCalled();
       expect(mockEngine.addStepActiveListener).toHaveBeenCalledWith(
-        mockOnStepActive
+        mockOnStepActive,
       );
       expect(mockEngine.addStepCompleteListener).not.toHaveBeenCalled();
       expect(mockEngine.addFlowCompleteListener).not.toHaveBeenCalled();

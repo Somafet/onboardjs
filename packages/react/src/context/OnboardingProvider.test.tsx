@@ -51,7 +51,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...mockConfig}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -69,7 +69,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...configWithInitialStep}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -81,7 +81,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...mockConfig}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -111,7 +111,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...mockConfig}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -139,7 +139,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...configWithCallback}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     // Navigate to last step and complete
@@ -174,7 +174,7 @@ describe("OnboardingProvider", () => {
         localStoragePersistence={persistenceConfig}
       >
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -200,7 +200,7 @@ describe("OnboardingProvider", () => {
         localStoragePersistence={persistenceConfig}
       >
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -230,7 +230,7 @@ describe("OnboardingProvider", () => {
         localStoragePersistence={persistenceConfig}
       >
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -257,7 +257,7 @@ describe("OnboardingProvider", () => {
         customOnDataPersist={customOnDataPersist}
       >
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -295,7 +295,7 @@ describe("OnboardingProvider", () => {
         customOnDataPersist={customOnDataPersist}
       >
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -330,7 +330,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...mockConfig}>
         <TestConsumerWithLoading />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {
@@ -361,7 +361,7 @@ describe("OnboardingProvider", () => {
     render(
       <OnboardingProvider {...emptyConfig}>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     await waitFor(() => {

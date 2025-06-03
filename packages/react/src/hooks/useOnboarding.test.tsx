@@ -30,12 +30,14 @@ describe("useOnboarding", () => {
   };
 
   it("should throw error when used outside OnboardingProvider", () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
     expect(() => {
       renderHook(() => useOnboarding());
     }).toThrow("useOnboarding must be used within an OnboardingProvider");
-    
+
     consoleErrorSpy.mockRestore();
   });
 
@@ -252,11 +254,12 @@ describe("useOnboarding", () => {
 
   it("should unsubscribe listeners on unmount", async () => {
     const { result, unmount } = renderHook(
-      () => useOnboarding({ 
-        onFlowComplete: vi.fn(),
-        onStepChange: vi.fn() 
-      }),
-      { wrapper: createWrapper() }
+      () =>
+        useOnboarding({
+          onFlowComplete: vi.fn(),
+          onStepChange: vi.fn(),
+        }),
+      { wrapper: createWrapper() },
     );
 
     await waitFor(() => {
@@ -266,12 +269,12 @@ describe("useOnboarding", () => {
     // Mock the unsubscribe functions
     const mockUnsubscribeFlow = vi.fn();
     const mockUnsubscribeStep = vi.fn();
-    
+
     vi.spyOn(result.current.engine!, "addEventListener").mockReturnValue(
-      mockUnsubscribeFlow
+      mockUnsubscribeFlow,
     );
     vi.spyOn(result.current.engine!, "addEventListener").mockReturnValue(
-      mockUnsubscribeStep
+      mockUnsubscribeStep,
     );
 
     unmount();

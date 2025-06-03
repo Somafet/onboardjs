@@ -4,7 +4,9 @@ import { EventListenerMap, UnsubscribeFunction } from "./types";
 /**
  * Unified event listener handler with consistent error management
  */
-export class EventManager<TContext extends OnboardingContext = OnboardingContext> {
+export class EventManager<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
   private listeners: Map<keyof EventListenerMap<TContext>, Set<any>> =
     new Map();
 
@@ -31,7 +33,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
    */
   addEventListener<T extends keyof EventListenerMap<TContext>>(
     eventType: T,
-    listener: EventListenerMap<TContext>[T]
+    listener: EventListenerMap<TContext>[T],
   ): UnsubscribeFunction {
     const listenerSet = this.listeners.get(eventType);
     if (!listenerSet) {
@@ -80,7 +82,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
    * Get legacy event name for error messages to maintain backward compatibility
    */
   private getLegacyEventName<T extends keyof EventListenerMap<TContext>>(
-    eventType: T
+    eventType: T,
   ): string {
     switch (eventType) {
       case "stepChange":
@@ -121,7 +123,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
       } catch (err) {
         console.error(
           `[OnboardingEngine] Error in sequential ${String(eventType)} listener:`,
-          err
+          err,
         );
         throw err; // Re-throw for beforeStepChange cancellation logic
       }
@@ -132,7 +134,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
    * Get the number of listeners for an event type
    */
   getListenerCount<T extends keyof EventListenerMap<TContext>>(
-    eventType: T
+    eventType: T,
   ): number {
     return this.listeners.get(eventType)?.size || 0;
   }

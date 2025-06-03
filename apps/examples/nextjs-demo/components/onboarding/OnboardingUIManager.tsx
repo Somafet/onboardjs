@@ -72,7 +72,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   }, [currentStep?.id, currentStep?.meta?.isValid]);
 
   const currentStepIndex = stepsConfig.findIndex(
-    (s) => s.id === currentStep?.id
+    (s) => s.id === currentStep?.id,
   );
 
   const progressPercentage =
@@ -102,7 +102,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       setCurrentActiveStepData(mergedData);
       setIsCurrentActiveStepValid(isValid);
     },
-    [currentActiveStepData]
+    [currentActiveStepData],
   );
 
   if (!state) return <>{LoadingScreen}</>; // Engine not ready

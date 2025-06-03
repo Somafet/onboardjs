@@ -150,6 +150,7 @@ export default function OnboardingUIManager({ stepsConfig, stepComponentRegistry
 ---
 
 ## 📚 Documentation & Community
+
 - **[@onboardjs/core README](../core)**
 - **Main Documentation Site** (coming soon)
 - **GitHub Discussions** | **Discord** (coming soon)

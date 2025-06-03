@@ -139,7 +139,7 @@ describe("OnboardingEngine", () => {
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Error during loadData"),
-        expect.any(Error)
+        expect.any(Error),
       );
 
       const state = engine.getState();
@@ -159,7 +159,7 @@ describe("OnboardingEngine", () => {
         expect.objectContaining({
           flowData: expect.objectContaining({ newData: "value" }),
         }),
-        "step1"
+        "step1",
       );
     });
 
@@ -180,7 +180,7 @@ describe("OnboardingEngine", () => {
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Error during persistData"),
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -242,7 +242,7 @@ describe("OnboardingEngine", () => {
         expect.objectContaining({
           flowData: expect.objectContaining({ newData: "value" }),
         }),
-        "step1"
+        "step1",
       );
     });
   });
@@ -965,7 +965,7 @@ describe("OnboardingEngine", () => {
           currentStep: expect.objectContaining({ id: "step1" }),
           targetStepId: "step2",
           direction: "next",
-        })
+        }),
       );
     });
 
@@ -1192,7 +1192,7 @@ describe("OnboardingEngine", () => {
         expect.objectContaining({
           flowData: expect.objectContaining({ test: "data" }),
         }),
-        "step2"
+        "step2",
       );
 
       // Reset the engine
@@ -1221,7 +1221,7 @@ describe("OnboardingEngine", () => {
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Error during clearPersistedData"),
-        expect.any(Error)
+        expect.any(Error),
       );
     });
   });
@@ -1264,7 +1264,7 @@ describe("OnboardingEngine", () => {
       const slowOnStepComplete = vi
         .fn()
         .mockImplementation(
-          () => new Promise((resolve) => setTimeout(resolve, 100))
+          () => new Promise((resolve) => setTimeout(resolve, 100)),
         );
 
       const slowStep: OnboardingStep = {
@@ -1303,10 +1303,10 @@ describe("OnboardingEngine", () => {
       const state = engine.getState();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Cannot update checklist item")
+        expect.stringContaining("Cannot update checklist item"),
       );
       expect(state.error?.message).toContain(
-        "Target step for checklist item update is invalid."
+        "Target step for checklist item update is invalid.",
       );
     });
 
@@ -1319,7 +1319,7 @@ describe("OnboardingEngine", () => {
       await engine.updateChecklistItem("item1", true, "step1"); // step1 is INFORMATION type
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Cannot update checklist item")
+        expect.stringContaining("Cannot update checklist item"),
       );
     });
 
@@ -1345,8 +1345,8 @@ describe("OnboardingEngine", () => {
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining(
-          "Attempted to update non-existent checklist item"
-        )
+          "Attempted to update non-existent checklist item",
+        ),
       );
     });
 
@@ -1509,7 +1509,7 @@ describe("OnboardingEngine", () => {
           expect.objectContaining({
             flowData: expect.objectContaining({ foo: "bar" }),
           }),
-          "step1"
+          "step1",
         );
       });
 
@@ -1554,7 +1554,7 @@ describe("OnboardingEngine", () => {
           isLoading: true,
         }));
         expect(listener).toHaveBeenCalledWith(
-          expect.objectContaining({ isLoading: true })
+          expect.objectContaining({ isLoading: true }),
         );
       });
     });
@@ -1577,7 +1577,7 @@ describe("OnboardingEngine", () => {
           expect.objectContaining({ id: "step1" }), // old step
           expect.objectContaining({
             flowData: expect.any(Object),
-          })
+          }),
         );
 
         unsubscribe();
@@ -1603,13 +1603,13 @@ describe("OnboardingEngine", () => {
 
         const unsubscribe = engine.addEventListener(
           "stepChange",
-          errorListener
+          errorListener,
         );
         await engine.next();
 
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining("Error in stepChange listener:"),
-          expect.any(Error)
+          expect.any(Error),
         );
         expect(errorListener).toHaveBeenCalled();
       });
@@ -1643,7 +1643,7 @@ describe("OnboardingEngine", () => {
         expect(listener).toHaveBeenCalledWith(
           expect.objectContaining({
             flowData: expect.any(Object),
-          })
+          }),
         );
 
         unsubscribe();
@@ -1672,7 +1672,7 @@ describe("OnboardingEngine", () => {
 
         const unsubscribe = engine.addEventListener(
           "flowComplete",
-          errorListener
+          errorListener,
         );
 
         // Complete the flow
@@ -1681,7 +1681,7 @@ describe("OnboardingEngine", () => {
 
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining("Error in sync onFlowHasCompleted listener:"),
-          expect.any(Error)
+          expect.any(Error),
         );
         expect(errorListener).toHaveBeenCalled();
       });
@@ -1696,7 +1696,7 @@ describe("OnboardingEngine", () => {
 
         const unsubscribe = engine.addEventListener(
           "flowComplete",
-          asyncErrorListener
+          asyncErrorListener,
         );
 
         // Complete the flow
@@ -1708,9 +1708,9 @@ describe("OnboardingEngine", () => {
 
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining(
-            "Error in async onFlowHasCompleted listener:"
+            "Error in async onFlowHasCompleted listener:",
           ),
-          expect.any(Error)
+          expect.any(Error),
         );
         expect(asyncErrorListener).toHaveBeenCalled();
       });
@@ -1748,7 +1748,7 @@ describe("OnboardingEngine", () => {
             direction: "next",
             cancel: expect.any(Function),
             redirect: expect.any(Function),
-          })
+          }),
         );
       });
 
@@ -1787,7 +1787,7 @@ describe("OnboardingEngine", () => {
             if (event.redirect) {
               event.redirect("step3"); // This should be ignored
             }
-          }
+          },
         );
         engine.addEventListener("beforeStepChange", cancelAndRedirectListener);
 
@@ -1801,7 +1801,7 @@ describe("OnboardingEngine", () => {
         const listener = vi.fn();
         const unsubscribe = engine.addEventListener(
           "beforeStepChange",
-          listener
+          listener,
         );
 
         unsubscribe();
@@ -1849,19 +1849,19 @@ describe("OnboardingEngine", () => {
         // Test next
         await engine.next();
         expect(listener).toHaveBeenLastCalledWith(
-          expect.objectContaining({ direction: "next" })
+          expect.objectContaining({ direction: "next" }),
         );
 
         // Test previous
         await engine.previous();
         expect(listener).toHaveBeenLastCalledWith(
-          expect.objectContaining({ direction: "previous" })
+          expect.objectContaining({ direction: "previous" }),
         );
 
         // Test goto
         await engine.goToStep("step3");
         expect(listener).toHaveBeenLastCalledWith(
-          expect.objectContaining({ direction: "goto" })
+          expect.objectContaining({ direction: "goto" }),
         );
 
         // Test skip
@@ -1888,7 +1888,7 @@ describe("OnboardingEngine", () => {
 
         await skippableEngine.skip();
         expect(skipListener).toHaveBeenCalledWith(
-          expect.objectContaining({ direction: "skip" })
+          expect.objectContaining({ direction: "skip" }),
         );
       });
     });
@@ -1904,7 +1904,7 @@ describe("OnboardingEngine", () => {
           expect.objectContaining({
             currentStep: expect.objectContaining({ id: "step2" }),
             isLoading: false,
-          })
+          }),
         );
 
         unsubscribe();
@@ -1933,7 +1933,7 @@ describe("OnboardingEngine", () => {
                 newKey: "newValue",
               }),
             }),
-          })
+          }),
         );
       });
 
@@ -1958,7 +1958,7 @@ describe("OnboardingEngine", () => {
             (engine as any).setState(() => ({ isLoading: true }));
             await navigationPromise;
             return originalNavigateToStep.call(engine, ...args);
-          }
+          },
         );
 
         // Start navigation (this will set loading to true)
@@ -1968,7 +1968,7 @@ describe("OnboardingEngine", () => {
         expect(listener).toHaveBeenCalledWith(
           expect.objectContaining({
             isLoading: true,
-          })
+          }),
         );
 
         // Complete the navigation
@@ -1979,7 +1979,7 @@ describe("OnboardingEngine", () => {
         expect(listener).toHaveBeenCalledWith(
           expect.objectContaining({
             isLoading: false,
-          })
+          }),
         );
       });
 
@@ -2013,7 +2013,7 @@ describe("OnboardingEngine", () => {
         expect(errorListener).toHaveBeenCalledWith(
           expect.objectContaining({
             error: expect.any(Error),
-          })
+          }),
         );
       });
 
@@ -2085,7 +2085,7 @@ describe("OnboardingEngine", () => {
         expect(stateChangeListener).toHaveBeenCalled();
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           expect.stringContaining("Error in stepChange listener:"),
-          expect.any(Error)
+          expect.any(Error),
         );
       });
     });

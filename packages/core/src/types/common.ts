@@ -78,7 +78,7 @@ export type BaseOnboardingStep<
   onStepActive?: (context: TContext) => Promise<void> | void; // Use TContext
   onStepComplete?: (
     stepData: StepDataForStep<TStepType, TPayload>,
-    context: TContext // Use TContext
+    context: TContext, // Use TContext
   ) => Promise<void> | void;
   condition?: (context: TContext) => boolean; // Use TContext
   /** Arbitrary metadata for custom use cases or extensions. */

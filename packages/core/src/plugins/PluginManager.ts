@@ -27,7 +27,7 @@ export class PluginManagerImpl<
       for (const dep of plugin.dependencies) {
         if (!this.plugins.has(dep)) {
           throw new Error(
-            `Plugin "${plugin.name}" requires dependency "${dep}" which is not installed`
+            `Plugin "${plugin.name}" requires dependency "${dep}" which is not installed`,
           );
         }
       }
@@ -42,12 +42,12 @@ export class PluginManagerImpl<
       this.cleanupFunctions.set(plugin.name, cleanup);
 
       console.debug(
-        `[PluginManager] Installed plugin: ${plugin.name}@${plugin.version}`
+        `[PluginManager] Installed plugin: ${plugin.name}@${plugin.version}`,
       );
     } catch (error) {
       console.error(
         `[PluginManager] Failed to install plugin "${plugin.name}":`,
-        error
+        error,
       );
       throw error;
     }
@@ -61,13 +61,13 @@ export class PluginManagerImpl<
 
     // Check if other plugins depend on this one
     const dependentPlugins = Array.from(this.plugins.values()).filter((p) =>
-      p.dependencies?.includes(pluginName)
+      p.dependencies?.includes(pluginName),
     );
 
     if (dependentPlugins.length > 0) {
       const dependentNames = dependentPlugins.map((p) => p.name).join(", ");
       throw new Error(
-        `Cannot uninstall "${pluginName}" because it is required by: ${dependentNames}`
+        `Cannot uninstall "${pluginName}" because it is required by: ${dependentNames}`,
       );
     }
 
@@ -82,7 +82,7 @@ export class PluginManagerImpl<
     } catch (error) {
       console.error(
         `[PluginManager] Failed to uninstall plugin "${pluginName}":`,
-        error
+        error,
       );
       throw error;
     } finally {
@@ -106,7 +106,7 @@ export class PluginManagerImpl<
 
   async cleanup(): Promise<void> {
     const cleanupPromises = Array.from(this.cleanupFunctions.values()).map(
-      (cleanup) => cleanup()
+      (cleanup) => cleanup(),
     );
     await Promise.all(cleanupPromises);
 

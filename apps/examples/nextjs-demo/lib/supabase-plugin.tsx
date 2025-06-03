@@ -84,7 +84,7 @@ export class SupabasePlugin extends BasePlugin<
 
   private async saveToSupabase(
     context: OnboardingContext,
-    currentStepId: string | number | null
+    currentStepId: string | number | null,
   ): Promise<void> {
     try {
       const userId = await this.getCurrentUserId();
@@ -176,7 +176,7 @@ export class SupabasePlugin extends BasePlugin<
   }
 
   private extractContextData(
-    context: OnboardingContext
+    context: OnboardingContext,
   ): Record<string, unknown> {
     // Extract non-flowData context for storage
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

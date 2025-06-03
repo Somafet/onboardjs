@@ -30,7 +30,7 @@ describe("OnboardingFlow", () => {
     await waitFor(() => {
       expect(screen.getByTestId("information-step")).toBeInTheDocument();
       expect(
-        screen.getByText("Welcome to the onboarding flow!")
+        screen.getByText("Welcome to the onboarding flow!"),
       ).toBeInTheDocument();
     });
   });
@@ -50,7 +50,7 @@ describe("OnboardingFlow", () => {
     );
 
     render(
-      <OnboardingFlow {...defaultProps} LoadingComponent={LoadingComponent} />
+      <OnboardingFlow {...defaultProps} LoadingComponent={LoadingComponent} />,
     );
 
     // Note: This might be difficult to test as loading is usually brief
@@ -70,7 +70,7 @@ describe("OnboardingFlow", () => {
         {...defaultProps}
         steps={[]}
         EmptyStateComponent={EmptyStateComponent}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -85,7 +85,7 @@ describe("OnboardingFlow", () => {
 
     // This is challenging to test without triggering an actual error
     render(
-      <OnboardingFlow {...defaultProps} ErrorComponent={ErrorComponent} />
+      <OnboardingFlow {...defaultProps} ErrorComponent={ErrorComponent} />,
     );
 
     await waitFor(() => {
@@ -104,7 +104,7 @@ describe("OnboardingFlow", () => {
     );
 
     render(
-      <OnboardingFlow {...defaultProps} WrapperComponent={WrapperComponent} />
+      <OnboardingFlow {...defaultProps} WrapperComponent={WrapperComponent} />,
     );
 
     await waitFor(() => {
@@ -124,7 +124,7 @@ describe("OnboardingFlow", () => {
       <OnboardingFlow
         {...defaultProps}
         localStoragePersistence={persistenceConfig}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -145,7 +145,7 @@ describe("OnboardingFlow", () => {
       <OnboardingFlow
         {...defaultProps}
         localStoragePersistence={persistenceConfig}
-      />
+      />,
     );
 
     // Should restore to step2
@@ -166,7 +166,7 @@ describe("OnboardingFlow", () => {
         {...defaultProps}
         customOnDataLoad={customOnDataLoad}
         customOnDataPersist={customOnDataPersist}
-      />
+      />,
     );
     await waitFor(() => {
       expect(customOnDataLoad).toHaveBeenCalled();
@@ -204,7 +204,7 @@ describe("OnboardingFlow", () => {
         {...defaultProps}
         localStoragePersistence={persistenceConfig}
         customOnDataLoad={customOnDataLoad}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -222,7 +222,7 @@ describe("OnboardingFlow", () => {
         steps={mockStepsWithoutCriteria}
         onFlowComplete={onFlowComplete}
         initialStepId="step4"
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -262,7 +262,7 @@ describe("OnboardingFlow", () => {
     };
 
     render(
-      <OnboardingFlow {...defaultProps} initialContext={initialContext} />
+      <OnboardingFlow {...defaultProps} initialContext={initialContext} />,
     );
 
     await waitFor(() => {
@@ -369,7 +369,7 @@ describe("OnboardingFlow", () => {
         stepComponentRegistry={mockStepComponents}
         onFlowComplete={vi.fn()}
         onStepChange={vi.fn()}
-      />
+      />,
     );
 
     const { container: container2 } = render(
@@ -378,15 +378,15 @@ describe("OnboardingFlow", () => {
         stepComponentRegistry={mockStepComponents}
         onFlowComplete={vi.fn()}
         onStepChange={vi.fn()}
-      />
+      />,
     );
 
     await waitFor(() => {
       expect(
-        container1.querySelector('[data-testid="information-step"]')
+        container1.querySelector('[data-testid="information-step"]'),
       ).toBeInTheDocument();
       expect(
-        container2.querySelector('[data-testid="information-step"]')
+        container2.querySelector('[data-testid="information-step"]'),
       ).toBeInTheDocument();
     });
 

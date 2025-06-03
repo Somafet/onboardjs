@@ -48,14 +48,14 @@ export abstract class BasePlugin<
 
     if (hooks.beforeStepChange) {
       const unsubscribe = this.engine.addBeforeStepChangeListener(
-        hooks.beforeStepChange
+        hooks.beforeStepChange,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
 
     if (hooks.afterStepChange) {
       const unsubscribe = this.engine.addAfterStepChangeListener(
-        hooks.afterStepChange
+        hooks.afterStepChange,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
@@ -67,21 +67,21 @@ export abstract class BasePlugin<
 
     if (hooks.onStepComplete) {
       const unsubscribe = this.engine.addStepCompleteListener(
-        hooks.onStepComplete
+        hooks.onStepComplete,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
 
     if (hooks.onFlowComplete) {
       const unsubscribe = this.engine.addFlowCompleteListener(
-        hooks.onFlowComplete
+        hooks.onFlowComplete,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
 
     if (hooks.onContextUpdate) {
       const unsubscribe = this.engine.addContextUpdateListener(
-        hooks.onContextUpdate
+        hooks.onContextUpdate,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
