@@ -1,5 +1,6 @@
 // @onboardjs/core/src/engine/types.ts
 
+import { OnboardingPlugin } from "../plugins";
 import { OnboardingStep, OnboardingContext } from "../types";
 
 export interface EngineState<
@@ -57,6 +58,9 @@ export interface EventListenerMap<
   beforeStepChange: BeforeStepChangeListener<TContext>;
   stepChange: StepChangeListener<TContext>;
   flowComplete: FlowCompleteListener<TContext>;
+  dataLoad: DataLoadFn<TContext>;
+  dataPersist: DataPersistFn<TContext>;
+  clearPersistedData: () => void | Promise<void>;
   stepActive: (
     step: OnboardingStep<TContext>,
     context: TContext
@@ -78,15 +82,14 @@ export type LoadedData<TContext extends OnboardingContext = OnboardingContext> =
     currentStepId?: string | number | null;
   };
 
-export type DataLoadListener<
-  TContext extends OnboardingContext = OnboardingContext,
-> = () =>
-  | Promise<LoadedData<TContext> | null | undefined>
-  | LoadedData<TContext>
-  | null
-  | undefined;
+export type DataLoadFn<TContext extends OnboardingContext = OnboardingContext> =
+  () =>
+    | Promise<LoadedData<TContext> | null | undefined>
+    | LoadedData<TContext>
+    | null
+    | undefined;
 
-export type DataPersistListener<
+export type DataPersistFn<
   TContext extends OnboardingContext = OnboardingContext,
 > = (
   context: TContext,
@@ -105,7 +108,26 @@ export interface OnboardingEngineConfig<
     oldStep: OnboardingStep<TContext> | null,
     context: TContext
   ) => void;
-  onDataLoad?: DataLoadListener<TContext>;
-  onDataPersist?: DataPersistListener<TContext>;
-  onClearPersistedData?: () => Promise<void> | void;
+
+  /**
+   * The function that should load the initial data for the onboarding flow.
+   */
+  loadData?: DataLoadFn<TContext>;
+
+  /**
+   * The function that should persist the current state of the onboarding flow.
+   */
+  persistData?: DataPersistFn<TContext>;
+
+  /**
+   * Optional function to clear any persisted data, e.g. from local storage or a database.
+   * This can be useful for resetting the onboarding state.
+   */
+  clearPersistedData?: () => Promise<void> | void;
+
+  /**
+   * Optional plugins to be installed at initialization.
+   * These plugins can extend the functionality of the onboarding engine.
+   */
+  plugins?: OnboardingPlugin<TContext>[]; // Added: For plugins to be installed at init
 }

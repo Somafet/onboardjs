@@ -1,16 +1,13 @@
 // components/onboarding-ui/steps/DemoWelcomeStep.tsx
 "use client";
 import React from "react";
-import {
-  CustomComponentStepPayload,
-  StepComponentProps,
-  useOnboarding,
-} from "@onboardjs/react"; // Assuming user installs and imports this
+import { StepComponentProps, useOnboarding } from "@onboardjs/react"; // Assuming user installs and imports this
 import { Button } from "../ui/button";
+import { DemoNamePayload } from "./DemoNameStep";
 
-const DemoWelcomeStep: React.FC<
-  StepComponentProps<CustomComponentStepPayload>
-> = ({ payload }) => {
+const DemoWelcomeStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
+  payload,
+}) => {
   const { next } = useOnboarding();
   return (
     <div className="text-center p-4">

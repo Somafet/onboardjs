@@ -1,15 +1,14 @@
 // components/onboarding-ui/steps/DemoFinalStep.tsx
 "use client";
 import React from "react";
-import {
-  CustomComponentStepPayload,
-  StepComponentProps,
-} from "@onboardjs/react";
+import { StepComponentProps } from "@onboardjs/react";
 import { CheckCircle } from "lucide-react";
+import { BasePayload } from "@onboardjs/core";
 
-const DemoFinalStep: React.FC<
-  StepComponentProps<CustomComponentStepPayload>
-> = ({ payload, coreContext }) => {
+const DemoFinalStep: React.FC<StepComponentProps<BasePayload>> = ({
+  payload,
+  coreContext,
+}) => {
   // Optionally, show the user's name if it was collected in flowData
   const userName = coreContext?.flowData?.userName ?? undefined;
 

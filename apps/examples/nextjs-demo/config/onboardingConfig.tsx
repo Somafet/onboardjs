@@ -1,7 +1,8 @@
 "use client";
 
 // config/demoOnboardingConfig.ts
-import { OnboardingStep, StepComponentRegistry } from "@onboardjs/react";
+import { StepComponentRegistry } from "@onboardjs/react";
+import { OnboardingStep } from "@onboardjs/core";
 import { z } from "zod";
 
 // Import custom step components

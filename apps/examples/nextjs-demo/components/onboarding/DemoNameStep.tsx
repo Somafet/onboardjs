@@ -6,6 +6,9 @@ import { ZodError, ZodType } from "zod";
 import React from "react";
 
 export interface DemoNamePayload {
+  mainText?: string; // Optional main text for the step
+  subText?: string; // Optional sub text for the step
+  ctaLabel?: string; // Optional call-to-action label for the button
   fields: {
     label: string;
     key: string; // This will be used as the fieldKey in flowData

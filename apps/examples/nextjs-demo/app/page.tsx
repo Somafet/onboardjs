@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CoreOnboardingContext, useOnboarding } from "@onboardjs/react";
+import { useOnboarding } from "@onboardjs/react";
 import {
   demoOnboardingSteps,
   demoStepComponentRegistry,
@@ -11,10 +11,11 @@ import { toast } from "sonner";
 import OnboardJsLogo from "@/components/logo";
 import confetti from "canvas-confetti";
 import Link from "next/link";
+import { OnboardingContext } from "@onboardjs/core";
 
 export default function OnboardingDemoPage() {
   useOnboarding({
-    onFlowComplete: (context: CoreOnboardingContext) => {
+    onFlowComplete: (context: OnboardingContext) => {
       console.log("DEMO PAGE: Flow completed! Final data:", context.flowData);
       toast("Onboarding Complete!", {
         description: `Welcome, ${context.flowData?.userName || "friend"}! You're all set.`,

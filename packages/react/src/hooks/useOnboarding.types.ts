@@ -1,17 +1,16 @@
-// @onboardjs/react/src/hooks/useOnboarding.types.ts (or directly in useOnboarding.ts)
+// @onboardjs/react/src/hooks/useOnboarding.types.ts
 import {
   OnboardingEngine,
   EngineState,
-  OnboardingEngineConfig,
-  OnboardingContext as CoreOnboardingContext,
-  DataLoadListener,
-  DataPersistListener,
+  OnboardingContext,
+  DataLoadFn,
+  DataPersistFn,
   BeforeStepChangeListener,
-  FlowCompleteListener, // Assuming this is exported from @onboardjs/core
-  // Add other event listener types from @onboardjs/core if needed
-  // e.g., StepChangeListener, BeforeStepChangeListenerType
+  FlowCompleteListener,
+  OnboardingPlugin,
+  PluginManager,
 } from "@onboardjs/core";
-import { OnboardingActions } from "../context/OnboardingProvider"; // Assuming OnboardingActions is still useful
+import { OnboardingActions } from "../context/OnboardingProvider";
 
 export interface UseOnboardingOptions {
   /**
@@ -26,8 +25,8 @@ export interface UseOnboardingOptions {
    */
   onStepChange?: (
     newStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
-    oldStep: ReturnType<OnboardingEngine["getState"]>["currentStep"], // Assuming oldStep can be tracked or passed
-    context: CoreOnboardingContext
+    oldStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
+    context: OnboardingContext
   ) => void;
 
   /**
@@ -40,21 +39,25 @@ export interface UseOnboardingOptions {
    * Callback executed when data is loaded for the current step.
    * This can be used to trigger UI updates or other actions based on loaded data.
    */
-  onDataLoad?: DataLoadListener;
+  loadData?: DataLoadFn;
 
   /**
    * Callback executed when data is persisted for the current step.
    * Useful for triggering actions after data is saved.
    */
-  onDataPersist?: DataPersistListener;
+  persistData?: DataPersistFn;
 }
 
 export interface UseOnboardingReturn extends OnboardingActions {
   engine: OnboardingEngine | null;
   state: EngineState | null;
   isLoading: boolean;
-  // Add any other status shorthands if desired, similar to next-safe-action
   isCompleted: boolean;
   currentStep: EngineState["currentStep"];
-  // ... etc.
+  // Plugin management
+  pluginManager: PluginManager | null;
+  installPlugin: (plugin: OnboardingPlugin) => Promise<void>;
+  uninstallPlugin: (pluginName: string) => Promise<void>;
+  getInstalledPlugins: () => OnboardingPlugin[];
+  isPluginInstalled: (pluginName: string) => boolean;
 }

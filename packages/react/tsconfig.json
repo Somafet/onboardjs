@@ -6,12 +6,13 @@
     "outDir": "dist",
     "rootDir": "src",
     "jsx": "react-jsx",
-    "moduleResolution": "node",
-    "module": "esnext",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
     "target": "ESNext",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "strict": true
+    "skipLibCheck": false,
+    "strict": true,
+    "types": ["node", "vitest/globals", "react", "react-dom", "jest"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

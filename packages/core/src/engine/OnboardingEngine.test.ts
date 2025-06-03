@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { OnboardingEngine } from "./OnboardingEngine";
 import type {
   OnboardingEngineConfig,
-  EngineState,
   BeforeStepChangeEvent,
   LoadedData,
 } from "./types";
@@ -65,6 +64,7 @@ describe("OnboardingEngine", () => {
   describe("Initialization", () => {
     it("should initialize with first step when no initial step is specified", async () => {
       engine = new OnboardingEngine(basicConfig);
+      await engine.ready(); // Ensure engine is fully initialized
 
       // Wait for initialization to complete
 
@@ -106,20 +106,20 @@ describe("OnboardingEngine", () => {
   });
 
   describe("Data Loading and Persistence", () => {
-    it("should load data on initialization when onDataLoad is provided", async () => {
+    it("should load data on initialization when loadData is provided", async () => {
       const loadedData: LoadedData = {
         currentStepId: "step2",
         flowData: { userRole: "developer" },
         currentUser: { name: "Jane" },
       };
 
-      const onDataLoad = vi.fn().mockResolvedValue(loadedData);
-      const config = { ...basicConfig, onDataLoad };
+      const loadData = vi.fn().mockResolvedValue(loadedData);
+      const config = { ...basicConfig, loadData };
 
       engine = new OnboardingEngine(config);
       await engine.ready(); // Ensure engine is fully initialized
 
-      expect(onDataLoad).toHaveBeenCalled();
+      expect(loadData).toHaveBeenCalled();
       const state = engine.getState();
       expect(state.currentStep?.id).toBe("step2");
       expect(state.context.flowData.userRole).toBe("developer");
@@ -130,15 +130,15 @@ describe("OnboardingEngine", () => {
       const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const onDataLoad = vi.fn().mockRejectedValue(new Error("Load failed"));
-      const config = { ...basicConfig, onDataLoad };
+      const loadData = vi.fn().mockRejectedValue(new Error("Load failed"));
+      const config = { ...basicConfig, loadData };
 
       engine = new OnboardingEngine(config);
 
       await engine.ready(); // Ensure engine is fully initialized
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Error during onDataLoad"),
+        expect.stringContaining("Error during loadData"),
         expect.any(Error)
       );
 
@@ -147,14 +147,15 @@ describe("OnboardingEngine", () => {
     });
 
     it("should persist data when context changes", async () => {
-      const onDataPersist = vi.fn().mockResolvedValue(undefined);
-      const config = { ...basicConfig, onDataPersist };
+      const persistData = vi.fn().mockResolvedValue(undefined);
+      const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+      await engine.ready();
 
       await engine.updateContext({ flowData: { newData: "value" } });
 
-      expect(onDataPersist).toHaveBeenCalledWith(
+      expect(persistData).toHaveBeenCalledWith(
         expect.objectContaining({
           flowData: expect.objectContaining({ newData: "value" }),
         }),
@@ -166,25 +167,27 @@ describe("OnboardingEngine", () => {
       const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const onDataPersist = vi
+      const persistData = vi
         .fn()
         .mockRejectedValue(new Error("Persist failed"));
-      const config = { ...basicConfig, onDataPersist };
+      const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+
+      await engine.ready(); // Ensure engine is fully initialized
 
       await engine.updateContext({ flowData: { test: "data" } });
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Error during onDataPersist"),
+        expect.stringContaining("Error during persistData"),
         expect.any(Error)
       );
     });
 
-    // It should handle no data returned from onDataLoad
-    it("should handle no data returned from onDataLoad", async () => {
-      const onDataLoad = vi.fn().mockResolvedValue(null);
-      const config = { ...basicConfig, onDataLoad };
+    // It should handle no data returned from loadData
+    it("should handle no data returned from loadData", async () => {
+      const loadData = vi.fn().mockResolvedValue(null);
+      const config = { ...basicConfig, loadData };
 
       engine = new OnboardingEngine(config);
       await engine.ready(); // Ensure engine is fully initialized
@@ -199,11 +202,11 @@ describe("OnboardingEngine", () => {
       const initialContext: OnboardingContext = {
         flowData: { existingData: "initial" },
       };
-      const onDataLoad = vi.fn().mockResolvedValue({
+      const loadData = vi.fn().mockResolvedValue({
         currentStepId: "step2",
         flowData: {}, // Sparse data
       });
-      const config = { ...basicConfig, onDataLoad, initialContext };
+      const config = { ...basicConfig, loadData, initialContext };
 
       engine = new OnboardingEngine(config);
       await engine.ready(); // Ensure engine is fully initialized
@@ -214,27 +217,28 @@ describe("OnboardingEngine", () => {
 
     // Check if context actually changed to avoid unnecessary persists
     it("should not persist if context did not change", async () => {
-      const onDataPersist = vi.fn();
-      const config = { ...basicConfig, onDataPersist };
+      const persistData = vi.fn();
+      const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
 
       const initialContext = engine.getState().context;
       await engine.updateContext(initialContext); // Same data
 
-      expect(onDataPersist).not.toHaveBeenCalled(); // Should not persist
+      expect(persistData).not.toHaveBeenCalled(); // Should not persist
     });
 
     // Ensure Persist data if context changed and not hydrating
     it("should persist data if context changed and not hydrating", async () => {
-      const onDataPersist = vi.fn();
-      const config = { ...basicConfig, onDataPersist };
+      const persistData = vi.fn();
+      const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
+      await engine.ready();
 
       await engine.updateContext({ flowData: { newData: "value" } });
 
-      expect(onDataPersist).toHaveBeenCalledWith(
+      expect(persistData).toHaveBeenCalledWith(
         expect.objectContaining({
           flowData: expect.objectContaining({ newData: "value" }),
         }),
@@ -424,7 +428,7 @@ describe("OnboardingEngine", () => {
       const cancelListener = vi.fn((event: BeforeStepChangeEvent) => {
         event.cancel();
       });
-      engine.onBeforeStepChange(cancelListener);
+      engine.addEventListener("beforeStepChange", cancelListener);
       // @ts-expect-error: access private method for test
       await engine.navigateToStep("step2", "next");
       const state = engine.getState();
@@ -437,7 +441,7 @@ describe("OnboardingEngine", () => {
       const redirectListener = vi.fn((event: BeforeStepChangeEvent) => {
         if (event.redirect) event.redirect("step3");
       });
-      engine.onBeforeStepChange(redirectListener);
+      engine.addEventListener("beforeStepChange", redirectListener);
       // @ts-expect-error: access private method for test
       await engine.navigateToStep("step2", "next");
       const state = engine.getState();
@@ -538,12 +542,15 @@ describe("OnboardingEngine", () => {
     });
 
     it("should persist data when flow is completed", async () => {
-      const onDataPersist = vi.fn();
-      engine = new OnboardingEngine({ ...basicConfig, onDataPersist });
+      const persistData = vi.fn();
+      engine = new OnboardingEngine({
+        ...basicConfig,
+        persistData: persistData,
+      });
       await engine.ready();
       // @ts-expect-error: access private method for test
       await engine.navigateToStep(null, "next");
-      expect(onDataPersist).toHaveBeenCalled();
+      expect(persistData).toHaveBeenCalled();
     });
 
     it("should update history when navigating forward", async () => {
@@ -926,7 +933,7 @@ describe("OnboardingEngine", () => {
 
     it("should notify state change listeners", async () => {
       const listener = vi.fn();
-      engine.subscribeToStateChange(listener);
+      engine.addEventListener("stateChange", listener);
 
       await engine.next();
 
@@ -935,7 +942,7 @@ describe("OnboardingEngine", () => {
 
     it("should unsubscribe state change listeners", async () => {
       const listener = vi.fn();
-      const unsubscribe = engine.subscribeToStateChange(listener);
+      const unsubscribe = engine.addEventListener("stateChange", listener);
 
       unsubscribe();
       await engine.next();
@@ -950,7 +957,7 @@ describe("OnboardingEngine", () => {
           // Allow navigation
         });
 
-      engine.onBeforeStepChange(listener);
+      engine.addEventListener("beforeStepChange", listener);
       await engine.next();
 
       expect(listener).toHaveBeenCalledWith(
@@ -969,7 +976,7 @@ describe("OnboardingEngine", () => {
           event.cancel();
         });
 
-      engine.onBeforeStepChange(listener);
+      engine.addEventListener("beforeStepChange", listener);
       await engine.next();
 
       const state = engine.getState();
@@ -985,7 +992,7 @@ describe("OnboardingEngine", () => {
           }
         });
 
-      engine.onBeforeStepChange(listener);
+      engine.addEventListener("beforeStepChange", listener);
       await engine.next();
 
       const state = engine.getState();
@@ -1047,7 +1054,7 @@ describe("OnboardingEngine", () => {
       engine = new OnboardingEngine(config);
       // Wait for the state to reflect the error or for loading/hydration to finish
       await new Promise<void>((resolve) => {
-        const unsubscribe = engine.subscribeToStateChange((state) => {
+        const unsubscribe = engine.addEventListener("stateChange", (state) => {
           if (state.error || (!state.isLoading && !state.isHydrating)) {
             unsubscribe();
             resolve();
@@ -1094,54 +1101,56 @@ describe("OnboardingEngine", () => {
     });
 
     it("should preserve persistence handlers when not overridden", async () => {
-      const onDataPersist = vi.fn();
-      const configWithPersist = { ...basicConfig, onDataPersist };
+      const persistData = vi.fn();
+      const configWithPersist = { ...basicConfig, persistData };
       engine = new OnboardingEngine(configWithPersist);
 
       await engine.reset(); // Reset without new persistence config
       await engine.updateContext({ flowData: { test: "data" } });
 
-      expect(onDataPersist).toHaveBeenCalled();
+      expect(persistData).toHaveBeenCalled();
     });
 
     // it should handle reset with overridden persistence handlers
     it("should handle reset with overridden persistence handlers", async () => {
-      const onDataPersist = vi.fn();
-      const onDataLoad = vi.fn();
+      const persistData = vi.fn();
+      const loadData = vi.fn();
       const onFlowComplete = vi.fn();
       const onStepChange = vi.fn();
-      const configWithPersist = { ...basicConfig, onDataPersist };
+      const configWithPersist = { ...basicConfig, persistData };
       engine = new OnboardingEngine(configWithPersist);
+      await engine.ready();
 
       await engine.reset({
-        onDataPersist: vi.fn(),
-        onDataLoad: vi.fn(),
+        persistData: vi.fn(),
+        loadData: vi.fn(),
         onFlowComplete: vi.fn(),
         onStepChange: vi.fn(),
       }); // Reset with new persistence config
       await engine.updateContext({ flowData: { test: "data" } });
 
-      expect(onDataPersist).not.toHaveBeenCalled(); // Should not call old handler
-      expect(onDataLoad).not.toHaveBeenCalled(); // Should not call old handler
+      expect(persistData).not.toHaveBeenCalled(); // Should not call old handler
+      expect(loadData).not.toHaveBeenCalled(); // Should not call old handler
       expect(onFlowComplete).not.toHaveBeenCalled(); // Should not call old handler
       expect(onStepChange).not.toHaveBeenCalled(); // Should not call old handler
     });
 
-    // It should call onClearPersistedData when it is provided
-    it("should call onClearPersistedData when provided", async () => {
-      const onClearPersistedData = vi.fn();
+    // It should call clearPersistedData when it is provided
+    it("should call clearPersistedData when provided", async () => {
+      const clearPersistedData = vi.fn();
       engine = new OnboardingEngine({
         ...basicConfig,
-        onClearPersistedData,
+        clearPersistedData: clearPersistedData,
       });
+      await engine.ready();
 
       await engine.reset();
 
-      expect(onClearPersistedData).toHaveBeenCalled();
+      expect(clearPersistedData).toHaveBeenCalled();
     });
 
-    // Mock a persistence data store and ensure that during the reset, it is cleared if the onClearPersistedData handler is provided
-    it("should clear persisted data when onClearPersistedData is provided", async () => {
+    // Mock a persistence data store and ensure that during the reset, it is cleared if the clearPersistedData handler is provided
+    it("should clear persisted data when clearPersistedData is provided", async () => {
       const fakeStorage = {
         items: {} as Record<string | number, any>,
         get: function (key: string | number) {
@@ -1151,11 +1160,11 @@ describe("OnboardingEngine", () => {
           this.items[key] = value;
         },
       };
-      const onClearPersistedData = vi.fn(() => {
+      const clearPersistedData = vi.fn(() => {
         // Actually clear the fake storage
         fakeStorage.items = {};
       });
-      const onDataPersist = vi.fn((data, stepId) => {
+      const persistData = vi.fn((data, stepId) => {
         console.log(`Persisting data for step ${stepId}:`, data);
 
         if (stepId) {
@@ -1163,23 +1172,23 @@ describe("OnboardingEngine", () => {
         }
       });
 
-      const onDataLoad = vi.fn(async () => {
+      const loadData = vi.fn(async () => {
         // Simulate loading from storage
         return fakeStorage.items;
       });
 
       engine = new OnboardingEngine({
         ...basicConfig,
-        onClearPersistedData,
-        onDataPersist,
-        onDataLoad,
+        clearPersistedData: clearPersistedData,
+        persistData: persistData,
+        loadData: loadData,
       });
 
       await engine.ready(); // Ensure engine is ready
 
       // Simulate some persisted data for a step
       await engine.next({ test: "data" });
-      expect(onDataPersist).toHaveBeenCalledWith(
+      expect(persistData).toHaveBeenCalledWith(
         expect.objectContaining({
           flowData: expect.objectContaining({ test: "data" }),
         }),
@@ -1189,28 +1198,29 @@ describe("OnboardingEngine", () => {
       // Reset the engine
       await engine.reset();
 
-      expect(onClearPersistedData).toHaveBeenCalled();
+      expect(clearPersistedData).toHaveBeenCalled();
       expect(fakeStorage.items).toMatchObject({}); // Ensure storage is cleared
     });
 
-    // it should handle errors when onClearPersistedData throws
-    it("should handle errors when onClearPersistedData throws", async () => {
+    // it should handle errors when clearPersistedData throws
+    it("should handle errors when clearPersistedData throws", async () => {
       const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      const onClearPersistedData = vi.fn().mockImplementation(() => {
+      const clearPersistedData = vi.fn().mockImplementation(() => {
         throw new Error("Clear error");
       });
 
       engine = new OnboardingEngine({
         ...basicConfig,
-        onClearPersistedData,
+        clearPersistedData: clearPersistedData,
       });
+      await engine.ready();
 
       await engine.reset();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Error during onClearPersistedData"),
+        expect.stringContaining("Error during clearPersistedData"),
         expect.any(Error)
       );
     });
@@ -1341,29 +1351,29 @@ describe("OnboardingEngine", () => {
     });
 
     it("should not persist data during hydration", async () => {
-      const onDataPersist = vi.fn();
-      const onDataLoad = vi.fn().mockResolvedValue({
+      const persistData = vi.fn();
+      const loadData = vi.fn().mockResolvedValue({
         currentStepId: "step2",
         flowData: { test: "data" },
       });
 
       const config = {
         ...basicConfig,
-        onDataLoad,
-        onDataPersist,
+        loadData,
+        persistData,
         initialContext: { flowData: { initial: "data" } },
       };
 
       engine = new OnboardingEngine(config);
 
-      // onDataPersist should not be called during hydration
+      // persistData should not be called during hydration
       // Only after explicit context updates
-      expect(onDataPersist).not.toHaveBeenCalled();
+      expect(persistData).not.toHaveBeenCalled();
     });
 
     it("should handle context updates that don't actually change data", async () => {
-      const onDataPersist = vi.fn();
-      const config = { ...basicConfig, onDataPersist };
+      const persistData = vi.fn();
+      const config = { ...basicConfig, persistData };
 
       engine = new OnboardingEngine(config);
 
@@ -1371,7 +1381,7 @@ describe("OnboardingEngine", () => {
       await engine.updateContext(originalContext); // Same data
 
       // Should not persist since nothing changed
-      expect(onDataPersist).not.toHaveBeenCalled();
+      expect(persistData).not.toHaveBeenCalled();
     });
 
     describe("ready()", () => {
@@ -1387,13 +1397,13 @@ describe("OnboardingEngine", () => {
         expect(state.isHydrating).toBe(false);
       });
 
-      it("should resolve after data loading if onDataLoad is async", async () => {
+      it("should resolve after data loading if loadData is async", async () => {
         const loadedData: LoadedData = {
           currentStepId: "step2",
           flowData: { foo: "bar" },
         };
-        const onDataLoad = vi.fn().mockResolvedValue(loadedData);
-        const config = { ...basicConfig, onDataLoad };
+        const loadData = vi.fn().mockResolvedValue(loadedData);
+        const config = { ...basicConfig, loadData };
 
         engine = new OnboardingEngine(config);
 
@@ -1481,8 +1491,8 @@ describe("OnboardingEngine", () => {
       });
 
       it("should update context and persist if changed", async () => {
-        const onDataPersist = vi.fn().mockResolvedValue(undefined);
-        const config = { ...basicConfig, onDataPersist };
+        const persistData = vi.fn().mockResolvedValue(undefined);
+        const config = { ...basicConfig, persistData };
         engine = new OnboardingEngine(config);
         await engine.ready();
 
@@ -1495,7 +1505,7 @@ describe("OnboardingEngine", () => {
         // Wait for persist to be called
         await new Promise((resolve) => setTimeout(resolve, 10));
         expect(engine.getState().context.flowData.foo).toBe("bar");
-        expect(onDataPersist).toHaveBeenCalledWith(
+        expect(persistData).toHaveBeenCalledWith(
           expect.objectContaining({
             flowData: expect.objectContaining({ foo: "bar" }),
           }),
@@ -1504,8 +1514,8 @@ describe("OnboardingEngine", () => {
       });
 
       it("should not persist if context did not change", async () => {
-        const onDataPersist = vi.fn();
-        const config = { ...basicConfig, onDataPersist };
+        const persistData = vi.fn();
+        const config = { ...basicConfig, persistData };
         engine = new OnboardingEngine(config);
         await engine.ready();
 
@@ -1516,12 +1526,12 @@ describe("OnboardingEngine", () => {
 
         // Wait for persist to be called (should not be called)
         await new Promise((resolve) => setTimeout(resolve, 10));
-        expect(onDataPersist).not.toHaveBeenCalled();
+        expect(persistData).not.toHaveBeenCalled();
       });
 
       it("should not persist if hydrating", async () => {
-        const onDataPersist = vi.fn();
-        const config = { ...basicConfig, onDataPersist };
+        const persistData = vi.fn();
+        const config = { ...basicConfig, persistData };
         engine = new OnboardingEngine(config);
         await engine.ready();
 
@@ -1533,12 +1543,12 @@ describe("OnboardingEngine", () => {
         }));
 
         await new Promise((resolve) => setTimeout(resolve, 10));
-        expect(onDataPersist).not.toHaveBeenCalled();
+        expect(persistData).not.toHaveBeenCalled();
       });
 
       it("should notify state change listeners", () => {
         const listener = vi.fn();
-        engine.subscribeToStateChange(listener);
+        engine.addEventListener("stateChange", listener);
         // @ts-expect-error Accessing private method for test
         engine.setState(() => ({
           isLoading: true,
@@ -1558,7 +1568,7 @@ describe("OnboardingEngine", () => {
     describe("Step Change Listeners", () => {
       it("should notify step change listeners when navigating", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addStepChangeListener(listener);
+        const unsubscribe = engine.addEventListener("stepChange", listener);
 
         await engine.next();
 
@@ -1575,7 +1585,7 @@ describe("OnboardingEngine", () => {
 
       it("should unsubscribe step change listeners", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addStepChangeListener(listener);
+        const unsubscribe = engine.addEventListener("stepChange", listener);
 
         unsubscribe();
         await engine.next();
@@ -1591,7 +1601,10 @@ describe("OnboardingEngine", () => {
           throw new Error("Listener error");
         });
 
-        engine.addStepChangeListener(errorListener);
+        const unsubscribe = engine.addEventListener(
+          "stepChange",
+          errorListener
+        );
         await engine.next();
 
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -1606,9 +1619,9 @@ describe("OnboardingEngine", () => {
         const listener2 = vi.fn();
         const listener3 = vi.fn();
 
-        engine.addStepChangeListener(listener1);
-        engine.addStepChangeListener(listener2);
-        engine.addStepChangeListener(listener3);
+        engine.addEventListener("stepChange", listener1);
+        engine.addEventListener("stepChange", listener2);
+        engine.addEventListener("stepChange", listener3);
 
         await engine.next();
 
@@ -1621,7 +1634,7 @@ describe("OnboardingEngine", () => {
     describe("Flow Complete Listeners", () => {
       it("should notify flow complete listeners when flow completes", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addFlowCompletedListener(listener);
+        const unsubscribe = engine.addEventListener("flowComplete", listener);
 
         // Navigate to last step and complete the flow
         await engine.goToStep("step3");
@@ -1638,7 +1651,7 @@ describe("OnboardingEngine", () => {
 
       it("should unsubscribe flow complete listeners", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addFlowCompletedListener(listener);
+        const unsubscribe = engine.addEventListener("flowComplete", listener);
 
         unsubscribe();
 
@@ -1657,7 +1670,10 @@ describe("OnboardingEngine", () => {
           throw new Error("Sync listener error");
         });
 
-        engine.addFlowCompletedListener(errorListener);
+        const unsubscribe = engine.addEventListener(
+          "flowComplete",
+          errorListener
+        );
 
         // Complete the flow
         await engine.goToStep("step3");
@@ -1678,7 +1694,10 @@ describe("OnboardingEngine", () => {
           throw new Error("Async listener error");
         });
 
-        engine.addFlowCompletedListener(asyncErrorListener);
+        const unsubscribe = engine.addEventListener(
+          "flowComplete",
+          asyncErrorListener
+        );
 
         // Complete the flow
         await engine.goToStep("step3");
@@ -1701,9 +1720,9 @@ describe("OnboardingEngine", () => {
         const listener2 = vi.fn();
         const listener3 = vi.fn();
 
-        engine.addFlowCompletedListener(listener1);
-        engine.addFlowCompletedListener(listener2);
-        engine.addFlowCompletedListener(listener3);
+        engine.addEventListener("flowComplete", listener1);
+        engine.addEventListener("flowComplete", listener2);
+        engine.addEventListener("flowComplete", listener3);
 
         // Complete the flow
         await engine.goToStep("step3");
@@ -1718,7 +1737,7 @@ describe("OnboardingEngine", () => {
     describe("Before Step Change Listeners", () => {
       it("should call before step change listeners before navigation", async () => {
         const listener = vi.fn();
-        engine.onBeforeStepChange(listener);
+        engine.addEventListener("beforeStepChange", listener);
 
         await engine.next();
 
@@ -1737,7 +1756,7 @@ describe("OnboardingEngine", () => {
         const cancelListener = vi.fn((event: BeforeStepChangeEvent) => {
           event.cancel();
         });
-        engine.onBeforeStepChange(cancelListener);
+        engine.addEventListener("beforeStepChange", cancelListener);
 
         await engine.next();
 
@@ -1752,7 +1771,7 @@ describe("OnboardingEngine", () => {
             event.redirect("step3");
           }
         });
-        engine.onBeforeStepChange(redirectListener);
+        engine.addEventListener("beforeStepChange", redirectListener);
 
         await engine.next();
 
@@ -1770,7 +1789,7 @@ describe("OnboardingEngine", () => {
             }
           }
         );
-        engine.onBeforeStepChange(cancelAndRedirectListener);
+        engine.addEventListener("beforeStepChange", cancelAndRedirectListener);
 
         await engine.next();
 
@@ -1780,7 +1799,10 @@ describe("OnboardingEngine", () => {
 
       it("should unsubscribe before step change listeners", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.onBeforeStepChange(listener);
+        const unsubscribe = engine.addEventListener(
+          "beforeStepChange",
+          listener
+        );
 
         unsubscribe();
         await engine.next();
@@ -1793,7 +1815,7 @@ describe("OnboardingEngine", () => {
           await new Promise((resolve) => setTimeout(resolve, 10));
           // Allow navigation
         });
-        engine.onBeforeStepChange(asyncListener);
+        engine.addEventListener("beforeStepChange", asyncListener);
 
         await engine.next();
 
@@ -1809,9 +1831,9 @@ describe("OnboardingEngine", () => {
         const listener2 = vi.fn();
         const listener3 = vi.fn();
 
-        engine.onBeforeStepChange(listener1);
-        engine.onBeforeStepChange(listener2);
-        engine.onBeforeStepChange(listener3);
+        engine.addEventListener("beforeStepChange", listener1);
+        engine.addEventListener("beforeStepChange", listener2);
+        engine.addEventListener("beforeStepChange", listener3);
 
         await engine.next();
 
@@ -1822,7 +1844,7 @@ describe("OnboardingEngine", () => {
 
       it("should pass correct direction for different navigation types", async () => {
         const listener = vi.fn();
-        engine.onBeforeStepChange(listener);
+        engine.addEventListener("beforeStepChange", listener);
 
         // Test next
         await engine.next();
@@ -1862,7 +1884,7 @@ describe("OnboardingEngine", () => {
         await skippableEngine.ready();
 
         const skipListener = vi.fn();
-        skippableEngine.onBeforeStepChange(skipListener);
+        skippableEngine.addEventListener("beforeStepChange", skipListener);
 
         await skippableEngine.skip();
         expect(skipListener).toHaveBeenCalledWith(
@@ -1874,7 +1896,7 @@ describe("OnboardingEngine", () => {
     describe("State Change Listeners", () => {
       it("should notify state change listeners when state changes", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.subscribeToStateChange(listener);
+        const unsubscribe = engine.addEventListener("stateChange", listener);
 
         await engine.next();
 
@@ -1890,7 +1912,7 @@ describe("OnboardingEngine", () => {
 
       it("should unsubscribe state change listeners", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.subscribeToStateChange(listener);
+        const unsubscribe = engine.addEventListener("stateChange", listener);
 
         unsubscribe();
         await engine.next();
@@ -1900,7 +1922,7 @@ describe("OnboardingEngine", () => {
 
       it("should notify state change listeners on context updates", async () => {
         const listener = vi.fn();
-        engine.subscribeToStateChange(listener);
+        engine.addEventListener("stateChange", listener);
 
         await engine.updateContext({ flowData: { newKey: "newValue" } });
 
@@ -1917,7 +1939,7 @@ describe("OnboardingEngine", () => {
 
       it("should notify state change listeners on loading state changes", async () => {
         const listener = vi.fn();
-        engine.subscribeToStateChange(listener);
+        engine.addEventListener("stateChange", listener);
 
         // Reset to clear previous calls
         listener.mockClear();
@@ -1963,7 +1985,7 @@ describe("OnboardingEngine", () => {
 
       it("should notify state change listeners on error state changes", async () => {
         const listener = vi.fn();
-        engine.subscribeToStateChange(listener);
+        engine.addEventListener("stateChange", listener);
 
         // Create a step with onStepActive that throws an error
         const errorSteps: OnboardingStep[] = [
@@ -1984,7 +2006,7 @@ describe("OnboardingEngine", () => {
         await errorEngine.ready();
 
         const errorListener = vi.fn();
-        errorEngine.subscribeToStateChange(errorListener);
+        errorEngine.addEventListener("stateChange", errorListener);
 
         await errorEngine.next();
 
@@ -2000,9 +2022,9 @@ describe("OnboardingEngine", () => {
         const listener2 = vi.fn();
         const listener3 = vi.fn();
 
-        engine.subscribeToStateChange(listener1);
-        engine.subscribeToStateChange(listener2);
-        engine.subscribeToStateChange(listener3);
+        engine.addEventListener("stateChange", listener1);
+        engine.addEventListener("stateChange", listener2);
+        engine.addEventListener("stateChange", listener3);
 
         await engine.next();
 
@@ -2026,9 +2048,9 @@ describe("OnboardingEngine", () => {
           callOrder.push("stateChange");
         });
 
-        engine.onBeforeStepChange(beforeStepChangeListener);
-        engine.addStepChangeListener(stepChangeListener);
-        engine.subscribeToStateChange(stateChangeListener);
+        engine.addEventListener("beforeStepChange", beforeStepChangeListener);
+        engine.addEventListener("stepChange", stepChangeListener);
+        engine.addEventListener("stateChange", stateChangeListener);
 
         await engine.next();
 
@@ -2052,9 +2074,9 @@ describe("OnboardingEngine", () => {
         const workingStepChangeListener = vi.fn();
         const stateChangeListener = vi.fn();
 
-        engine.addStepChangeListener(errorStepChangeListener);
-        engine.addStepChangeListener(workingStepChangeListener);
-        engine.subscribeToStateChange(stateChangeListener);
+        engine.addEventListener("stepChange", errorStepChangeListener);
+        engine.addEventListener("stepChange", workingStepChangeListener);
+        engine.addEventListener("stateChange", stateChangeListener);
 
         await engine.next();
 

@@ -3,8 +3,8 @@
 
 import React, { ReactNode } from "react";
 import {
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
   OnboardingEngineConfig,
 } from "@onboardjs/core";
 import {
@@ -38,12 +38,12 @@ interface OnboardingFlowProps extends OnboardingEngineConfig {
    * For advanced scenarios: Directly provide your own onDataLoad function.
    * If provided, this will be used INSTEAD of localStoragePersistence.
    */
-  customOnDataLoad?: DataLoadListener;
+  customOnDataLoad?: DataLoadFn;
   /**
    * For advanced scenarios: Directly provide your own onDataPersist function.
    * If provided, this will be used INSTEAD of localStoragePersistence.
    */
-  customOnDataPersist?: DataPersistListener;
+  customOnDataPersist?: DataPersistFn;
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({

@@ -4,20 +4,18 @@
 import React, { ReactNode, useCallback, useEffect, useState } from "react";
 import {
   OnboardingEngineConfig,
-  OnboardingContext as CoreOnboardingContext,
   EngineState,
   OnboardingStep as CoreOnboardingStep,
   // Persistence related types if needed by render prop directly
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
 } from "@onboardjs/core";
 import {
   OnboardingProvider,
   LocalStoragePersistenceOptions, // Assuming this is exported
-  OnboardingContextValue,
   OnboardingActions, // Assuming this is exported
 } from "./context/OnboardingProvider";
-import { StepComponentRegistry, StepComponentProps } from "./types";
+import { StepComponentRegistry } from "./types";
 import { useOnboarding } from "./hooks/useOnboarding";
 
 // Props for the render function provided by the user
@@ -38,8 +36,8 @@ interface HeadlessOnboardingFlowProps
   stepComponentRegistry: StepComponentRegistry; // Still needed for the default renderStepContent helper
 
   localStoragePersistence?: LocalStoragePersistenceOptions;
-  customOnDataLoad?: DataLoadListener;
-  customOnDataPersist?: DataPersistListener;
+  customOnDataLoad?: DataLoadFn;
+  customOnDataPersist?: DataPersistFn;
 }
 
 // Internal component that consumes the context and calls the render prop
@@ -129,7 +127,7 @@ const HeadlessFlowRendererInternal: React.FC<{
     updateContext,
     currentStep: state.currentStep,
     isLoading,
-    renderStepContent, // Provide this helper
+    renderStepContent,
   });
 };
 
