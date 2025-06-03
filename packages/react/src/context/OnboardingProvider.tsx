@@ -17,9 +17,6 @@ import {
   DataLoadFn,
   DataPersistFn,
   LoadedData,
-  OnboardingPlugin, // Add plugin imports
-  PluginManager,
-  PluginManagerImpl,
 } from "@onboardjs/core";
 
 // Define the actions type based on OnboardingEngine methods
@@ -194,6 +191,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   useEffect(() => {
     const engineConfig: OnboardingEngineConfig = {
       steps,
+      plugins,
       initialStepId,
       initialContext,
       onFlowComplete: (context) => {

@@ -1,7 +1,6 @@
 // @onboardjs/react/src/index.ts
 export { OnboardingProvider } from "./context/OnboardingProvider";
 export { useOnboarding } from "./hooks/useOnboarding";
-export { usePlugins } from "./hooks/usePlugins";
 
 // Re-export plugin system from core for convenience
 export {

@@ -3,8 +3,8 @@ import {
   OnboardingEngine,
   EngineState,
   OnboardingContext as CoreOnboardingContext,
-  DataLoadListener,
-  DataPersistListener,
+  DataLoadFn,
+  DataPersistFn,
   BeforeStepChangeListener,
   FlowCompleteListener,
   OnboardingPlugin,
@@ -39,13 +39,13 @@ export interface UseOnboardingOptions {
    * Callback executed when data is loaded for the current step.
    * This can be used to trigger UI updates or other actions based on loaded data.
    */
-  loadData?: DataLoadListener;
+  loadData?: DataLoadFn;
 
   /**
    * Callback executed when data is persisted for the current step.
    * Useful for triggering actions after data is saved.
    */
-  persistData?: DataPersistListener;
+  persistData?: DataPersistFn;
 }
 
 export interface UseOnboardingReturn extends OnboardingActions {

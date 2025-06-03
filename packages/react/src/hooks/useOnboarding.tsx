@@ -26,11 +26,6 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
     reset,
     setComponentLoading,
     updateContext,
-    pluginManager,
-    installPlugin,
-    uninstallPlugin,
-    getInstalledPlugins,
-    isPluginInstalled,
   } = contextValue;
 
   // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
@@ -101,11 +96,5 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
     updateContext,
     isCompleted,
     currentStep,
-    // Plugin management
-    pluginManager,
-    installPlugin,
-    uninstallPlugin,
-    getInstalledPlugins,
-    isPluginInstalled,
   };
 };

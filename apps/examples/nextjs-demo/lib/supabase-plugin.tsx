@@ -45,7 +45,7 @@ export class SupabasePlugin extends BasePlugin<
 
   private async loadFromSupabase(): Promise<LoadedData | null> {
     try {
-      const userId = this.getCurrentUserId();
+      const userId = await this.getCurrentUserId();
       if (!userId) {
         console.log("[SupabasePlugin] No user ID available, skipping load");
         return null;
@@ -152,7 +152,7 @@ export class SupabasePlugin extends BasePlugin<
   }
 
   private async getCurrentUserId(): Promise<string | null> {
-    return "a84d94de-2d2e-4861-a956-60d17393cf78"; // Placeholder for testing;
+    // return "your_uuid"; // Placeholder for testing;
     // 1. Try custom getUserId function if provided
     if (this.config.getUserId) {
       return this.config.getUserId();
