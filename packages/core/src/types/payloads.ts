@@ -71,7 +71,7 @@ export interface SingleChoiceStepPayload extends BasePayload {
 
 /** Defines the structure of an item in a checklist step's payload. */
 export interface ChecklistItemDefinition<
-  TContext extends OnboardingContext = OnboardingContext, // Add TContext
+  TContext extends OnboardingContext = OnboardingContext,
 > {
   id: string; // Unique identifier for the item within this checklist
   label: string;
@@ -84,7 +84,7 @@ export interface ChecklistItemDefinition<
 
 /** Payload for a checklist step. */
 export interface ChecklistStepPayload<
-  TContext extends OnboardingContext = OnboardingContext, // Add TContext
+  TContext extends OnboardingContext = OnboardingContext,
 > extends BasePayload {
   /** An array of item definitions for the checklist. */
   items: ChecklistItemDefinition<TContext>[]; // Use generic ChecklistItemDefinition

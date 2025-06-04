@@ -55,7 +55,7 @@ type NonSkipableStep = {
 export type BaseOnboardingStep<
   TStepType extends string = string,
   TPayload = any,
-  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
+  TContext extends OnboardingContext = OnboardingContext,
 > = {
   /** A unique identifier for this step. */
   id: string | number;

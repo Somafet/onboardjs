@@ -106,7 +106,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   );
 
   if (!state) return <>{LoadingScreen}</>; // Engine not ready
-  if (isLoading) return <>{LoadingScreen}</>; // Covers hydration and engine's isLoading
+  // if (isLoading) return <>{LoadingScreen}</>; // Covers hydration and engine's isLoading
   if (state.error)
     return (
       <ErrorScreen
@@ -114,7 +114,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
         onRetry={() => reset({ steps: stepsConfig })}
       />
     );
-  if (state.isCompleted)
+  if (state.isCompleted || state.currentStep === null)
     return (
       <>
         {CompletedScreen ?? (

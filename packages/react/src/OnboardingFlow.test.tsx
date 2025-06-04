@@ -53,8 +53,6 @@ describe("OnboardingFlow", () => {
       <OnboardingFlow {...defaultProps} LoadingComponent={LoadingComponent} />,
     );
 
-    // Note: This might be difficult to test as loading is usually brief
-    // We'd need to mock the engine to stay in loading state
     await waitFor(() => {
       expect(screen.getByTestId("information-step")).toBeInTheDocument();
     });

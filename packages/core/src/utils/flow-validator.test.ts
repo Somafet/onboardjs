@@ -216,7 +216,7 @@ describe("validateFlow", () => {
         id: "step2",
         type: "INFORMATION",
         payload: { mainText: "There" },
-      }, // Added title
+      },
     ];
     const issues = validateFlow(steps);
     // We don't expect an error for the functional link because static analysis can't resolve it.

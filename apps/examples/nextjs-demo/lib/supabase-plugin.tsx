@@ -107,8 +107,8 @@ export class SupabasePlugin extends BasePlugin<
         .from(this.config.tableName || "onboarding_progress")
         .select("*")
         .eq(this.config.userIdField || "user_id", userId)
-        .single();
-
+        .maybeSingle();
+      
       if (hasExistingData.data) {
         const { error } = await this.supabase
           .from(this.config.tableName || "onboarding_progress")
@@ -131,7 +131,7 @@ export class SupabasePlugin extends BasePlugin<
 
   private async clearFromSupabase(): Promise<void> {
     try {
-      const userId = this.getCurrentUserId();
+      const userId = await this.getCurrentUserId();
       if (!userId) {
         console.log("[SupabasePlugin] No user ID available, skipping clear");
         return;
@@ -152,7 +152,7 @@ export class SupabasePlugin extends BasePlugin<
   }
 
   private async getCurrentUserId(): Promise<string | null> {
-    // return "your_uuid"; // Placeholder for testing;
+    // return "a84d94de-2d2e-4861-a956-60d17393cf78"; // Demo user ID for testing
     // 1. Try custom getUserId function if provided
     if (this.config.getUserId) {
       return this.config.getUserId();

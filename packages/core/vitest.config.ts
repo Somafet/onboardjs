@@ -10,6 +10,8 @@ export default defineConfig({
         "src/**/index.ts", // Exclude all barrel index.ts files
         "dist/**", // Exclude the dist directory
         "*.config.ts", // Exclude config files
+        "*.config.mjs", // Exclude config files
+        "*.config.js", // Exclude config files
       ],
     },
   },

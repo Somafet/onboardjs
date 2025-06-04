@@ -11,13 +11,13 @@
 
 **`@onboardjs/core` is the headless, framework-agnostic engine that powers dynamic and customizable onboarding experiences. It provides the foundational logic for defining, managing, and transitioning through multi-step user onboarding flows.**
 
-This core library is designed to be integrated into any JavaScript/TypeScript application, with dedicated binding packages (like [`@onboardjs/react`](../react)) for popular UI frameworks.
+This core library is designed to be integrated into any JavaScript/TypeScript application, with dedicated binding packages (like [`@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)) for popular UI frameworks.
 
 **The OnboardJS Project:**
 
 OnboardJS aims to enable developers to quickly and easily build highly customizable, dynamic, and effective onboarding flows for their web applications. We provide an open-source engine, comprehensive resources, and foster a supportive community.
 
-➡️ **Looking for React integration? Check out [`@onboardjs/react`](../react)!**
+➡️ **Looking for React integration? Check out [`@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)!**
 ➡️ **Explore our [Documentation](#)!** (Coming soon)
 ➡️ **Join our [Community](#)!** (Coming soon)
 
@@ -51,13 +51,14 @@ Building effective user onboarding is crucial for product adoption and user succ
 - **Event System:**
   - Subscribe to engine events like `stateChange` and `beforeStepChange` to react to flow updates or intercept navigation.
 - **Data Persistence Hooks:**
-  - `onDataLoad`: Allows you to load saved progress when the engine initializes.
-  - `onDataPersist`: Allows you to save progress whenever data changes or steps are completed.
+  - `loadData`: Allows you to load saved progress when the engine initializes.
+  - `persistData`: Allows you to save progress whenever data changes or steps are completed.
 - **Flow Validation Utility:**
   - `validateFlow()`: A helper function to check your flow definitions for common errors.
 - **Support for Various Step Types:**
   - Includes definitions for common types (e.g., `INFORMATION`, `CONFIRMATION`, `CHECKLIST`).
   - Crucially supports `CUSTOM_COMPONENT` type for maximum flexibility when used with UI binding libraries.
+- **Plugin System:** Easily extend the engine with custom plugins for additional functionality (e.g., analytics, custom storage).
 
 ## Installation
 
@@ -102,6 +103,7 @@ const steps: OnboardingStep[] = [
     id: "profile-setup",
     type: "CUSTOM_COMPONENT", // Example type
     payload: {
+      componentKey: "ProfileSetupComponent", // This should match a registered component
       title: "Setup Your Profile",
       fields: [
         { id: "name", name: "userName", label: "Your Name", type: "text" },
@@ -127,7 +129,7 @@ const steps: OnboardingStep[] = [
     type: "INFORMATION",
     payload: {
       title: "Name Required",
-      message: "Please go back and enter your name.",
+      mainText: "Please go back and enter your name.",
     },
     previousStep: "profile-setup",
     nextStep: null,
@@ -135,7 +137,7 @@ const steps: OnboardingStep[] = [
   {
     id: "confirmation",
     type: "CONFIRMATION",
-    payload: { title: "All Set!", message: "Your profile is set up." },
+    payload: { title: "All Set!", confirmationMessage: "Your profile is set up." },
     previousStep: "profile-setup",
     nextStep: null, // End of flow
   },
@@ -171,7 +173,7 @@ const engine = new OnboardingEngine({
   //     const saved = localStorage.getItem('onboardingState');
   //     if (saved) {
   //       const parsed = JSON.parse(saved);
-  //       // Add TTL check if you implement it in this example
+  //       // Check TTL if needed
   //       return parsed.data; // Assuming you store { timestamp, data: LoadedData }
   //     }
   //   }
@@ -189,7 +191,7 @@ const engine = new OnboardingEngine({
 });
 
 // 3. Subscribe to state changes (e.g., to update your UI)
-const unsubscribe = engine.subscribeToStateChange((newState) => {
+const unsubscribe = engine.addEventListener("stateChange", (newState) => {
   console.log("Engine state changed:", newState);
   // Update your UI based on newState.currentStep, newState.context, etc.
   // For example, if using React, you'd update component state here.

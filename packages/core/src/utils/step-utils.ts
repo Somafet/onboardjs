@@ -6,7 +6,7 @@ import { OnboardingStep, OnboardingContext } from "../types";
  * Evaluates a step ID that can be a string, number or a function.
  */
 export function evaluateStepId<
-  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
+  TContext extends OnboardingContext = OnboardingContext,
 >(
   stepIdOrFn:
     | string
@@ -26,7 +26,7 @@ export function evaluateStepId<
  * Finds a step by its ID in an array of steps.
  */
 export function findStepById<
-  TContext extends OnboardingContext = OnboardingContext, // Add TContext generic
+  TContext extends OnboardingContext = OnboardingContext,
 >(
   steps: OnboardingStep<TContext>[], // Use generic OnboardingStep
   stepId: string | null | undefined | number,

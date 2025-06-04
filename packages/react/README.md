@@ -6,7 +6,7 @@
 <!-- [![Build Status](https://github.com/your-username/onboardjs/actions/workflows/ci.yml/badge.svg?branch=main&path=packages/react)](...) -->
 <!-- [![npm downloads](https://img.shields.io/npm/dm/@onboardjs/react.svg)](https://www.npmjs.com/package/@onboardjs/react) -->
 
-**Official React bindings for [`@onboardjs/core`](../core): Build fully custom, dynamic onboarding flows in React and Next.js with maximum flexibility.**
+**Official React bindings for [`@onboardjs/core`](https://github.com/Somafet/onboardjs/tree/main/packages/core): Build fully custom, dynamic onboarding flows in React and Next.js with maximum flexibility.**
 
 ---
 
@@ -19,6 +19,7 @@
 - **Persistence:** Built-in localStorage support, or plug in your own (e.g., Supabase).
 - **TypeScript-first:** Full type safety and autocompletion.
 - **Next.js Ready:** Works with App Router and Pages Router.
+- **Plugins:** Extend functionality with custom plugins.
 
 ---
 
@@ -42,7 +43,8 @@ bun add @onboardjs/core @onboardjs/react
 
 ```typescript jsx
 // config/onboarding.ts
-import { OnboardingStep, StepComponentProps } from '@onboardjs/react';
+import { OnboardingStep } from '@onboardjs/core';
+import { StepComponentProps } from '@onboardjs/react';
 
 const WelcomeStep: React.FC<StepComponentProps<{ title: string }>> = ({ payload }) => (
   <div>
@@ -62,14 +64,12 @@ export const steps: OnboardingStep[] = [
   {
     id: 'welcome',
     type: 'CUSTOM_COMPONENT',
-    title: 'Welcome!',
     payload: { componentKey: 'welcome', title: 'Hello from OnboardJS!' },
     nextStep: 'name',
   },
   {
     id: 'name',
     type: 'CUSTOM_COMPONENT',
-    title: 'Your Name',
     payload: { componentKey: 'name', fieldKey: 'userName' },
     nextStep: null,
   },
@@ -151,7 +151,7 @@ export default function OnboardingUIManager({ stepsConfig, stepComponentRegistry
 
 ## 📚 Documentation & Community
 
-- **[@onboardjs/core README](../core)**
+- **[@onboardjs/core README](https://github.com/Somafet/onboardjs/tree/main/packages/core)**
 - **Main Documentation Site** (coming soon)
 - **GitHub Discussions** | **Discord** (coming soon)
 
