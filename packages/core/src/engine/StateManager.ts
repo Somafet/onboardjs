@@ -163,7 +163,6 @@ export class StateManager<TContext extends OnboardingContext> {
   setError(error: Error | null): void {
     this.errorInternal = error;
     if (error) {
-      // Note: context needs to be passed from caller
       console.error("[StateManager] Error set:", error);
     }
   }

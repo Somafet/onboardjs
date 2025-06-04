@@ -142,7 +142,11 @@ describe("OnboardingProvider", () => {
       </OnboardingProvider>,
     );
 
-    // Navigate to last step and complete
+    await waitFor(() => {
+      expect(screen.getByTestId("current-step")).toHaveTextContent("step1");
+    });
+
+    // Navigate directly to step 4
     await act(async () => {
       screen.getByTestId("goto-final-btn").click();
     });

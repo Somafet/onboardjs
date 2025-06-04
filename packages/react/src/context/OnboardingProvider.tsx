@@ -17,14 +17,16 @@ import {
   DataLoadFn,
   DataPersistFn,
   LoadedData,
+  OnboardingStep,
+  UnsubscribeFunction,
 } from "@onboardjs/core";
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions {
-  next: (stepSpecificData?: any) => Promise<void>;
+  next: (stepSpecificData?: unknown) => Promise<void>;
   previous: () => Promise<void>;
   skip: () => Promise<void>;
-  goToStep: (stepId: string, stepSpecificData?: any) => Promise<void>;
+  goToStep: (stepId: string, stepSpecificData?: unknown) => Promise<void>;
   updateContext: (
     newContextData: Partial<CoreOnboardingContext>,
   ) => Promise<void>;
@@ -33,9 +35,13 @@ export interface OnboardingActions {
 
 export interface OnboardingContextValue extends OnboardingActions {
   engine: OnboardingEngine | null;
+  engineInstanceId: number | undefined;
   state: EngineState | null;
   isLoading: boolean;
   setComponentLoading: (loading: boolean) => void;
+  // Expose currentStep directly for convenience, derived from state
+  currentStep: OnboardingStep | null | undefined;
+  isCompleted: boolean | undefined;
 }
 
 export const OnboardingContext = createContext<
@@ -44,19 +50,25 @@ export const OnboardingContext = createContext<
 
 export interface LocalStoragePersistenceOptions {
   key: string;
-  ttl?: number;
+  ttl?: number; // Time to live in milliseconds
 }
 
 export interface OnboardingProviderProps
-  extends Omit<OnboardingEngineConfig, "loadData" | "persistData"> {
+  extends Omit<
+    OnboardingEngineConfig,
+    "loadData" | "persistData" | "clearPersistedData" | "onFlowComplete" // onFlowComplete is handled separately
+  > {
   children: ReactNode;
   localStoragePersistence?: LocalStoragePersistenceOptions;
   customOnDataLoad?: DataLoadFn;
   customOnDataPersist?: DataPersistFn;
-  customOnClearPeristedData?: () => void;
+  customOnClearPersistedData?: () => Promise<void> | void; // Ensure it can be async
+  onFlowComplete?: (context: CoreOnboardingContext) => Promise<void> | void; // Prop for flow complete
   /**
    * Whether to enable plugin management features.
    * If true, allows installing/uninstalling plugins dynamically.
+   * Note: This prop is not currently used to configure the engine directly
+   * but can be used by consumers or future enhancements.
    */
   enablePluginManager?: boolean;
 }
@@ -66,23 +78,23 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   steps,
   initialStepId,
   initialContext,
-  onFlowComplete: passedOnFlowComplete,
+  onFlowComplete: passedOnFlowComplete, // Renamed prop
   onStepChange,
   localStoragePersistence,
   customOnDataLoad,
   customOnDataPersist,
-  customOnClearPeristedData,
+  customOnClearPersistedData,
   plugins,
-  enablePluginManager = true, // Default to enabled
+  // enablePluginManager is not directly used in engineConfig in this version
 }) => {
   const [engine, setEngine] = useState<OnboardingEngine | null>(null);
   const [engineState, setEngineState] = useState<EngineState | null>(null);
   const [componentLoading, setComponentLoading] = useState(false);
+  const [isEngineReadyAndInitialized, setIsEngineReadyAndInitialized] =
+    useState(false);
 
-  // Use a stable reference for plugins to avoid unnecessary re-renders
   const stablePlugins = useMemo(() => plugins || [], [plugins]);
 
-  // Persistence logic (unchanged)
   const onDataLoadHandler = useCallback(async (): Promise<
     LoadedData | null | undefined
   > => {
@@ -96,35 +108,36 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     try {
       const savedStateRaw = window.localStorage.getItem(key);
       if (savedStateRaw) {
-        const savedState = JSON.parse(savedStateRaw);
-        if (ttl && savedState.timestamp) {
-          if (Date.now() - savedState.timestamp > ttl) {
-            console.log(
-              `[OnboardJS] localStorage data for key "${key}" expired. Ignoring.`,
-            );
-            window.localStorage.removeItem(key);
-            return null;
-          }
+        const savedState = JSON.parse(savedStateRaw) as {
+          timestamp?: number;
+          data: LoadedData;
+        };
+        if (
+          ttl &&
+          savedState.timestamp &&
+          Date.now() - savedState.timestamp > ttl
+        ) {
+          console.log(
+            `[OnboardJS] localStorage data for key "${key}" expired. Ignoring.`,
+          );
+          window.localStorage.removeItem(key);
+          return null;
         }
         console.log(
           `[OnboardJS] Loaded from localStorage (key: "${key}"):`,
           savedState.data,
         );
-        return savedState.data as LoadedData;
+        return savedState.data;
       }
     } catch (error) {
       console.error(
         `[OnboardJS] Error loading from localStorage (key: "${key}"):`,
         error,
       );
-      window.localStorage.removeItem(key);
+      window.localStorage.removeItem(key); // Clear corrupted data
     }
     return null;
-  }, [
-    localStoragePersistence?.key,
-    localStoragePersistence?.ttl,
-    customOnDataLoad,
-  ]);
+  }, [customOnDataLoad, localStoragePersistence]);
 
   const onDataPersistHandler = useCallback(
     async (
@@ -132,7 +145,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       currentStepId: string | number | null,
     ): Promise<void> => {
       if (customOnDataPersist) {
-        return customOnDataPersist(context, currentStepId);
+        await customOnDataPersist(context, currentStepId);
+        return;
       }
       if (!localStoragePersistence || typeof window === "undefined") {
         return;
@@ -142,6 +156,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         const dataToSave: LoadedData = {
           flowData: context.flowData,
           currentStepId: currentStepId,
+          // Persist other top-level context properties if needed, excluding functions or complex objects not suitable for JSON
+          ...Object.fromEntries(
+            Object.entries(context).filter(([k]) => k !== "flowData"),
+          ),
         };
         const stateToStore = {
           timestamp: Date.now(),
@@ -155,10 +173,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         );
       }
     },
-    [localStoragePersistence?.key, customOnDataPersist],
+    [customOnDataPersist, localStoragePersistence],
   );
 
-  const onClearPeristedData = useCallback(() => {
+  const onClearPersistedDataHandler = useCallback(async () => {
+    if (customOnClearPersistedData) {
+      await customOnClearPersistedData();
+      return;
+    }
     if (!localStoragePersistence || typeof window === "undefined") {
       return;
     }
@@ -174,178 +196,240 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         error,
       );
     }
-  }, [localStoragePersistence?.key]);
+  }, [customOnClearPersistedData, localStoragePersistence]);
 
-  const onFlowComplete = useCallback(
-    (context: CoreOnboardingContext) => {
+  const onFlowCompleteHandler = useCallback(
+    async (context: CoreOnboardingContext) => {
       if (passedOnFlowComplete) {
-        passedOnFlowComplete(context);
-      } else {
-        console.warn(
-          "[OnboardingProvider] No onFlowComplete handler provided. Flow completed without custom action.",
-        );
+        await passedOnFlowComplete(context);
       }
-    },
-    [passedOnFlowComplete],
-  );
-  useEffect(() => {
-    const engineConfig: OnboardingEngineConfig = {
-      steps,
-      plugins,
-      initialStepId,
-      initialContext,
-      onFlowComplete: (context) => {
-        if (onFlowComplete) onFlowComplete(context);
-        // Clear localStorage on flow completion if persistence is enabled
-        if (localStoragePersistence && typeof window !== "undefined") {
+      if (localStoragePersistence && typeof window !== "undefined") {
+        try {
           window.localStorage.removeItem(localStoragePersistence.key);
           console.log(
             `[OnboardJS] Cleared localStorage (key: "${localStoragePersistence.key}") on flow completion.`,
           );
+        } catch (error) {
+          console.error(
+            `[OnboardJS] Error clearing localStorage on flow completion (key: "${localStoragePersistence.key}"):`,
+            error,
+          );
         }
-      },
+      }
+    },
+    [passedOnFlowComplete, localStoragePersistence],
+  );
+
+  useEffect(() => {
+    console.log(
+      "[OnboardingProvider] useEffect triggered to re-initialize engine.",
+    );
+    setIsEngineReadyAndInitialized(false); // Mark as not ready when config changes
+    setEngine(null); // Clear old engine instance
+    setEngineState(null); // Reset state when re-initializing
+
+    const engineConfig: OnboardingEngineConfig = {
+      steps,
+      plugins: stablePlugins,
+      initialStepId,
+      initialContext,
+      onFlowComplete: onFlowCompleteHandler,
       onStepChange,
-      // Only set these if no plugins will override them
-      loadData:
-        customOnDataLoad ||
-        (localStoragePersistence ? onDataLoadHandler : undefined),
-      persistData:
-        customOnDataPersist ||
-        (localStoragePersistence ? onDataPersistHandler : undefined),
-      clearPersistedData:
-        customOnClearPeristedData ||
-        (localStoragePersistence ? onClearPeristedData : undefined),
+      loadData: onDataLoadHandler,
+      persistData: onDataPersistHandler,
+      clearPersistedData: onClearPersistedDataHandler,
     };
 
-    const newEngine = new OnboardingEngine(engineConfig);
-    setEngine(newEngine);
-    setEngineState(newEngine.getState());
+    let currentEngine: OnboardingEngine | null = null;
+    let unsubscribeStateChange: UnsubscribeFunction | undefined;
 
-    const unsubscribe = newEngine.addEventListener(
-      "stateChange",
-      (newState) => {
-        setEngineState(newState);
-      },
-    );
+    try {
+      currentEngine = new OnboardingEngine(engineConfig);
+      setEngine(currentEngine); // Set engine instance immediately
 
-    return () => unsubscribe();
+      currentEngine
+        .ready()
+        .then(() => {
+          if (currentEngine) {
+            // Check if component is still mounted / engine is current
+            console.log("[OnboardingProvider] Engine is ready.");
+            setEngineState(currentEngine.getState());
+            setIsEngineReadyAndInitialized(true);
+
+            unsubscribeStateChange = currentEngine.addEventListener(
+              "stateChange",
+              (newState) => {
+                console.log(
+                  "[OnboardingProvider] stateChange event received:",
+                  newState.currentStep?.id,
+                  newState.isLoading,
+                );
+                setEngineState(newState);
+              },
+            );
+          }
+        })
+        .catch((engineInitError) => {
+          console.error(
+            "[OnboardingProvider] Engine initialization failed:",
+            engineInitError,
+          );
+          setEngineState({
+            // Provide a default error state
+            currentStep: null,
+            context: (initialContext || {}) as CoreOnboardingContext,
+            isFirstStep: false,
+            isLastStep: false,
+            canGoNext: false,
+            canGoPrevious: false,
+            isSkippable: false,
+            isLoading: false,
+            isHydrating: false,
+            error:
+              engineInitError instanceof Error
+                ? engineInitError
+                : new Error(String(engineInitError)),
+            isCompleted: false,
+          });
+          setIsEngineReadyAndInitialized(false); // Explicitly false on error
+        });
+    } catch (configError) {
+      console.error(
+        "[OnboardingProvider] Error creating OnboardingEngine (invalid config):",
+        configError,
+      );
+      setEngineState({
+        currentStep: null,
+        context: (initialContext || {}) as CoreOnboardingContext,
+        isFirstStep: false,
+        isLastStep: false,
+        canGoNext: false,
+        canGoPrevious: false,
+        isSkippable: false,
+        isLoading: false,
+        isHydrating: false,
+        error:
+          configError instanceof Error
+            ? configError
+            : new Error(String(configError)),
+        isCompleted: false,
+      });
+      setIsEngineReadyAndInitialized(false);
+    }
+
+    return () => {
+      console.log("[OnboardingProvider] useEffect cleanup.");
+      if (unsubscribeStateChange) {
+        unsubscribeStateChange();
+      }
+    };
   }, [
     steps,
     initialStepId,
     initialContext,
-    localStoragePersistence?.key, // Only depend on the key, not the whole object
-    localStoragePersistence?.ttl,
-    customOnDataLoad,
-    customOnDataPersist,
-    customOnClearPeristedData,
-    passedOnFlowComplete, // Use the original prop, not the wrapped callback
+    onFlowCompleteHandler,
     onStepChange,
+    onDataLoadHandler,
+    onDataPersistHandler,
+    onClearPersistedDataHandler,
     stablePlugins,
-    enablePluginManager,
-    // Don't include the callback handlers themselves - they're now stable due to dependency fixes
   ]);
 
   const isLoading = useMemo(
     () =>
       componentLoading ||
+      !isEngineReadyAndInitialized || // Key: loading if engine not fully ready and initialized
       (engineState?.isLoading ?? false) ||
       (engineState?.isHydrating ?? false),
-    [componentLoading, engineState?.isLoading, engineState?.isHydrating],
+    [
+      componentLoading,
+      isEngineReadyAndInitialized,
+      engineState?.isLoading,
+      engineState?.isHydrating,
+    ],
   );
 
-  // Individual action functions (unchanged)
-  const next = useCallback(
-    async (data?: any) => {
-      if (!engine) return;
-      setComponentLoading(true);
-      try {
-        await engine.next(data);
-      } finally {
-        setComponentLoading(false);
-      }
-    },
-    [engine],
-  );
-
-  const previous = useCallback(async () => {
-    if (!engine) return;
-    setComponentLoading(true);
-    try {
-      await engine.previous();
-    } finally {
-      setComponentLoading(false);
-    }
-  }, [engine]);
-
-  const skip = useCallback(async () => {
-    if (!engine) return;
-    setComponentLoading(true);
-    try {
-      await engine.skip();
-    } finally {
-      setComponentLoading(false);
-    }
-  }, [engine]);
-
-  const goToStep = useCallback(
-    async (stepId: string, data?: any) => {
-      if (!engine) return;
-      setComponentLoading(true);
-      try {
-        await engine.goToStep(stepId, data);
-      } finally {
-        setComponentLoading(false);
-      }
-    },
-    [engine],
-  );
-
-  const updateContext = useCallback(
-    async (newContextData: Partial<CoreOnboardingContext>) => {
-      if (!engine) return;
-      await engine.updateContext(newContextData);
-    },
-    [engine],
-  );
-
-  const reset = useCallback(
-    async (newConfig?: Partial<OnboardingEngineConfig>) => {
-      if (!engine) return;
-      setComponentLoading(true);
-      try {
-        await engine.reset(newConfig);
-      } finally {
-        setComponentLoading(false);
-      }
-    },
-    [engine],
+  const actions = useMemo(
+    () => ({
+      next: async (data?: unknown) => {
+        if (!engine || !isEngineReadyAndInitialized) return;
+        setComponentLoading(true);
+        try {
+          await engine.next(data);
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      previous: async () => {
+        if (!engine || !isEngineReadyAndInitialized) return;
+        setComponentLoading(true);
+        try {
+          await engine.previous();
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      skip: async () => {
+        if (!engine || !isEngineReadyAndInitialized) return;
+        setComponentLoading(true);
+        try {
+          await engine.skip();
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      goToStep: async (stepId: string, data?: unknown) => {
+        if (!engine || !isEngineReadyAndInitialized) return;
+        setComponentLoading(true);
+        try {
+          await engine.goToStep(stepId, data);
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      updateContext: async (newContextData: Partial<CoreOnboardingContext>) => {
+        if (!engine || !isEngineReadyAndInitialized) return;
+        setComponentLoading(true);
+        try {
+          await engine.updateContext(newContextData);
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+      reset: async (newConfig?: Partial<OnboardingEngineConfig>) => {
+        if (!engine) return; // Allow reset even if not fully "ready" but engine instance exists
+        setComponentLoading(true);
+        try {
+          // Resetting the engine will trigger its own async initialization.
+          // The useEffect will likely re-run if config props change,
+          // or the engine's internal stateChange will update the provider.
+          await engine.reset(newConfig);
+          // After reset, the engine re-initializes. We might need to reflect this.
+          // The stateChange listener should handle updating engineState.
+          // We might want to set isEngineReadyAndInitialized to false here and let ready() set it true.
+          // However, engine.reset() itself re-initializes and should eventually emit state.
+        } finally {
+          setComponentLoading(false);
+        }
+      },
+    }),
+    [engine, isEngineReadyAndInitialized],
   );
 
   const value = useMemo(
     (): OnboardingContextValue => ({
-      engine,
-      state: engineState,
+      engine: isEngineReadyAndInitialized ? engine : null,
+      engineInstanceId: isEngineReadyAndInitialized
+        ? engine?.instanceId
+        : undefined,
+      state: isEngineReadyAndInitialized ? engineState : null,
       isLoading,
       setComponentLoading,
-      skip,
-      next,
-      reset,
-      previous,
-      goToStep,
-      updateContext,
+      currentStep: engineState?.currentStep, // Derived for convenience
+      isCompleted: engineState?.isCompleted, // Derived
+      ...actions,
     }),
-    [
-      engine,
-      engineState,
-      isLoading,
-      setComponentLoading,
-      skip,
-      next,
-      reset,
-      previous,
-      goToStep,
-      updateContext,
-    ],
+    [engine, engineState, isLoading, isEngineReadyAndInitialized, actions],
   );
 
   return (

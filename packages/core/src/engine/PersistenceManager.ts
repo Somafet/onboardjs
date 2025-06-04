@@ -99,16 +99,16 @@ export class PersistenceManager<TContext extends OnboardingContext> {
   }
 
   // Setters for updating handlers (used by plugins)
-  setDataLoadHandler(handler: DataLoadFn<TContext> | undefined): void {
+  setDataLoadHandler(handler?: DataLoadFn<TContext> | undefined): void {
     this.loadData = handler;
   }
 
-  setDataPersistHandler(handler: DataPersistFn<TContext> | undefined): void {
+  setDataPersistHandler(handler?: DataPersistFn<TContext> | undefined): void {
     this.persistData = handler;
   }
 
   setClearPersistedDataHandler(
-    handler: (() => Promise<void> | void) | undefined,
+    handler?: (() => Promise<void> | void) | undefined,
   ): void {
     this.clearPersistedData = handler;
   }

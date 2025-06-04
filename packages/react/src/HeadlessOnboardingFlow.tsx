@@ -70,7 +70,7 @@ const HeadlessFlowRendererInternal: React.FC<{
 
   const renderStepContent = useCallback((): ReactNode => {
     if (!state?.currentStep || !state.context) {
-      return null; // Or some placeholder
+      return null;
     }
 
     let ComponentToRender;
@@ -79,7 +79,7 @@ const HeadlessFlowRendererInternal: React.FC<{
       ComponentToRender =
         stepComponentRegistry[(step.payload as any)?.componentKey];
     } else {
-      ComponentToRender = stepComponentRegistry[step.type];
+      ComponentToRender = stepComponentRegistry[step.type] ?? stepComponentRegistry[step.id];
     }
 
     if (!ComponentToRender) {

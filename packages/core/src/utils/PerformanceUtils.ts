@@ -33,7 +33,7 @@ export class PerformanceUtils {
     const step = steps.find((s) => s.id === stepId);
 
     if (step) {
-      // Implement LRU eviction
+      // Apply LRU eviction when cache is full
       if (this.stepCache.size >= this.maxCacheSize) {
         const firstKey = this.stepCache.keys().next().value;
         if (firstKey) {
@@ -52,8 +52,8 @@ export class PerformanceUtils {
   static memoizeStepEvaluation<T extends OnboardingContext>(
     stepId: string | number | null | undefined,
     context: T,
-    evaluator: (id: string | number | null | undefined, ctx: T) => any,
-  ): any {
+    evaluator: (id: string | number | null | undefined, ctx: T) => unknown,
+  ) {
     if (!stepId) return evaluator(stepId, context);
 
     // Create cache key from stepId and relevant context parts
@@ -66,7 +66,7 @@ export class PerformanceUtils {
 
     const result = evaluator(stepId, context);
 
-    // Implement cache size limit
+    // Apply cache size limit
     if (this.evaluationCache.size >= this.maxCacheSize) {
       const firstKey = this.evaluationCache.keys().next().value;
       if (firstKey) {
@@ -82,7 +82,7 @@ export class PerformanceUtils {
   /**
    * Debounce function for frequent operations
    */
-  static debounce<T extends (...args: any[]) => any>(
+  static debounce<T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number,
   ): (...args: Parameters<T>) => void {
@@ -96,7 +96,7 @@ export class PerformanceUtils {
   /**
    * Throttle function for rate limiting
    */
-  static throttle<T extends (...args: any[]) => any>(
+  static throttle<T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number,
   ): (...args: Parameters<T>) => void {
@@ -230,14 +230,26 @@ export class PerformanceUtils {
    * Simple context hashing for cache keys
    */
   private static hashContext<T extends OnboardingContext>(context: T): string {
-    // Create a hash from relevant context properties
-    // This is a simple implementation - you might want a more sophisticated hash
-    const relevantData = {
-      flowDataKeys: Object.keys(context.flowData || {}),
-      flowDataValues: JSON.stringify(context.flowData || {}),
+    const flowData = context.flowData || {};
+    // Create a stable representation of flowData by sorting keys
+    const sortedFlowDataKeys = Object.keys(flowData).sort();
+    const stableFlowDataRepresentation: Record<string, unknown> = {};
+    for (const key of sortedFlowDataKeys) {
+      stableFlowDataRepresentation[key] = flowData[key];
+    }
+  
+    // Define what parts of the context are relevant for the hash.
+    // If other top-level context properties (besides flowData) can affect
+    // the outcome of an evaluation that you're memoizing, include them here.
+    const dataToHash = {
+      // Example: if context.user?.id affects evaluation, include it:
+      // userId: context.user?.id, 
+      flowData: stableFlowDataRepresentation,
     };
-
-    return btoa(JSON.stringify(relevantData)).slice(0, 16);
+  
+    // JSON.stringify the stable representation as the hash
+    const hash = JSON.stringify(dataToHash);
+    return hash;
   }
 
   /**
@@ -257,7 +269,7 @@ export class PerformanceUtils {
       // Allow other tasks to run between batches
       if (i + batchSize < operations.length) {
         // In a real implementation, you might use setTimeout or requestIdleCallback
-        // For now, we'll just continue synchronously
+        // For this implementation, we continue synchronously
       }
     }
 

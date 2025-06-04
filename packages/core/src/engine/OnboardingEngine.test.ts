@@ -503,9 +503,8 @@ describe("OnboardingEngine", () => {
       // We expect navigateToStep to complete, including its internal async operations and state updates
       await engine.goToStep("step2");
 
-      // Add a minimal yield to the event loop, just in case.
-      // This helps ensure any final microtasks from the promise rejection handling in navigateToStep complete.
-      await new Promise((resolve) => setTimeout(resolve, 0)); // Or process.nextTick for Node
+      // Yield to the event loop to ensure all async operations complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       const state = engine.getState();
       expect(onStepActive).toHaveBeenCalled(); // Make sure the mock was called

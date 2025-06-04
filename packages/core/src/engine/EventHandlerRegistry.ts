@@ -166,7 +166,6 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
     stepId: string | number | null | undefined,
   ): OnboardingStep<TContext> | undefined {
     // This would need to be provided by the engine or injected
-    // For now, returning undefined as placeholder
     return undefined;
   }
 

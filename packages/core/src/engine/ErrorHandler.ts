@@ -40,7 +40,6 @@ export class ErrorHandler<TContext extends OnboardingContext> {
       stack: processedError.stack,
     };
 
-    // Add to history
     this.errorHistory.push({
       error: processedError,
       context: errorContext,
@@ -108,7 +107,6 @@ export class ErrorHandler<TContext extends OnboardingContext> {
     engineContext: TContext;
   }> {
     if (count <= 0) {
-      // Add this condition
       return [];
     }
     return this.errorHistory.slice(-count);

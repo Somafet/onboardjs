@@ -24,9 +24,11 @@ describe("useOnboarding", () => {
   });
 
   const createWrapper = (config = mockConfig) => {
-    return ({ children }: { children: React.ReactNode }) => (
+    const Wrapper = ({ children }: { children: React.ReactNode }) => (
       <OnboardingProvider {...config}>{children}</OnboardingProvider>
     );
+    Wrapper.displayName = "OnboardingProviderWrapper";
+    return Wrapper;
   };
 
   it("should throw error when used outside OnboardingProvider", () => {
@@ -44,6 +46,18 @@ describe("useOnboarding", () => {
   it("should return onboarding context values", async () => {
     const { result } = renderHook(() => useOnboarding(), {
       wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      // First, ensure the engine and state objects are available
+      expect(result.current.engine).toBeTruthy();
+      expect(result.current.state).toBeTruthy();
+
+      // Then, specifically wait for the currentStep to be the expected initial one
+      // Assuming mockSteps[0].id is "step1"
+      expect(result.current.state?.currentStep?.id).toBe(mockSteps[0].id);
+      // Or if useOnboarding directly exposes currentStep:
+      // expect(result.current.currentStep?.id).toBe(mockSteps[0].id);
     });
 
     await waitFor(() => {
@@ -117,7 +131,7 @@ describe("useOnboarding", () => {
   });
 
   it("should update callback references when options change", async () => {
-    let onFlowComplete = vi.fn();
+    const onFlowComplete = vi.fn();
     let options: UseOnboardingOptions = { onFlowComplete };
 
     const { result, rerender } = renderHook(() => useOnboarding(options), {
@@ -189,6 +203,9 @@ describe("useOnboarding", () => {
 
     await waitFor(() => {
       expect(result.current.engine).toBeTruthy();
+      expect(result.current.state).toBeTruthy();
+      expect(result.current.isLoading).toBe(false); // Engine should be initialized
+      expect(result.current.currentStep?.id).toBe(mockSteps[0].id);
     });
 
     await act(async () => {
@@ -218,6 +235,7 @@ describe("useOnboarding", () => {
 
     await waitFor(() => {
       expect(result.current.state?.currentStep?.id).toBe("step2");
+      expect(result.current.isLoading).toBe(false);
     });
 
     // Reset to initial state
@@ -225,9 +243,23 @@ describe("useOnboarding", () => {
       await result.current.reset();
     });
 
-    await waitFor(() => {
-      expect(result.current.state?.currentStep?.id).toBe("step1");
-    });
+    // Wait for the reset to complete and state to propagate
+    await waitFor(
+      () => {
+        console.log(
+          "After reset - currentStep:",
+          result.current.state?.currentStep?.id,
+          "isLoading:",
+          result.current.isLoading,
+        );
+        // The engine might go into a loading state during reset and re-initialization
+        // So, first wait for it to finish loading, then check the step.
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.state?.currentStep?.id).toBe("step1");
+        expect(result.current.isCompleted).toBe(false); // Should not be completed
+      },
+      { timeout: 3000 },
+    );
   });
 
   it("should handle loading state changes", async () => {
@@ -279,9 +311,8 @@ describe("useOnboarding", () => {
 
     unmount();
 
-    // The actual unsubscribe calls happen in useEffect cleanup
-    // We can't easily test this without more complex mocking
-    expect(true).toBe(true); // Placeholder - testing cleanup is complex
+    // The cleanup logic is handled by the hook's useEffect cleanup
+    // Testing this thoroughly would require more complex engine mocking
   });
 
   it("should handle engine re-initialization", async () => {

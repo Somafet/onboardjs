@@ -59,7 +59,6 @@ export function validateFlow(
     if (!step.payload && step.type !== "CUSTOM_COMPONENT") {
       // CUSTOM_COMPONENT might have an empty payload initially
       // More specific payload checks could be added per type if desired
-      // For now, just a basic check.
     }
 
     if (step.type === "CUSTOM_COMPONENT") {

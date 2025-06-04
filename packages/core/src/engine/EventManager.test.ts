@@ -84,9 +84,11 @@ describe("EventManager", () => {
 
     it("should throw an error if trying to add a listener for an unknown event type", () => {
       const listener = vi.fn();
-      // @ts-expect-error Testing unknown event type
       expect(() =>
-        eventManager.addEventListener("unknownEvent", listener),
+        eventManager.addEventListener(
+          "unknownEvent" as keyof EventListenerMap<TestContext>,
+          listener,
+        ),
       ).toThrowError("Unknown event type: unknownEvent");
     });
 
@@ -180,9 +182,11 @@ describe("EventManager", () => {
     });
 
     it("should do nothing if notifying for an unknown event type", () => {
-      // @ts-expect-error Testing unknown event type
       expect(() =>
-        eventManager.notifyListeners("unknownEvent", {}),
+        eventManager.notifyListeners(
+          "unknownEvent" as keyof EventListenerMap<TestContext>,
+          { flowData: {} },
+        ),
       ).not.toThrow();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });

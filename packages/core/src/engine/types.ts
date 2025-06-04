@@ -129,5 +129,5 @@ export interface OnboardingEngineConfig<
    * Optional plugins to be installed at initialization.
    * These plugins can extend the functionality of the onboarding engine.
    */
-  plugins?: OnboardingPlugin<TContext>[]; // Added: For plugins to be installed at init
+  plugins?: OnboardingPlugin<TContext>[];
 }

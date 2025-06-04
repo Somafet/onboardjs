@@ -7,6 +7,8 @@ import {
   UnsubscribeFunction,
   EventListenerMap,
   LoadedData,
+  DataLoadFn,
+  DataPersistFn,
 } from "./types";
 import { OnboardingPlugin } from "../plugins/types";
 import { PluginManagerImpl } from "../plugins/PluginManager";
@@ -20,9 +22,12 @@ import { PerformanceUtils } from "../utils/PerformanceUtils";
 import { PersistenceManager } from "./PersistenceManager";
 import { StateManager } from "./StateManager";
 
+let engineInstanceCounter = 0; // Module-level counter
+
 export class OnboardingEngine<
   TContext extends OnboardingContext = OnboardingContext,
 > {
+  public readonly instanceId: number; // Public for easy access in tests
   private steps: OnboardingStep<TContext>[];
   private currentStepInternal: OnboardingStep<TContext> | null = null;
   private contextInternal: TContext;
@@ -54,6 +59,8 @@ export class OnboardingEngine<
   ) => void;
 
   constructor(config: OnboardingEngineConfig<TContext>) {
+    this.instanceId = ++engineInstanceCounter;
+    console.log(`[OnboardingEngine#${this.instanceId}] CONSTRUCTOR called`);
     // Validate configuration
     const validation = ConfigurationBuilder.validateConfig(config);
     if (!validation.isValid) {
@@ -335,6 +342,7 @@ export class OnboardingEngine<
     if (loadedData) {
       const {
         flowData: loadedFlowData,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         currentStepId: _loadedStepId,
         ...otherLoadedProps
       } = loadedData;
@@ -536,6 +544,13 @@ export class OnboardingEngine<
       const newContextJSON = JSON.stringify(this.contextInternal);
 
       if (oldContextJSON !== newContextJSON) {
+        console.log(
+          "[OnboardingEngine] Context updated:",
+          oldContextJSON,
+          "=>",
+          newContextJSON,
+        );
+
         this.eventManager.notifyListeners(
           "contextUpdate",
           oldContext,
@@ -545,6 +560,15 @@ export class OnboardingEngine<
           this.contextInternal,
           this.currentStepInternal?.id || null,
           this.stateManager.isHydrating,
+        );
+
+        console.log(
+          "[Engine] Notifying full state change after context update.",
+        );
+        this.stateManager.notifyStateChange(
+          this.currentStepInternal,
+          this.contextInternal, // This context now includes the updates
+          this.history,
         );
       }
     });
@@ -674,19 +698,42 @@ export class OnboardingEngine<
     // Re-create initialization promise
     this.setupInitializationPromise();
 
-    // Re-initialize - but wait for it to complete
     try {
+      // Re-initialize: This will set isLoading, navigate to initial step, and then set isLoading to false.
+      // initializeEngine SHOULD ideally emit the final stateChange event itself upon successful completion.
       await this.initializeEngine();
-      console.log(
-        "[OnboardingEngine] Engine has been reset and re-initialized.",
+      console.log("[OnboardingEngine] Reset: Re-initialization complete.");
+
+      // *** CRITICAL: Ensure a stateChange event is emitted with the final reset state ***
+      // If initializeEngine doesn't guarantee this, do it here.
+      // However, initializeEngine's .then() block in the Provider also sets state.
+      // The most robust way is for initializeEngine to be the source of truth for its own ready state.
+      // The engine's internal state (currentStepInternal, contextInternal) IS NOW CORRECT.
+      // We need to make sure the StateManager reflects this and notifies.
+      this.stateManager.notifyStateChange(
+        this.currentStepInternal,
+        this.contextInternal,
+        this.history,
       );
+      // This will ensure the provider's listener picks up the state where currentStep is "step1".
     } catch (error) {
       console.error(
-        "[OnboardingEngine] Error during reset re-initialization:",
+        "[OnboardingEngine] Error during reset's re-initialization:",
         error,
       );
-      throw error;
+      const processedError =
+        error instanceof Error ? error : new Error(String(error));
+      this.stateManager.setError(processedError);
+      // Also notify state change in case of error during reset's re-init
+      this.stateManager.notifyStateChange(
+        this.currentStepInternal,
+        this.contextInternal,
+        this.history,
+      );
+      // No need to throw here if reset is meant to recover gracefully,
+      // but the engine will be in an error state.
     }
+    console.log("[OnboardingEngine] Engine reset process finished.");
   }
 
   // =============================================================================
@@ -764,15 +811,17 @@ export class OnboardingEngine<
   // PLUGIN COMPATIBILITY METHODS
   // =============================================================================
 
-  public setDataLoadHandler(handler: any): void {
+  public setDataLoadHandler(handler: DataLoadFn<TContext> | undefined): void {
     this.persistenceManager.setDataLoadHandler(handler);
   }
 
-  public setDataPersistHandler(handler: any): void {
+  public setDataPersistHandler(handler: DataPersistFn<TContext> | undefined): void {
     this.persistenceManager.setDataPersistHandler(handler);
   }
 
-  public setClearPersistedDataHandler(handler: any): void {
+  public setClearPersistedDataHandler(
+    handler: (() => Promise<void> | void) | undefined,
+  ): void {
     this.persistenceManager.setClearPersistedDataHandler(handler);
   }
 
@@ -811,6 +860,7 @@ export class OnboardingEngine<
         }
         return acc;
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {} as Record<string, any>,
     );
 

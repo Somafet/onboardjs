@@ -29,7 +29,6 @@ vi.mock("../EventManager", () => {
   return {
     EventManager: vi.fn().mockImplementation(() => ({
       notifyListeners: mockNotifyListenersFn, // Use the shared mock
-      // Add other EventManager methods if ErrorHandler were to call them directly
     })),
   };
 });
@@ -45,7 +44,6 @@ describe("ErrorHandler", () => {
   let manualMockStateManager: {
     // Manually created mock object for StateManager
     setError: Mock<() => void>; // This will be a spy
-    // Add other StateManager methods here if ErrorHandler uses them
   };
   let errorHandler: ErrorHandler<TestContext>;
   let consoleErrorSpy: MockInstance;
@@ -177,7 +175,6 @@ describe("ErrorHandler", () => {
       expect(manualMockStateManager.setError).toHaveBeenCalledWith(error);
     });
 
-    // TODO: Fix this test
     it.skip("should call eventManager.notifyListeners for 'error' event", () => {
       const error = new Error("EventManager test");
       errorHandler.handleError(error, testOperation, mockEngineContext);

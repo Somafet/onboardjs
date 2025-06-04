@@ -392,9 +392,8 @@ describe("EventHandlerRegistry", () => {
   });
 
   describe("findStepById (Private Helper)", () => {
-    // Since it's a placeholder, we can only test its current behavior.
-    // In a real scenario, this would be injected or part of a larger system.
-    it("should return undefined as per its placeholder implementation", () => {
+    // This is a simple implementation that currently returns undefined
+    it("should return undefined as per its current implementation", () => {
       const result = (registry as any).findStepById("anyStepId");
       expect(result).toBeUndefined();
     });
