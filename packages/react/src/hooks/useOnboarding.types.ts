@@ -12,52 +12,56 @@ import {
 } from "@onboardjs/core";
 import { OnboardingActions } from "../context/OnboardingProvider";
 
-export interface UseOnboardingOptions {
+export interface UseOnboardingOptions<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
   /**
    * Callback executed when the entire onboarding flow is completed.
    * This callback is specific to this instance of the `useOnboarding` hook.
    */
-  onFlowComplete?: FlowCompleteListener;
+  onFlowComplete?: FlowCompleteListener<TContext>;
 
   /**
    * Callback executed when the current step changes.
    * Specific to this instance of the `useOnboarding` hook.
    */
   onStepChange?: (
-    newStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
-    oldStep: ReturnType<OnboardingEngine["getState"]>["currentStep"],
-    context: OnboardingContext,
+    newStep: ReturnType<OnboardingEngine<TContext>["getState"]>["currentStep"],
+    oldStep: ReturnType<OnboardingEngine<TContext>["getState"]>["currentStep"],
+    context: TContext,
   ) => void;
 
   /**
    * Callback executed before the current step changes.
    * This allows you to perform checks or actions before the step transition.
    */
-  onBeforeStepChange?: BeforeStepChangeListener;
+  onBeforeStepChange?: BeforeStepChangeListener<TContext>;
 
   /**
    * Callback executed when data is loaded for the current step.
    * This can be used to trigger UI updates or other actions based on loaded data.
    */
-  loadData?: DataLoadFn;
+  loadData?: DataLoadFn<TContext>;
 
   /**
    * Callback executed when data is persisted for the current step.
    * Useful for triggering actions after data is saved.
    */
-  persistData?: DataPersistFn;
+  persistData?: DataPersistFn<TContext>;
 }
 
-export interface UseOnboardingReturn extends OnboardingActions {
-  engine: OnboardingEngine | null;
-  state: EngineState | null;
+export interface UseOnboardingReturn<
+  TContext extends OnboardingContext = OnboardingContext,
+> extends OnboardingActions {
+  engine: OnboardingEngine<TContext> | null;
+  state: EngineState<TContext> | null;
   isLoading: boolean;
   isCompleted: boolean;
-  currentStep: EngineState["currentStep"];
+  currentStep: EngineState<TContext>["currentStep"];
   // Plugin management
-  pluginManager: PluginManager | null;
-  installPlugin: (plugin: OnboardingPlugin) => Promise<void>;
+  pluginManager: PluginManager<TContext> | null;
+  installPlugin: (plugin: OnboardingPlugin<TContext>) => Promise<void>;
   uninstallPlugin: (pluginName: string) => Promise<void>;
-  getInstalledPlugins: () => OnboardingPlugin[];
+  getInstalledPlugins: () => OnboardingPlugin<TContext>[];
   isPluginInstalled: (pluginName: string) => boolean;
 }
