@@ -7,45 +7,50 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useContext,
   ReactNode,
 } from "react";
 import {
   OnboardingEngine,
   EngineState,
-  OnboardingContext as CoreOnboardingContext,
   OnboardingEngineConfig,
   DataLoadFn,
   DataPersistFn,
   LoadedData,
   OnboardingStep,
   UnsubscribeFunction,
+  OnboardingContext as OnboardingContextType,
 } from "@onboardjs/core";
 
 // Define the actions type based on OnboardingEngine methods
-export interface OnboardingActions {
+export interface OnboardingActions<
+  TContext extends OnboardingContextType = OnboardingContextType,
+> {
   next: (stepSpecificData?: unknown) => Promise<void>;
   previous: () => Promise<void>;
   skip: () => Promise<void>;
   goToStep: (stepId: string, stepSpecificData?: unknown) => Promise<void>;
-  updateContext: (
-    newContextData: Partial<CoreOnboardingContext>,
+  updateContext: (newContextData: Partial<TContext>) => Promise<void>;
+  reset: (
+    newConfig?: Partial<OnboardingEngineConfig<TContext>>,
   ) => Promise<void>;
-  reset: (newConfig?: Partial<OnboardingEngineConfig>) => Promise<void>;
 }
 
-export interface OnboardingContextValue extends OnboardingActions {
-  engine: OnboardingEngine | null;
-  engineInstanceId: number | undefined;
-  state: EngineState | null;
+export interface OnboardingContextValue<TContext extends OnboardingContextType>
+  extends OnboardingActions<TContext> {
+  engine: OnboardingEngine<TContext> | null;
+  engineInstanceId?: number | undefined;
+  state: EngineState<TContext> | null;
   isLoading: boolean;
   setComponentLoading: (loading: boolean) => void;
   // Expose currentStep directly for convenience, derived from state
-  currentStep: OnboardingStep | null | undefined;
+  currentStep: OnboardingStep<TContext> | null | undefined;
   isCompleted: boolean | undefined;
 }
 
+// Default context for backward compatibility
 export const OnboardingContext = createContext<
-  OnboardingContextValue | undefined
+  OnboardingContextValue<OnboardingContextType> | undefined
 >(undefined);
 
 export interface LocalStoragePersistenceOptions {
@@ -53,17 +58,17 @@ export interface LocalStoragePersistenceOptions {
   ttl?: number; // Time to live in milliseconds
 }
 
-export interface OnboardingProviderProps
+export interface OnboardingProviderProps<TContext extends OnboardingContextType>
   extends Omit<
-    OnboardingEngineConfig,
+    OnboardingEngineConfig<TContext>,
     "loadData" | "persistData" | "clearPersistedData" | "onFlowComplete" // onFlowComplete is handled separately
   > {
   children: ReactNode;
   localStoragePersistence?: LocalStoragePersistenceOptions;
-  customOnDataLoad?: DataLoadFn;
-  customOnDataPersist?: DataPersistFn;
+  customOnDataLoad?: DataLoadFn<TContext>;
+  customOnDataPersist?: DataPersistFn<TContext>;
   customOnClearPersistedData?: () => Promise<void> | void; // Ensure it can be async
-  onFlowComplete?: (context: CoreOnboardingContext) => Promise<void> | void; // Prop for flow complete
+  onFlowComplete?: (context: TContext) => Promise<void> | void; // Prop for flow complete
   /**
    * Whether to enable plugin management features.
    * If true, allows installing/uninstalling plugins dynamically.
@@ -73,7 +78,9 @@ export interface OnboardingProviderProps
   enablePluginManager?: boolean;
 }
 
-export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
+export function OnboardingProvider<
+  TContext extends OnboardingContextType = OnboardingContextType,
+>({
   children,
   steps,
   initialStepId,
@@ -86,9 +93,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   customOnClearPersistedData,
   plugins,
   // enablePluginManager is not directly used in engineConfig in this version
-}) => {
-  const [engine, setEngine] = useState<OnboardingEngine | null>(null);
-  const [engineState, setEngineState] = useState<EngineState | null>(null);
+}: OnboardingProviderProps<TContext>) {
+  const [engine, setEngine] = useState<OnboardingEngine<TContext> | null>(null);
+  const [engineState, setEngineState] = useState<EngineState<TContext> | null>(
+    null,
+  );
   const [componentLoading, setComponentLoading] = useState(false);
   const [isEngineReadyAndInitialized, setIsEngineReadyAndInitialized] =
     useState(false);
@@ -96,7 +105,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const stablePlugins = useMemo(() => plugins || [], [plugins]);
 
   const onDataLoadHandler = useCallback(async (): Promise<
-    LoadedData | null | undefined
+    LoadedData<TContext> | null | undefined
   > => {
     if (customOnDataLoad) {
       return customOnDataLoad();
@@ -110,7 +119,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (savedStateRaw) {
         const savedState = JSON.parse(savedStateRaw) as {
           timestamp?: number;
-          data: LoadedData;
+          data: LoadedData<TContext>;
         };
         if (
           ttl &&
@@ -141,7 +150,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
   const onDataPersistHandler = useCallback(
     async (
-      context: CoreOnboardingContext,
+      context: TContext,
       currentStepId: string | number | null,
     ): Promise<void> => {
       if (customOnDataPersist) {
@@ -199,7 +208,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   }, [customOnClearPersistedData, localStoragePersistence]);
 
   const onFlowCompleteHandler = useCallback(
-    async (context: CoreOnboardingContext) => {
+    async (context: TContext) => {
       if (passedOnFlowComplete) {
         await passedOnFlowComplete(context);
       }
@@ -228,7 +237,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     setEngine(null); // Clear old engine instance
     setEngineState(null); // Reset state when re-initializing
 
-    const engineConfig: OnboardingEngineConfig = {
+    const engineConfig: OnboardingEngineConfig<TContext> = {
       steps,
       plugins: stablePlugins,
       initialStepId,
@@ -240,11 +249,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       clearPersistedData: onClearPersistedDataHandler,
     };
 
-    let currentEngine: OnboardingEngine | null = null;
+    let currentEngine: OnboardingEngine<TContext> | null = null;
     let unsubscribeStateChange: UnsubscribeFunction | undefined;
 
     try {
-      currentEngine = new OnboardingEngine(engineConfig);
+      currentEngine = new OnboardingEngine<TContext>(engineConfig);
       setEngine(currentEngine); // Set engine instance immediately
 
       currentEngine
@@ -277,7 +286,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           setEngineState({
             // Provide a default error state
             currentStep: null,
-            context: (initialContext || {}) as CoreOnboardingContext,
+            context: (initialContext || {}) as TContext,
             isFirstStep: false,
             isLastStep: false,
             canGoNext: false,
@@ -300,7 +309,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       );
       setEngineState({
         currentStep: null,
-        context: (initialContext || {}) as CoreOnboardingContext,
+        context: (initialContext || {}) as TContext,
         isFirstStep: false,
         isLastStep: false,
         canGoNext: false,
@@ -387,7 +396,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           setComponentLoading(false);
         }
       },
-      updateContext: async (newContextData: Partial<CoreOnboardingContext>) => {
+      updateContext: async (newContextData: Partial<TContext>) => {
         if (!engine || !isEngineReadyAndInitialized) return;
         setComponentLoading(true);
         try {
@@ -396,7 +405,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           setComponentLoading(false);
         }
       },
-      reset: async (newConfig?: Partial<OnboardingEngineConfig>) => {
+      reset: async (newConfig?: Partial<OnboardingEngineConfig<TContext>>) => {
         if (!engine) return; // Allow reset even if not fully "ready" but engine instance exists
         setComponentLoading(true);
         try {
@@ -417,7 +426,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const value = useMemo(
-    (): OnboardingContextValue => ({
+    (): OnboardingContextValue<TContext> => ({
       engine: isEngineReadyAndInitialized ? engine : null,
       engineInstanceId: isEngineReadyAndInitialized
         ? engine?.instanceId
@@ -433,8 +442,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   return (
-    <OnboardingContext.Provider value={value}>
+    <OnboardingContext.Provider
+      value={value as unknown as OnboardingContextValue<OnboardingContextType>}
+    >
       {children}
     </OnboardingContext.Provider>
   );
-};
+}

@@ -2,12 +2,19 @@
 "use client";
 
 import { useContext, useEffect, useRef } from "react";
-import { OnboardingContext } from "../context/OnboardingProvider";
+import {
+  OnboardingContext,
+  OnboardingContextValue,
+} from "../context/OnboardingProvider";
 import { UseOnboardingOptions } from "./useOnboarding.types";
-import { OnboardingContext as CoreOnboardingContext } from "@onboardjs/core";
+import { OnboardingContext as OnboardingContextType } from "@onboardjs/core";
 
-export const useOnboarding = (options?: UseOnboardingOptions) => {
-  const contextValue = useContext(OnboardingContext);
+export function useOnboarding<
+  TContext extends OnboardingContextType = OnboardingContextType, // Default generic
+>(options?: UseOnboardingOptions<TContext>): OnboardingContextValue<TContext> {
+  const contextValue = useContext(OnboardingContext) as
+    | OnboardingContextValue<TContext>
+    | undefined;
   if (contextValue === undefined) {
     throw new Error("useOnboarding must be used within an OnboardingProvider");
   }
@@ -44,7 +51,7 @@ export const useOnboarding = (options?: UseOnboardingOptions) => {
       return;
     }
 
-    const listener = (context: CoreOnboardingContext) => {
+    const listener = (context: TContext) => {
       if (onFlowCompleteRef.current) {
         onFlowCompleteRef.current(context);
       }
