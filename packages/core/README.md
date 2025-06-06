@@ -2,12 +2,11 @@
 
 [![npm version](https://badge.fury.io/js/%40onboardjs%2Fcore.svg)](https://badge.fury.io/js/%40onboardjs%2Fcore)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Discord](https://img.shields.io/discord/1380449826663301182?label=discord)](https://discord.gg/RnG5AdZjyR)
 
-<!-- Add other badges: build status, test coverage, downloads, etc. -->
-<!-- [![Build Status](https://travis-ci.org/your-username/onboardjs.svg?branch=main)](https://travis-ci.org/your-username/onboardjs) -->
-<!-- [![Coverage Status](https://coveralls.io/repos/github/your-username/onboardjs/badge.svg?branch=main)](https://coveralls.io/github/your-username/onboardjs?branch=main) -->
-<!-- [![npm downloads](https://img.shields.io/npm/dm/@onboardjs/core.svg)](https://www.npmjs.com/package/@onboardjs/core) -->
-<!-- [![Discord](https://img.shields.io/discord/your-discord-invite-code?label=discord)](https://discord.gg/your-discord-invite-code) -->
+[![Build Status](https://github.com/Somafet/onboardjs/actions/workflows/core-tests.yml/badge.svg?branch=main&path=packages/core)](#)
+[![npm downloads](https://img.shields.io/npm/dm/@onboardjs/core.svg)](https://www.npmjs.com/package/@onboardjs/core)
+
 
 **`@onboardjs/core` is the headless, framework-agnostic engine that powers dynamic and customizable onboarding experiences. It provides the foundational logic for defining, managing, and transitioning through multi-step user onboarding flows.**
 
@@ -18,8 +17,8 @@ This core library is designed to be integrated into any JavaScript/TypeScript ap
 OnboardJS aims to enable developers to quickly and easily build highly customizable, dynamic, and effective onboarding flows for their web applications. We provide an open-source engine, comprehensive resources, and foster a supportive community.
 
 ➡️ **Looking for React integration? Check out [`@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)!**
-➡️ **Explore our [Documentation](#)!** (Coming soon)
-➡️ **Join our [Community](#)!** (Coming soon)
+➡️ **Explore our [Documentation](https://onboardjs.com/docs)!**
+➡️ **Join our [Discord Community](https://discord.gg/RnG5AdZjyR)!**
 
 ## Why OnboardJS Core?
 
@@ -234,7 +233,7 @@ The main class that manages the onboarding flow. You instantiate it with your st
 An object defining a single step in the flow. Key properties:
 
 - `id: string` (Unique)
-- `type: string` (e.g., `CHECKLIST`, `CUSTOM_COMPONENT`)
+- `type: string` (e.g., `INFORMATION`, `CUSTOM_COMPONENT`)
 - `payload: any` (Data specific to this step's type and content)
 - `nextStep?: string | null | ((context: OnboardingContext) => string | null | undefined) | undefined`
 - `previousStep?: string | null | ((context: OnboardingContext) => string | null | undefined) | undefined`
@@ -368,7 +367,7 @@ While `@onboardjs/core` defines some payload interfaces, you are free to define 
 
 We welcome contributions from the community! Whether it's bug reports, feature requests, documentation improvements, or code contributions, your help is appreciated.
 
-Please read our [**Contributing Guidelines**](CONTRIBUTING.md) to get started. This document includes information on:
+Please read our [**Contributing Guidelines**](https://github.com/Somafet/onboardjs/blob/main/CONTRIBUTING.md) to get started. This document includes information on:
 
 - Setting up the development environment
 - Coding standards (linting, formatting)
@@ -400,12 +399,12 @@ Our high-level goals include:
 
 - **GitHub Discussions:** For questions, ideas, and showing off what you've built! [Discuss here](https://github.com/Somafet/onboardjs/issues)
 - **GitHub Issues:** For bug reports and feature requests. [Issues here](https://github.com/Somafet/onboardjs/issues)
-- **Discord Server:** Join our community for real-time chat and support. (Coming Soon)
+- **Discord Server:** Join our community for real-time chat and support. [Join Discord](https://discord.gg/RnG5AdZjyR)
 - **Stack Overflow:** Tag your questions with `onboardjs`.
 
 ## License
 
-`@onboardjs/core` is [MIT licensed](LICENSE).
+`@onboardjs/core` is [MIT licensed](https://github.com/Somafet/onboardjs/blob/main/LICENSE.md).
 
 ---
 

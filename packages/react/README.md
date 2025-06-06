@@ -2,9 +2,10 @@
 
 [![npm version](https://badge.fury.io/js/%40onboardjs%2Freact.svg)](https://badge.fury.io/js/%40onboardjs%2Freact)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Discord](https://img.shields.io/discord/1380449826663301182?label=discord)](https://discord.gg/RnG5AdZjyR)
 
-<!-- [![Build Status](https://github.com/your-username/onboardjs/actions/workflows/ci.yml/badge.svg?branch=main&path=packages/react)](...) -->
-<!-- [![npm downloads](https://img.shields.io/npm/dm/@onboardjs/react.svg)](https://www.npmjs.com/package/@onboardjs/react) -->
+[![Build Status](https://github.com/Somafet/onboardjs/actions/workflows/react-tests.yml/badge.svg?branch=main&path=packages/react)](#)
+[![npm downloads](https://img.shields.io/npm/dm/@onboardjs/react.svg)](https://www.npmjs.com/package/@onboardjs/react)
 
 **Official React bindings for [`@onboardjs/core`](https://github.com/Somafet/onboardjs/tree/main/packages/core): Build fully custom, dynamic onboarding flows in React and Next.js with maximum flexibility.**
 
@@ -145,15 +146,15 @@ export default function OnboardingUIManager({ stepsConfig, stepComponentRegistry
 
 - **Client Components**: `OnboardingProvider` and any component using `useOnboarding` must be a Client Component (`'use client';`).
 - **Persistence**: Use `localStoragePersistence` for out-of-the-box device bound progress saving, or provide your own handlers for Supabase, Neon, etc.
-- **Examples**: See [onboardjs/examples](../../apps/examples/).
+- **Examples**: See [onboardjs/apps/examples](https://github.com/Somafet/onboardjs/tree/main/apps/examples).
 
 ---
 
 ## 📚 Documentation & Community
 
 - **[@onboardjs/core README](https://github.com/Somafet/onboardjs/tree/main/packages/core)**
-- **Main Documentation Site** (coming soon)
-- **GitHub Discussions** | **Discord** (coming soon)
+- **Main Documentation Site**@ [onboardjs.com/docs](https://onboardjs.com/docs)
+- **Discord Discussions**: [Join the community](https://discord.gg/RnG5AdZjyR)
 
 ---
 
