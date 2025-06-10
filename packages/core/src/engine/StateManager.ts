@@ -14,6 +14,7 @@ export class StateManager<TContext extends OnboardingContext> {
   constructor(
     private eventManager: EventManager<TContext>,
     private steps: OnboardingStep<TContext>[],
+    private initialStepId: string | number | null,
   ) {}
 
   setState(
@@ -93,32 +94,54 @@ export class StateManager<TContext extends OnboardingContext> {
     history: string[],
   ): EngineState<TContext> {
     let nextStepCandidate: OnboardingStep<TContext> | null = null;
-    let previousPossibleStepId: string | number | null | undefined;
+    let previousStepCandidate: OnboardingStep<TContext> | null = null;
 
     if (currentStep) {
       nextStepCandidate = this._findNextStep(currentStep, context);
-      previousPossibleStepId = evaluateStepId(
-        currentStep.previousStep,
+      previousStepCandidate = this._findPreviousStep(
+        currentStep,
         context,
+        history,
       );
     }
+
+    const isFirstStep = !!currentStep && currentStep.id === this.initialStepId;
+
+    const completedIds = new Set(
+      Object.keys(context.flowData?._internal?.completedSteps || {}),
+    );
+
+    let totalRelevantSteps = 0;
+    let completedRelevantSteps = 0;
+
+    for (const step of this.steps) {
+      // A step is relevant if its condition passes (or it has no condition)
+      const isRelevant = !step.condition || step.condition(context);
+
+      if (isRelevant) {
+        totalRelevantSteps++;
+        if (completedIds.has(String(step.id))) {
+          completedRelevantSteps++;
+        }
+      }
+    }
+
+    const progressPercentage =
+      totalRelevantSteps > 0
+        ? Math.round((completedRelevantSteps / totalRelevantSteps) * 100)
+        : 0;
 
     return {
       currentStep,
       context,
-      isFirstStep: currentStep
-        ? !previousPossibleStepId && history.length === 0
-        : false,
-      // The flow is on its last step if no next step can be found
+      isFirstStep,
       isLastStep: currentStep ? !nextStepCandidate : this.isCompletedInternal,
-      // The user can go next if a valid next step exists
-      canGoNext: !!(currentStep && nextStepCandidate && !this.errorInternal),
       canGoPrevious:
-        !!(
-          (currentStep && previousPossibleStepId) ||
-          (history.length > 0 &&
-            history[history.length - 1] !== (currentStep?.id ?? null))
-        ) && !this.errorInternal,
+        !isFirstStep &&
+        !!currentStep &&
+        !!previousStepCandidate &&
+        !this.errorInternal,
+      canGoNext: !!(currentStep && nextStepCandidate && !this.errorInternal),
       isSkippable: !!(
         currentStep &&
         currentStep.isSkippable &&
@@ -128,7 +151,11 @@ export class StateManager<TContext extends OnboardingContext> {
       isHydrating: this.isHydratingInternal,
       error: this.errorInternal,
       isCompleted: this.isCompletedInternal,
+      previousStepCandidate: previousStepCandidate,
       nextStepCandidate: nextStepCandidate,
+      totalSteps: totalRelevantSteps,
+      completedSteps: completedRelevantSteps,
+      progressPercentage: progressPercentage,
     };
   }
 
@@ -173,6 +200,58 @@ export class StateManager<TContext extends OnboardingContext> {
         }
       }
       return null; // No subsequent valid steps found
+    }
+
+    return null;
+  }
+
+  private _findPreviousStep(
+    currentStep: OnboardingStep<TContext>,
+    context: TContext,
+    history: string[],
+  ): OnboardingStep<TContext> | null {
+    // 1. Determine the initial target ID. Priority is the explicit property.
+    let targetId: string | number | null | undefined = evaluateStepId(
+      currentStep.previousStep,
+      context,
+    );
+
+    // 2. If no explicit previousStep, fall back to the last item in history.
+    let historyIndex = history.length - 1;
+    if (targetId === undefined && historyIndex >= 0) {
+      targetId = history[historyIndex];
+    }
+
+    if (!targetId) {
+      return null;
+    }
+
+    // 3. Now, find the first valid, non-skipped step by traversing backwards.
+    let candidateStep = findStepById(this.steps, targetId);
+    while (candidateStep) {
+      // If the candidate's condition passes, we've found our step.
+      if (!candidateStep.condition || candidateStep.condition(context)) {
+        return candidateStep;
+      }
+
+      // Otherwise, find the previous step of this *candidate* and loop again.
+      targetId = evaluateStepId(candidateStep.previousStep, context);
+
+      // If the explicit chain ends, try to continue with history.
+      if (targetId === undefined) {
+        historyIndex--; // Look at the next item in history
+        if (historyIndex >= 0) {
+          targetId = history[historyIndex];
+        } else {
+          // No more history, the backward chain is broken.
+          return null;
+        }
+      } else if (targetId === null) {
+        // Explicitly ended chain.
+        return null;
+      }
+
+      candidateStep = findStepById(this.steps, targetId);
     }
 
     return null;

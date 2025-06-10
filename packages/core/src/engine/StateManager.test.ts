@@ -32,6 +32,7 @@ describe("StateManager", () => {
       flowData: {
         // A flag to test conditional steps
         shouldShowConditional: true,
+        shouldShowConditional2: true,
       },
     };
 
@@ -55,7 +56,7 @@ describe("StateManager", () => {
       { id: "step3", type: "INFORMATION", payload: {}, nextStep: null }, // Explicit end
     ];
 
-    stateManager = new StateManager(mockEventManager, mockSteps);
+    stateManager = new StateManager(mockEventManager, mockSteps, "step1");
   });
 
   describe("getState", () => {
@@ -73,6 +74,7 @@ describe("StateManager", () => {
       expect(state.canGoPrevious).toBe(true);
       expect(state.canGoNext).toBe(true);
       expect(state.nextStepCandidate?.id).toBe("step3");
+      expect(state.previousStepCandidate?.id).toBe("step1");
     });
 
     it("should identify an explicit last step where nextStep is null", () => {
@@ -137,6 +139,64 @@ describe("StateManager", () => {
       expect(state.canGoNext).toBe(false);
       expect(state.canGoPrevious).toBe(false);
       expect(state.isSkippable).toBe(false);
+    });
+
+    it("should find previous step from `previousStep` property", () => {
+      const steps: OnboardingStep<OnboardingContext>[] = [
+        { id: "A", type: "INFORMATION", payload: {} },
+        { id: "B", type: "INFORMATION", payload: {}, previousStep: "A" },
+      ];
+      const manager = new StateManager(mockEventManager, steps, "A");
+      const state = manager.getState(steps[1], mockContext, ["A"]);
+
+      expect(state.canGoPrevious).toBe(true);
+      expect(state.previousStepCandidate?.id).toBe("A");
+      expect(state.isFirstStep).toBe(false);
+    });
+
+    it("should find previous step from history when `previousStep` is undefined", () => {
+      const steps: OnboardingStep<OnboardingContext>[] = [
+        { id: "A", type: "INFORMATION", payload: {} },
+        { id: "B", type: "INFORMATION", payload: {} }, // No previousStep property
+      ];
+      const manager = new StateManager(mockEventManager, steps, "A");
+      // History indicates we came from 'A'
+      const state = manager.getState(steps[1], mockContext, ["A"]);
+
+      expect(state.canGoPrevious).toBe(true);
+      expect(state.previousStepCandidate?.id).toBe("A");
+    });
+
+    it("should skip a conditional previous step and find the one before it", () => {
+      const steps: OnboardingStep<OnboardingContext>[] = [
+        { id: "A", type: "INFORMATION", payload: {} },
+        {
+          id: "B_CONDITIONAL",
+          type: "INFORMATION",
+          payload: {},
+          condition: () => false, // This step is now hidden
+          previousStep: "A",
+        },
+        {
+          id: "C",
+          type: "INFORMATION",
+          payload: {},
+          previousStep: "B_CONDITIONAL",
+        },
+      ];
+      const manager = new StateManager(mockEventManager, steps, "A");
+      const state = manager.getState(steps[2], mockContext, []);
+
+      expect(state.canGoPrevious).toBe(true);
+      // Should skip B_CONDITIONAL and find A
+      expect(state.previousStepCandidate?.id).toBe("A");
+    });
+
+    it("should correctly identify the first step when no history or previousStep exists", () => {
+      const state = stateManager.getState(mockSteps[0], mockContext, []);
+      expect(state.isFirstStep).toBe(true);
+      expect(state.canGoPrevious).toBe(false);
+      expect(state.previousStepCandidate).toBeNull();
     });
   });
 
@@ -290,6 +350,121 @@ describe("StateManager", () => {
       stateManager.setError(null);
       expect(stateManager.error).toBeNull();
       expect(stateManager.hasError).toBe(false);
+    });
+  });
+
+  describe("Progress Calculation in getState", () => {
+    it("should calculate correct progress when no steps are completed", () => {
+      const state = stateManager.getState(mockSteps[0], mockContext, []);
+      expect(state.totalSteps).toBe(5);
+      expect(state.completedSteps).toBe(0);
+      expect(state.progressPercentage).toBe(0);
+    });
+
+    it("should calculate correct progress when some steps are completed", () => {
+      const contextWithProgress = {
+        ...mockContext,
+        flowData: {
+          ...mockContext.flowData,
+          _internal: {
+            completedSteps: {
+              step1: Date.now(),
+              conditionalStep: Date.now(),
+            },
+          },
+        },
+      };
+      const state = stateManager.getState(
+        mockSteps[2], // Current step is 'conditionalStep2'
+        contextWithProgress,
+        [],
+      );
+      // With the provided context, all 5 steps are relevant.
+      expect(state.totalSteps).toBe(5);
+      expect(state.completedSteps).toBe(2);
+      expect(state.progressPercentage).toBe(40); // (2 / 5) * 100
+    });
+
+    it("should respect conditions when calculating total steps", () => {
+      const contextWithConditionFalse = {
+        flowData: {
+          shouldShowConditional: false, // This will hide 'conditionalStep'
+          shouldShowConditional2: true,
+        },
+      };
+      const state = stateManager.getState(
+        mockSteps[0],
+        contextWithConditionFalse,
+        [],
+      );
+      // Total steps should be 4, not 5, because one is hidden
+      expect(state.totalSteps).toBe(4);
+      expect(state.completedSteps).toBe(0);
+      expect(state.progressPercentage).toBe(0);
+    });
+
+    it("should not count a completed step if its condition is now false", () => {
+      const contextWithChangedCondition = {
+        flowData: {
+          shouldShowConditional: false, // 'conditionalStep' is now hidden
+          shouldShowConditional2: true,
+          _internal: {
+            completedSteps: {
+              step1: Date.now(),
+              conditionalStep: Date.now(), // This step was completed, but is now irrelevant
+            },
+          },
+        },
+      };
+      const state = stateManager.getState(
+        mockSteps[2],
+        contextWithChangedCondition,
+        [],
+      );
+      // Total relevant steps is 4
+      expect(state.totalSteps).toBe(4);
+      // Only 1 of the completed steps is still relevant
+      expect(state.completedSteps).toBe(1);
+      expect(state.progressPercentage).toBe(25); // 1 / 4 * 100
+    });
+
+    it("should handle the case with 0 total relevant steps", () => {
+      const contextWithNoRelevantSteps = {
+        flowData: {
+          shouldShowConditional: false,
+          shouldShowConditional2: false,
+          // Let's imagine the other steps also have conditions that fail
+        },
+      };
+      // A more targeted steps array for this test
+      const conditionalOnlySteps: OnboardingStep<OnboardingContext>[] = [
+        mockSteps[1],
+        mockSteps[2],
+      ];
+      const specificManager = new StateManager(
+        mockEventManager,
+        conditionalOnlySteps,
+        "step1", // Starting step
+      );
+      const state = specificManager.getState(
+        null,
+        contextWithNoRelevantSteps,
+        [],
+      );
+      expect(state.totalSteps).toBe(0);
+      expect(state.completedSteps).toBe(0);
+      expect(state.progressPercentage).toBe(0);
+    });
+
+    it("should handle a context with no _internal data gracefully", () => {
+      const contextWithoutInternal = { flowData: {} };
+      const state = stateManager.getState(
+        mockSteps[0],
+        contextWithoutInternal,
+        [],
+      );
+      expect(state.completedSteps).toBe(0);
+      expect(state.progressPercentage).toBe(0);
     });
   });
 });

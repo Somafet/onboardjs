@@ -274,6 +274,10 @@ export function OnboardingProvider<
         error: error,
         isCompleted: false,
         nextStepCandidate: null,
+        previousStepCandidate: null,
+        totalSteps: 0,
+        completedSteps: 0,
+        progressPercentage: 0,
       });
       // Do not mark as "ready"
       setIsEngineReadyAndInitialized(false);
@@ -331,6 +335,10 @@ export function OnboardingProvider<
                 : new Error(String(engineInitError)),
             isCompleted: false,
             nextStepCandidate: null,
+            previousStepCandidate: null,
+            totalSteps: 0,
+            completedSteps: 0,
+            progressPercentage: 0,
           });
           setIsEngineReadyAndInitialized(false); // Explicitly false on error
         });
@@ -355,6 +363,10 @@ export function OnboardingProvider<
             : new Error(String(configError)),
         isCompleted: false,
         nextStepCandidate: null,
+        previousStepCandidate: null,
+        totalSteps: 0,
+        completedSteps: 0,
+        progressPercentage: 0,
       });
       setIsEngineReadyAndInitialized(false);
     }

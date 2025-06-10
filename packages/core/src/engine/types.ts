@@ -20,9 +20,22 @@ export interface EngineState<
 
   /**
    * The next step the engine will navigate to, considering conditions.
-   * Useful for debugging and UI previews. Can be null if at the end of the flow.
+   * Useful for debugging and UI previews.
    */
   nextStepCandidate: OnboardingStep<TContext> | null;
+
+  /**
+   * The previous step the engine will navigate back to, considering conditions.
+   * Useful for debugging and UI previews.
+   */
+  previousStepCandidate: OnboardingStep<TContext> | null;
+
+  /** The total number of steps in the flow that are currently accessible based on their conditions. */
+  totalSteps: number;
+  /** The number of accessible steps that have been completed. */
+  completedSteps: number;
+  /** The completion progress as a percentage (0-100), based on the accessible steps. */
+  progressPercentage: number;
 }
 
 export type EngineStateChangeListener<
@@ -73,7 +86,7 @@ export interface EventListenerMap<
   ) => void | Promise<void>;
   stepComplete: (
     step: OnboardingStep<TContext>,
-    stepData: any,
+    stepData: Record<string, unknown>,
     context: TContext,
   ) => void | Promise<void>;
   contextUpdate: (

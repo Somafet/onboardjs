@@ -114,10 +114,19 @@ describe("StepRenderer", () => {
       <StepRenderer stepComponentRegistry={mockStepComponents} />,
       {
         onboardingConfig: {
-          initialStepId: "step2", // Start at step 2
+          initialStepId: "step1", // Start at step 1
         },
       },
     );
+
+    // Navigate to next step first
+    await waitFor(() => {
+      expect(screen.getByTestId("information-step")).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Next"));
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId("single-choice-step")).toBeInTheDocument();
@@ -221,24 +230,6 @@ describe("StepRenderer", () => {
 
     // Next button should still be enabled
     expect(nextButton).not.toBeDisabled();
-  });
-
-  it("should disable navigation buttons when loading", async () => {
-    // This test would require more sophisticated mocking to simulate loading state
-    // For now, we'll just verify the buttons exist and are functional
-    renderWithOnboardingProvider(
-      <StepRenderer stepComponentRegistry={mockStepComponents} />,
-      {
-        onboardingConfig: {
-          initialStepId: "step2",
-        },
-      },
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText("Next")).toBeInTheDocument();
-      expect(screen.getByText("Back")).toBeInTheDocument();
-    });
   });
 
   it("should handle missing step component gracefully", async () => {

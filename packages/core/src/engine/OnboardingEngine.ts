@@ -76,11 +76,23 @@ export class OnboardingEngine<
 
     this.initialConfig = config;
     this.steps = config.steps;
+    const effectiveInitialStepId =
+      this.initialConfig.initialStepId ||
+      (this.steps.length > 0 ? this.steps[0].id : null);
+
+    console.log(
+      `[OnboardingEngine#${this.instanceId}] Effective initial step ID: ${effectiveInitialStepId}`,
+    );
+
     this.contextInternal = ConfigurationBuilder.buildInitialContext(config);
 
     // Initialize core managers
     this.eventManager = new EventManager();
-    this.stateManager = new StateManager(this.eventManager, this.steps);
+    this.stateManager = new StateManager(
+      this.eventManager,
+      this.steps,
+      effectiveInitialStepId,
+    );
     this.errorHandler = new ErrorHandler(this.eventManager, this.stateManager);
     this.persistenceManager = new PersistenceManager(
       config.loadData,
