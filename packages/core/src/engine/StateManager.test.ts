@@ -198,6 +198,20 @@ describe("StateManager", () => {
       expect(state.canGoPrevious).toBe(false);
       expect(state.previousStepCandidate).toBeNull();
     });
+
+    it("should find previous step from array order when history is empty (persisted state)", () => {
+      const steps: OnboardingStep[] = [
+        { id: "A", type: "INFORMATION", payload: {} },
+        { id: "B", type: "INFORMATION", payload: {} }, // No previousStep or history
+      ];
+      const manager = new StateManager(mockEventManager, steps, "A");
+      // We are on step 'B', but the history is empty, simulating a cold start.
+      const state = manager.getState(steps[1], mockContext, []);
+
+      expect(state.canGoPrevious).toBe(true);
+      // It should correctly identify 'A' as the previous step from the array order.
+      expect(state.previousStepCandidate?.id).toBe("A");
+    });
   });
 
   describe("setState", () => {

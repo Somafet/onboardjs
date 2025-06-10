@@ -210,51 +210,55 @@ export class StateManager<TContext extends OnboardingContext> {
     context: TContext,
     history: string[],
   ): OnboardingStep<TContext> | null {
-    // 1. Determine the initial target ID. Priority is the explicit property.
+    // --- STEP 1: Find the initial candidate ID using the 3-priority system ---
     let targetId: string | number | null | undefined = evaluateStepId(
       currentStep.previousStep,
       context,
     );
 
-    // 2. If no explicit previousStep, fall back to the last item in history.
-    let historyIndex = history.length - 1;
-    if (targetId === undefined && historyIndex >= 0) {
-      targetId = history[historyIndex];
+    if (targetId === undefined) {
+      // Priority 2: History
+      if (history.length > 0) {
+        targetId = history[history.length - 1];
+      } else {
+        // Priority 3: Array Order (The fix for persisted state)
+        const currentIndex = this.steps.findIndex(
+          (s) => s.id === currentStep.id,
+        );
+        if (currentIndex > 0) {
+          targetId = this.steps[currentIndex - 1].id;
+        }
+      }
     }
 
     if (!targetId) {
-      return null;
+      return null; // No possible previous step from any source.
     }
 
-    // 3. Now, find the first valid, non-skipped step by traversing backwards.
+    // --- STEP 2: Validate the candidate and traverse backwards if its condition fails ---
     let candidateStep = findStepById(this.steps, targetId);
+
     while (candidateStep) {
-      // If the candidate's condition passes, we've found our step.
+      // If the candidate's condition passes (or it has no condition), we've found our step.
       if (!candidateStep.condition || candidateStep.condition(context)) {
         return candidateStep;
       }
 
-      // Otherwise, find the previous step of this *candidate* and loop again.
-      targetId = evaluateStepId(candidateStep.previousStep, context);
+      // Condition failed. We MUST follow the explicit `previousStep` chain from here
+      // to ensure a predictable backward traversal. We do not consult history or
+      // array order again inside this loop.
+      const nextTargetIdInChain = evaluateStepId(
+        candidateStep.previousStep,
+        context,
+      );
 
-      // If the explicit chain ends, try to continue with history.
-      if (targetId === undefined) {
-        historyIndex--; // Look at the next item in history
-        if (historyIndex >= 0) {
-          targetId = history[historyIndex];
-        } else {
-          // No more history, the backward chain is broken.
-          return null;
-        }
-      } else if (targetId === null) {
-        // Explicitly ended chain.
-        return null;
+      if (!nextTargetIdInChain) {
+        return null; // The backward chain is broken by a failed condition.
       }
-
-      candidateStep = findStepById(this.steps, targetId);
+      candidateStep = findStepById(this.steps, nextTargetIdInChain);
     }
 
-    return null;
+    return null; // Loop finished (e.g., a bad ID was found in the chain).
   }
 
   // Getters for internal state
