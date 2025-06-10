@@ -72,7 +72,7 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
   localStoragePersistence?: LocalStoragePersistenceOptions;
   customOnDataLoad?: DataLoadFn<TContext>;
   customOnDataPersist?: DataPersistFn<TContext>;
-  customOnClearPersistedData?: () => Promise<void> | void; // Ensure it can be async
+  customOnClearPersistedData?: () => Promise<any> | any; // Ensure it can be async
   onFlowComplete?: (context: TContext) => Promise<void> | void; // Prop for flow complete
   /**
    * Whether to enable plugin management features.
@@ -113,7 +113,10 @@ export function OnboardingProvider<
     LoadedData<TContext> | null | undefined
   > => {
     if (customOnDataLoad) {
-      return customOnDataLoad();
+      const result = await customOnDataLoad();
+      console.log("Result from customOnDataLoad:", result);
+
+      return result;
     }
     if (!localStoragePersistence || typeof window === "undefined") {
       return null;
