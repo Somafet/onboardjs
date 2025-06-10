@@ -19,6 +19,7 @@ import {
   OnboardingStep,
   UnsubscribeFunction,
   OnboardingContext as OnboardingContextType,
+  ConfigurationBuilder,
 } from "@onboardjs/core";
 
 // Define the actions type based on OnboardingEngine methods
@@ -48,6 +49,8 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType>
   // Expose currentStep directly for convenience, derived from state
   currentStep: OnboardingStep<TContext> | null | undefined;
   isCompleted: boolean | undefined;
+  /** The current error state of the engine, if any. */
+  error: Error | null;
 }
 
 // Default context for backward compatibility
@@ -251,6 +254,32 @@ export function OnboardingProvider<
       clearPersistedData: onClearPersistedDataHandler,
     };
 
+    const validation = ConfigurationBuilder.validateConfig(engineConfig);
+    if (!validation.isValid) {
+      const error = new Error(
+        `Invalid Onboarding Configuration: ${validation.errors.join(", ")}`,
+      );
+      console.error(`[OnboardingProvider] ${error.message}`);
+      // Set the error state immediately and stop.
+      setEngineState({
+        currentStep: null,
+        context: (initialContext || {}) as TContext,
+        isFirstStep: false,
+        isLastStep: false,
+        canGoNext: false,
+        canGoPrevious: false,
+        isSkippable: false,
+        isLoading: false,
+        isHydrating: false,
+        error: error,
+        isCompleted: false,
+        nextStepCandidate: null,
+      });
+      // Do not mark as "ready"
+      setIsEngineReadyAndInitialized(false);
+      return; // Abort initialization
+    }
+
     let currentEngine: OnboardingEngine<TContext> | null = null;
     let unsubscribeStateChange: UnsubscribeFunction | undefined;
 
@@ -440,6 +469,7 @@ export function OnboardingProvider<
       setComponentLoading,
       currentStep: engineState?.currentStep, // Derived for convenience
       isCompleted: engineState?.isCompleted, // Derived
+      error: engineState?.error ?? null,
       ...actions,
     }),
     [engine, engineState, isLoading, isEngineReadyAndInitialized, actions],

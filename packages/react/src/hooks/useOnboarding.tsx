@@ -30,6 +30,7 @@ export function useOnboarding<
     reset,
     setComponentLoading,
     updateContext,
+    error,
   } = contextValue;
 
   // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
@@ -100,5 +101,6 @@ export function useOnboarding<
     updateContext,
     isCompleted,
     currentStep,
+    error,
   };
 };
