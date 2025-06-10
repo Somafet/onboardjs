@@ -3,10 +3,7 @@ import { OnboardingContext } from "./common";
 export interface BasePayload {
   [key: string]: any;
 }
-export interface InformationStepPayload extends BasePayload {
-  mainText: string;
-  subText?: string;
-}
+export type InformationStepPayload = BasePayload;
 
 // --- Example: Form Input Step ---
 export interface FormFieldOption {
@@ -55,18 +52,14 @@ export interface ChoiceOption<TValue = string | number> {
 }
 
 export interface MultipleChoiceStepPayload extends BasePayload {
-  question: string;
   options: ChoiceOption[];
   minSelections?: number;
   maxSelections?: number;
-  dataKey: string;
 }
 
 // --- Example: Single Choice Selection Step ---
 export interface SingleChoiceStepPayload extends BasePayload {
-  question: string;
   options: ChoiceOption[];
-  dataKey: string;
 }
 
 /** Defines the structure of an item in a checklist step's payload. */
@@ -79,7 +72,7 @@ export interface ChecklistItemDefinition<
   isMandatory?: boolean; // Defaults to true if not specified by the engine's logic
   /** Optional condition to determine if this item should be shown/considered. */
   condition?: (context: TContext) => boolean; // Use TContext
-  meta?: Record<string, any>; // For custom data per item
+  meta?: Record<string, unknown>; // For custom data per item
 }
 
 /** Payload for a checklist step. */
@@ -98,8 +91,6 @@ export interface ChecklistStepPayload<
    * If not provided, all mandatory items must be completed.
    */
   minItemsToComplete?: number;
-  /** Optional: Title or heading for the checklist itself, if different from step.title */
-  checklistTitle?: string;
 }
 
 // Runtime state of a checklist item, typically stored in flowData
@@ -108,15 +99,9 @@ export interface ChecklistItemState {
   isCompleted: boolean;
 }
 
-// --- Example: Confirmation Step ---
-export interface ConfirmationStepPayload extends BasePayload {
-  confirmationTitle?: string;
-  confirmationMessage: string;
-  details?: Array<{ label: string; value: string | (() => string) }>;
-  showDataSummary?: boolean | string[];
-}
+export type ConfirmationStepPayload = BasePayload;
 
 // --- For Custom Components (interpreted by the UI package) ---
 export interface CustomComponentStepPayload extends BasePayload {
-  componentKey: string;
+  componentKey?: string;
 }

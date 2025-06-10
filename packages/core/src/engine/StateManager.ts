@@ -1,7 +1,7 @@
 // src/engine/services/StateManager.ts
 
 import { OnboardingContext, OnboardingStep } from "../types";
-import { evaluateStepId } from "../utils/step-utils";
+import { evaluateStepId, findStepById } from "../utils/step-utils";
 import { EventManager } from "./EventManager";
 import { EngineState } from "./types";
 
@@ -11,7 +11,10 @@ export class StateManager<TContext extends OnboardingContext> {
   private errorInternal: Error | null = null;
   private isCompletedInternal = false;
 
-  constructor(private eventManager: EventManager<TContext>) {}
+  constructor(
+    private eventManager: EventManager<TContext>,
+    private steps: OnboardingStep<TContext>[],
+  ) {}
 
   setState(
     updater: (
@@ -62,9 +65,10 @@ export class StateManager<TContext extends OnboardingContext> {
       }
     }
 
-    // Always notify state change listeners when setState is called
-    // This ensures that step changes trigger state change notifications
-    this.notifyStateChangeListeners(currentStep, context, history);
+    // Only notify if there was a meaningful change to the state object
+    if (stateChanged) {
+      this.notifyStateChangeListeners(currentStep, context, history);
+    }
 
     if (contextChanged && !this.isHydratingInternal && onContextChange) {
       onContextChange(oldContext, context);
@@ -88,11 +92,11 @@ export class StateManager<TContext extends OnboardingContext> {
     context: TContext,
     history: string[],
   ): EngineState<TContext> {
-    let nextPossibleStepId: string | number | null | undefined;
+    let nextStep: OnboardingStep<TContext> | null = null;
     let previousPossibleStepId: string | number | null | undefined;
 
     if (currentStep) {
-      nextPossibleStepId = evaluateStepId(currentStep.nextStep, context);
+      nextStep = this._findNextStep(currentStep, context);
       previousPossibleStepId = evaluateStepId(
         currentStep.previousStep,
         context,
@@ -105,8 +109,8 @@ export class StateManager<TContext extends OnboardingContext> {
       isFirstStep: currentStep
         ? !previousPossibleStepId && history.length === 0
         : false,
-      isLastStep: currentStep ? !nextPossibleStepId : this.isCompletedInternal,
-      canGoNext: !!(currentStep && nextPossibleStepId && !this.errorInternal),
+      isLastStep: currentStep ? !nextStep : this.isCompletedInternal,
+      canGoNext: !!(currentStep && nextStep && !this.errorInternal),
       canGoPrevious:
         !!(
           (currentStep && previousPossibleStepId) ||
@@ -132,6 +136,43 @@ export class StateManager<TContext extends OnboardingContext> {
   ): void {
     const state = this.getState(currentStep, context, history);
     this.eventManager.notifyListeners("stateChange", state);
+  }
+
+  private _findNextStep(
+    currentStep: OnboardingStep<TContext>,
+    context: TContext,
+  ): OnboardingStep<TContext> | null {
+    // 1. Check for an explicit nextStep first
+    const explicitNextStepId = evaluateStepId(currentStep.nextStep, context);
+
+    if (explicitNextStepId) {
+      // An explicit target is set, find it. NavigationManager will handle its condition.
+      return findStepById(this.steps, explicitNextStepId) || null;
+    }
+
+    if (explicitNextStepId === null) {
+      // Flow is explicitly ended
+      return null;
+    }
+
+    // 2. If nextStep is undefined, fall back to array order
+    if (explicitNextStepId === undefined) {
+      const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id);
+      if (currentIndex === -1 || currentIndex >= this.steps.length - 1) {
+        return null; // Not found or is the last step
+      }
+
+      // Find the next step in the array that satisfies its condition
+      for (let i = currentIndex + 1; i < this.steps.length; i++) {
+        const candidateStep = this.steps[i];
+        if (!candidateStep.condition || candidateStep.condition(context)) {
+          return candidateStep; // Found the next valid step
+        }
+      }
+      return null; // No subsequent valid steps found
+    }
+
+    return null;
   }
 
   // Getters for internal state

@@ -80,7 +80,7 @@ export class OnboardingEngine<
 
     // Initialize core managers
     this.eventManager = new EventManager();
-    this.stateManager = new StateManager(this.eventManager);
+    this.stateManager = new StateManager(this.eventManager, this.steps);
     this.errorHandler = new ErrorHandler(this.eventManager, this.stateManager);
     this.persistenceManager = new PersistenceManager(
       config.loadData,
@@ -424,7 +424,7 @@ export class OnboardingEngine<
   /**
    * Navigate to next step
    */
-  public async next(stepSpecificData?: unknown): Promise<void> {
+  public async next(stepSpecificData?: Record<string, unknown>): Promise<void> {
     return this.operationQueue.enqueue(async () => {
       this.currentStepInternal = await this.navigationManager.next(
         this.currentStepInternal,
@@ -815,7 +815,9 @@ export class OnboardingEngine<
     this.persistenceManager.setDataLoadHandler(handler);
   }
 
-  public setDataPersistHandler(handler: DataPersistFn<TContext> | undefined): void {
+  public setDataPersistHandler(
+    handler: DataPersistFn<TContext> | undefined,
+  ): void {
     this.persistenceManager.setDataPersistHandler(handler);
   }
 

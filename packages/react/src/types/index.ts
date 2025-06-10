@@ -12,7 +12,7 @@ import {
 export interface StepComponentProps<P = any> {
   payload: P;
   coreContext: OnboardingContext;
-  onDataChange: (data: any, isValid: boolean) => void;
+  onDataChange?: (data: any, isValid: boolean) => void;
   initialData?: Record<string, any>;
   setStepValid?: (isValid: boolean) => void;
 }
