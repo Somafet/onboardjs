@@ -85,34 +85,34 @@ export class NavigationManager<TContext extends OnboardingContext> {
     this.stateManager.setLoading(true);
     this.stateManager.setError(null);
 
-    let nextCandidateStep = findStepById(this.steps, finalTargetStepId);
+    let candidateStep: OnboardingStep<TContext> | undefined | null = findStepById(this.steps, finalTargetStepId);
 
-    // Handle conditional step skipping
+    // This loop now correctly handles skipping by using our robust helper methods.
     while (
-      nextCandidateStep &&
-      nextCandidateStep.condition &&
-      !nextCandidateStep.condition(context)
+      candidateStep &&
+      candidateStep.condition &&
+      !candidateStep.condition(context)
     ) {
-      let skipToId: string | number | null | undefined;
-      const effectiveDirection = redirected ? "goto" : direction;
-
-      if (effectiveDirection === "previous") {
-        skipToId = evaluateStepId(nextCandidateStep.previousStep, context);
+      console.log(
+        `[NavigationManager] Skipping conditional step: ${candidateStep.id}`,
+      );
+      if (direction === "previous") {
+        // When skipping backwards, we must find the previous valid candidate
+        // relative to the *current candidate*, not the original currentStep.
+        // We pass an empty history to force it to use explicit `previousStep` or array order.
+        candidateStep = this._findPreviousStepCandidate(
+          candidateStep,
+          context,
+          [],
+        );
       } else {
-        skipToId = evaluateStepId(nextCandidateStep.nextStep, context);
+        // When skipping forwards, find the next valid candidate.
+        candidateStep = this._findNextStepCandidate(candidateStep, context);
       }
-
-      if (!skipToId) {
-        nextCandidateStep = undefined;
-        break;
-      }
-
-      finalTargetStepId = skipToId;
-      nextCandidateStep = findStepById(this.steps, finalTargetStepId);
     }
 
     const oldStep = currentStep;
-    const newCurrentStep = nextCandidateStep || null;
+    const newCurrentStep = candidateStep ?? null;
 
     if (newCurrentStep) {
       // Initialize checklist data on activation
@@ -283,30 +283,14 @@ export class NavigationManager<TContext extends OnboardingContext> {
       };
 
       // Determine next step
-      let finalNextStepId: string | number | null | undefined;
-      const definedNextStepTarget =
-        currentStep.nextStep !== undefined
-          ? evaluateStepId(currentStep.nextStep, context)
-          : undefined;
-
-      if (definedNextStepTarget === undefined) {
-        const currentIndex = this.steps.findIndex(
-          (s) => s.id === currentStep.id,
-        );
-        if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
-          finalNextStepId = this.steps[currentIndex + 1].id;
-          console.log(
-            `[NavigationManager] next(): nextStep for '${currentStep.id}' was undefined, defaulting to next in array: '${finalNextStepId}'`,
-          );
-        } else {
-          finalNextStepId = null;
-          console.log(
-            `[NavigationManager] next(): nextStep for '${currentStep.id}' was undefined, no next in array, completing.`,
-          );
-        }
-      } else {
-        finalNextStepId = definedNextStepTarget;
-      }
+      // --- START OF CORRECTED LOGIC ---
+      // Use the new, robust helper to determine the next step.
+      const nextStepCandidate = this._findNextStepCandidate(
+        currentStep,
+        context,
+      );
+      const finalNextStepId = nextStepCandidate ? nextStepCandidate.id : null;
+      // --- END OF CORRECTED LOGIC ---
 
       const newCurrentStep = await this.navigateToStep(
         finalNextStepId,
@@ -347,25 +331,25 @@ export class NavigationManager<TContext extends OnboardingContext> {
     ) => void,
     onFlowComplete?: (context: TContext) => Promise<void> | void,
   ): Promise<OnboardingStep<TContext> | null> {
-    if (this.stateManager.isLoading) {
+    if (!currentStep || this.stateManager.isLoading) {
       return currentStep;
     }
 
-    let prevStepId: string | number | null | undefined;
+    // This method can now be simplified to use the helper.
+    // The history.pop() is the key action here.
+    const candidate = this._findPreviousStepCandidate(
+      currentStep,
+      context,
+      history,
+    );
+    const prevStepId = candidate ? candidate.id : null;
 
-    if (currentStep && currentStep.previousStep) {
-      prevStepId = evaluateStepId(currentStep.previousStep, context);
-    } else if (history.length > 0) {
-      prevStepId = history.pop();
-    }
-
-    if (prevStepId === undefined) {
-      const currentIndex = this.steps.findIndex(
-        (s) => s.id === currentStep?.id,
-      );
-      if (currentIndex > 0) {
-        prevStepId = this.steps[currentIndex - 1].id;
-      }
+    // We still need to pop from history if it was the source.
+    if (
+      !evaluateStepId(currentStep.previousStep, context) &&
+      history.length > 0
+    ) {
+      history.pop();
     }
 
     if (prevStepId) {
@@ -480,5 +464,61 @@ export class NavigationManager<TContext extends OnboardingContext> {
       onStepChangeCallback,
       onFlowComplete,
     );
+  }
+
+  private _findNextStepCandidate(
+    currentStep: OnboardingStep<TContext>,
+    context: TContext,
+  ): OnboardingStep<TContext> | undefined | null {
+    // Priority 1: Explicit `nextStep` property.
+    const explicitNextStepId = evaluateStepId(currentStep.nextStep, context);
+
+    if (explicitNextStepId) {
+      return findStepById(this.steps, explicitNextStepId) || undefined;
+    }
+
+    if (explicitNextStepId === null) {
+      // Flow is explicitly ended.
+      return null;
+    }
+
+    // Priority 2: Array order (if nextStep is undefined).
+    if (explicitNextStepId === undefined) {
+      const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id);
+      if (currentIndex === -1) {
+        return undefined;
+      }
+
+      // Iterate through the rest of the array to find the first valid step.
+      for (let i = currentIndex + 1; i < this.steps.length; i++) {
+        const candidateStep = this.steps[i];
+        if (!candidateStep.condition || candidateStep.condition(context)) {
+          return candidateStep; // Found the next valid step.
+        }
+      }
+    }
+
+    return undefined; // No valid next step found.
+  }
+
+  private _findPreviousStepCandidate(
+    currentStep: OnboardingStep<TContext>,
+    context: TContext,
+    history: string[],
+  ): OnboardingStep<TContext> | undefined {
+    let targetId = evaluateStepId(currentStep.previousStep, context);
+    if (targetId === undefined) {
+      if (history.length > 0) {
+        targetId = history[history.length - 1];
+      } else {
+        const currentIndex = this.steps.findIndex(
+          (s) => s.id === currentStep.id,
+        );
+        if (currentIndex > 0) {
+          targetId = this.steps[currentIndex - 1].id;
+        }
+      }
+    }
+    return targetId ? findStepById(this.steps, targetId) : undefined;
   }
 }

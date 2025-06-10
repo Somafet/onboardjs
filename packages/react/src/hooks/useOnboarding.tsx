@@ -86,7 +86,7 @@ export function useOnboarding<
 
   // Derive shorthand status values for convenience
   const isCompleted = state?.isCompleted ?? false;
-  const currentStep = state?.currentStep ?? null;
+  const currentStep = state?.currentStep;
 
   return {
     engine,

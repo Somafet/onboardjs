@@ -36,6 +36,11 @@ export interface EngineState<
   completedSteps: number;
   /** The completion progress as a percentage (0-100), based on the accessible steps. */
   progressPercentage: number;
+  /**
+   * The 1-based number of the current step within the sequence of accessible steps.
+   * Returns 0 if there is no current step. Useful for "Step X of Y" displays.
+   */
+  currentStepNumber: number;
 }
 
 export type EngineStateChangeListener<

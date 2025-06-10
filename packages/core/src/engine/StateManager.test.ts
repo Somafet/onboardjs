@@ -373,6 +373,7 @@ describe("StateManager", () => {
       expect(state.totalSteps).toBe(5);
       expect(state.completedSteps).toBe(0);
       expect(state.progressPercentage).toBe(0);
+      expect(state.currentStepNumber).toBe(1);
     });
 
     it("should calculate correct progress when some steps are completed", () => {
@@ -397,6 +398,7 @@ describe("StateManager", () => {
       expect(state.totalSteps).toBe(5);
       expect(state.completedSteps).toBe(2);
       expect(state.progressPercentage).toBe(40); // (2 / 5) * 100
+      expect(state.currentStepNumber).toBe(3);
     });
 
     it("should respect conditions when calculating total steps", () => {
@@ -415,6 +417,26 @@ describe("StateManager", () => {
       expect(state.totalSteps).toBe(4);
       expect(state.completedSteps).toBe(0);
       expect(state.progressPercentage).toBe(0);
+    });
+
+    it("should respect conditions when calculating total and current step number", () => {
+      const contextWithConditionFalse = {
+        flowData: {
+          shouldShowConditional: false, // This will hide 'conditionalStep'
+          shouldShowConditional2: true,
+        },
+      };
+      // Current step is 'conditionalStep2'. The relevant steps are [step1, conditionalStep2, step2, step3].
+      // 'conditionalStep2' is the 2nd in this list.
+      const state = stateManager.getState(
+        mockSteps[2],
+        contextWithConditionFalse,
+        [],
+      );
+      expect(state.totalSteps).toBe(4);
+      expect(state.completedSteps).toBe(0);
+      expect(state.progressPercentage).toBe(0);
+      expect(state.currentStepNumber).toBe(2);
     });
 
     it("should not count a completed step if its condition is now false", () => {

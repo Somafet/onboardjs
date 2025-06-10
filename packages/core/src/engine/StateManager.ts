@@ -111,25 +111,31 @@ export class StateManager<TContext extends OnboardingContext> {
       Object.keys(context.flowData?._internal?.completedSteps || {}),
     );
 
-    let totalRelevantSteps = 0;
-    let completedRelevantSteps = 0;
+    // First, determine the list of steps that are currently relevant based on conditions.
+    const relevantSteps = this.steps.filter(
+      (step) => !step.condition || step.condition(context),
+    );
 
-    for (const step of this.steps) {
-      // A step is relevant if its condition passes (or it has no condition)
-      const isRelevant = !step.condition || step.condition(context);
+    const totalRelevantSteps = relevantSteps.length;
 
-      if (isRelevant) {
-        totalRelevantSteps++;
-        if (completedIds.has(String(step.id))) {
-          completedRelevantSteps++;
-        }
-      }
-    }
+    // Calculate completed steps based on the relevant list.
+    const completedRelevantSteps = relevantSteps.filter((step) =>
+      completedIds.has(String(step.id)),
+    ).length;
 
     const progressPercentage =
       totalRelevantSteps > 0
         ? Math.round((completedRelevantSteps / totalRelevantSteps) * 100)
         : 0;
+
+    // Find the 0-based index of the current step within the relevant steps.
+    const currentStepIndex = currentStep
+      ? relevantSteps.findIndex((step) => step.id === currentStep.id)
+      : -1;
+
+    // Convert to a 1-based number for UI display, or 0 if not found/null.
+    const currentStepNumber =
+      currentStepIndex !== -1 ? currentStepIndex + 1 : 0;
 
     return {
       currentStep,
@@ -155,7 +161,8 @@ export class StateManager<TContext extends OnboardingContext> {
       nextStepCandidate: nextStepCandidate,
       totalSteps: totalRelevantSteps,
       completedSteps: completedRelevantSteps,
-      progressPercentage: progressPercentage,
+      progressPercentage,
+      currentStepNumber,
     };
   }
 

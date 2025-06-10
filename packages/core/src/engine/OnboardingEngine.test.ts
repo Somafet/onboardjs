@@ -1702,10 +1702,7 @@ describe("OnboardingEngine", () => {
           throw new Error("Listener error");
         });
 
-        const unsubscribe = engine.addEventListener(
-          "stepChange",
-          errorListener,
-        );
+        engine.addEventListener("stepChange", errorListener);
         await engine.next();
 
         expect(consoleErrorSpy).toHaveBeenCalledWith(
