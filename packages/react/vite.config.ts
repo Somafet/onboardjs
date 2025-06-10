@@ -8,13 +8,13 @@ export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
-      name: "OnboardjsShadcn",
+      name: "OnboardJSReact",
       fileName: (format) => `index.${format}.js`,
       formats: ["es", "cjs"],
     },
     rollupOptions: {
       // Externalize peer deps (like react, react-dom)
-      external: ["react", "react-dom", "@onboardjs/core"],
+      external: ["react", "react-dom", "react/jsx-runtime", "@onboardjs/core"],
       output: {
         globals: {
           react: "React",
@@ -22,9 +22,5 @@ export default defineConfig({
         },
       },
     },
-    cssCodeSplit: true, // Ensures CSS is output separately
-  },
-  css: {
-    postcss: "./postcss.config.js",
   },
 });
