@@ -254,6 +254,34 @@ describe("OnboardingEngine", () => {
         "step1",
       );
     });
+
+    // It should load to step2 and be able to navigate back to step1
+    it("should load to step2 and be able to navigate back to step1", async () => {
+      const loadedData: LoadedData = {
+        flowData: {
+          userRole: "developer",
+          _internal: {
+            completedSteps: { step1: 1749553875099 },
+            startedAt: 1749553871180,
+          },
+        },
+        currentStepId: "step2",
+      };
+
+      const loadData = vi.fn().mockResolvedValue(loadedData);
+      const config = { ...basicConfig, loadData };
+
+      engine = new OnboardingEngine(config);
+      await engine.ready();
+
+      const state = engine.getState();
+      expect(state.currentStep?.id).toBe("step2");
+      expect(state.context.flowData.userRole).toBe("developer");
+
+      await engine.previous(); // Navigate back to step1
+      const previousState = engine.getState();
+      expect(previousState.currentStep?.id).toBe("step1");
+    });
   });
 
   describe("Navigation", () => {

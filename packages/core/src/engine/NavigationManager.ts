@@ -359,8 +359,17 @@ export class NavigationManager<TContext extends OnboardingContext> {
       prevStepId = history.pop();
     }
 
+    if (prevStepId === undefined) {
+      const currentIndex = this.steps.findIndex(
+        (s) => s.id === currentStep?.id,
+      );
+      if (currentIndex > 0) {
+        prevStepId = this.steps[currentIndex - 1].id;
+      }
+    }
+
     if (prevStepId) {
-      return await this.navigateToStep(
+      return this.navigateToStep(
         prevStepId,
         "previous",
         currentStep,
