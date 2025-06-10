@@ -39,7 +39,7 @@ export const mockStepComponents: StepComponentRegistry = {
               name="choice"
               value={option.value}
               onChange={(e) =>
-                onDataChange({ [payload.dataKey]: e.target.value }, true)
+                onDataChange?.({ [payload.dataKey]: e.target.value }, true)
               }
             />
             {option.label}
@@ -57,7 +57,10 @@ export const mockStepComponents: StepComponentRegistry = {
         ? [...selected, value]
         : selected.filter((v) => v !== value);
       setSelected(newSelected);
-      onDataChange({ [payload.dataKey]: newSelected }, newSelected.length > 0);
+      onDataChange?.(
+        { [payload.dataKey]: newSelected },
+        newSelected.length > 0,
+      );
     };
 
     return (
@@ -89,7 +92,7 @@ export const mockStepComponents: StepComponentRegistry = {
               data-testid={item.id}
               type="checkbox"
               onChange={(e) =>
-                onDataChange({ [item.id]: e.target.checked }, true)
+                onDataChange?.({ [item.id]: e.target.checked }, true)
               }
             />
             {item.label}
@@ -102,7 +105,7 @@ export const mockStepComponents: StepComponentRegistry = {
     <div data-testid="confirmation-step">
       <h2>Confirmation Component</h2>
       <p>{payload?.confirmationMessage}</p>
-      <button onClick={() => onDataChange(true, true)}>Confirm</button>
+      <button onClick={() => onDataChange?.(true, true)}>Confirm</button>
     </div>
   ),
   CUSTOM_COMPONENT: ({ payload, onDataChange }) => (
