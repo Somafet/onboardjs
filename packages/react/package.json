@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.1.10-alpha",
+  "version": "0.1.12-alpha",
   "private": false,
   "author": {
     "name": "Soma Somorjai",
@@ -37,8 +37,8 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.15.3",
-    "@types/react": "19.1.0",
-    "@types/react-dom": "19.1.1",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.0",
     "@vitest/coverage-v8": "^3.1.4",
     "eslint": "^9.27.0",
@@ -47,11 +47,13 @@
     "rollup-plugin-preserve-use-client": "^3.0.1",
     "typescript": "^5.8.2",
     "vite": "^6.3.5",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "@onboardjs/core": "^0.1.12-alpha"
