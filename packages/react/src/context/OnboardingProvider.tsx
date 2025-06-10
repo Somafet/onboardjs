@@ -25,10 +25,13 @@ import {
 export interface OnboardingActions<
   TContext extends OnboardingContextType = OnboardingContextType,
 > {
-  next: (stepSpecificData?: unknown) => Promise<void>;
+  next: (stepSpecificData?: Record<string, unknown>) => Promise<void>;
   previous: () => Promise<void>;
   skip: () => Promise<void>;
-  goToStep: (stepId: string, stepSpecificData?: unknown) => Promise<void>;
+  goToStep: (
+    stepId: string,
+    stepSpecificData?: Record<string, unknown>,
+  ) => Promise<void>;
   updateContext: (newContextData: Partial<TContext>) => Promise<void>;
   reset: (
     newConfig?: Partial<OnboardingEngineConfig<TContext>>,
@@ -359,7 +362,7 @@ export function OnboardingProvider<
 
   const actions = useMemo(
     () => ({
-      next: async (data?: unknown) => {
+      next: async (data?: Record<string, unknown>) => {
         if (!engine || !isEngineReadyAndInitialized) return;
         setComponentLoading(true);
         try {
@@ -386,7 +389,7 @@ export function OnboardingProvider<
           setComponentLoading(false);
         }
       },
-      goToStep: async (stepId: string, data?: unknown) => {
+      goToStep: async (stepId: string, data?: Record<string, unknown>) => {
         if (!engine || !isEngineReadyAndInitialized) return;
         setComponentLoading(true);
         try {
