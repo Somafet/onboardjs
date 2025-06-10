@@ -160,7 +160,9 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       ? currentStep.payload?.componentKey
       : currentStep.type;
 
-  const SpecificStepComponent = stepComponentRegistry[componentKey];
+  const SpecificStepComponent = componentKey
+    ? stepComponentRegistry[componentKey]
+    : null;
 
   if (!SpecificStepComponent) {
     return (

@@ -70,7 +70,7 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
       [fieldKey]: errorMsg,
     }).every((msg) => !msg);
 
-    onDataChange({ ...fieldValues, [fieldKey]: value }, allValid && valid);
+    onDataChange?.({ ...fieldValues, [fieldKey]: value }, allValid && valid);
   };
 
   return (
