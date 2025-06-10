@@ -92,11 +92,11 @@ export class StateManager<TContext extends OnboardingContext> {
     context: TContext,
     history: string[],
   ): EngineState<TContext> {
-    let nextStep: OnboardingStep<TContext> | null = null;
+    let nextStepCandidate: OnboardingStep<TContext> | null = null;
     let previousPossibleStepId: string | number | null | undefined;
 
     if (currentStep) {
-      nextStep = this._findNextStep(currentStep, context);
+      nextStepCandidate = this._findNextStep(currentStep, context);
       previousPossibleStepId = evaluateStepId(
         currentStep.previousStep,
         context,
@@ -109,8 +109,10 @@ export class StateManager<TContext extends OnboardingContext> {
       isFirstStep: currentStep
         ? !previousPossibleStepId && history.length === 0
         : false,
-      isLastStep: currentStep ? !nextStep : this.isCompletedInternal,
-      canGoNext: !!(currentStep && nextStep && !this.errorInternal),
+      // The flow is on its last step if no next step can be found
+      isLastStep: currentStep ? !nextStepCandidate : this.isCompletedInternal,
+      // The user can go next if a valid next step exists
+      canGoNext: !!(currentStep && nextStepCandidate && !this.errorInternal),
       canGoPrevious:
         !!(
           (currentStep && previousPossibleStepId) ||
@@ -126,6 +128,7 @@ export class StateManager<TContext extends OnboardingContext> {
       isHydrating: this.isHydratingInternal,
       error: this.errorInternal,
       isCompleted: this.isCompletedInternal,
+      nextStepCandidate: nextStepCandidate,
     };
   }
 

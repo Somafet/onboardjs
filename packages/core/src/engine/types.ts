@@ -17,6 +17,12 @@ export interface EngineState<
   isHydrating: boolean;
   error: Error | null;
   isCompleted: boolean;
+
+  /**
+   * The next step the engine will navigate to, considering conditions.
+   * Useful for debugging and UI previews. Can be null if at the end of the flow.
+   */
+  nextStepCandidate: OnboardingStep<TContext> | null;
 }
 
 export type EngineStateChangeListener<

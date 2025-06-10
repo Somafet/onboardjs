@@ -301,6 +301,7 @@ export function OnboardingProvider<
                 ? engineInitError
                 : new Error(String(engineInitError)),
             isCompleted: false,
+            nextStepCandidate: null,
           });
           setIsEngineReadyAndInitialized(false); // Explicitly false on error
         });
@@ -324,6 +325,7 @@ export function OnboardingProvider<
             ? configError
             : new Error(String(configError)),
         isCompleted: false,
+        nextStepCandidate: null,
       });
       setIsEngineReadyAndInitialized(false);
     }
