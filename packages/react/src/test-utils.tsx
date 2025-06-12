@@ -1,14 +1,22 @@
 import React from "react";
 import { render, RenderOptions } from "@testing-library/react";
 import { vi } from "vitest";
-import { OnboardingStep, OnboardingEngineConfig } from "@onboardjs/core";
+import {
+  OnboardingStep,
+  OnboardingEngineConfig,
+  SingleChoiceStepPayload,
+  MultipleChoiceStepPayload,
+  ChecklistStepPayload,
+  InformationStepPayload,
+  ConfirmationStepPayload,
+  CustomComponentStepPayload,
+} from "@onboardjs/core";
 import { OnboardingProvider } from "./context/OnboardingProvider";
-import { StepComponentRegistry } from "./types";
+import { StepComponentRegistry, StepComponentProps } from "./types";
 
 // Helper function to create mock step components
-export const createMockStepComponent =
-  (name: string) =>
-  ({ payload, onDataChange }: any) => (
+export const createMockStepComponent = (name: string) => {
+  const Component = ({ payload, onDataChange }: StepComponentProps) => (
     <div data-testid={`${name.toLowerCase()}-step`}>
       <h2>{name} Component</h2>
       <p>Step content for {name}</p>
@@ -17,22 +25,28 @@ export const createMockStepComponent =
       )}
     </div>
   );
+  Component.displayName = `${name}MockStepComponent`;
+  return Component;
+};
 
 // Mock step components for testing
 export const mockStepComponents: StepComponentRegistry = {
-  INFORMATION: ({ payload, onDataChange }) => (
+  INFORMATION: ({ payload }: StepComponentProps<InformationStepPayload>) => (
     <div data-testid="information-step">
       <h2>Information Component</h2>
       <p>{payload?.mainText}</p>
       {payload?.subText && <p>{payload.subText}</p>}
     </div>
   ),
-  SINGLE_CHOICE: ({ payload, onDataChange }) => {
+  SINGLE_CHOICE: ({
+    payload,
+    onDataChange,
+  }: StepComponentProps<SingleChoiceStepPayload>) => {
     const { question, options } = payload;
     return (
       <div data-testid="single-choice-step">
         <h2>{question}</h2>
-        {options?.map((option: any) => (
+        {options?.map((option) => (
           <label key={option.id}>
             <input
               type="radio"
@@ -48,7 +62,10 @@ export const mockStepComponents: StepComponentRegistry = {
       </div>
     );
   },
-  MULTIPLE_CHOICE: ({ payload, onDataChange }) => {
+  MULTIPLE_CHOICE: ({
+    payload,
+    onDataChange,
+  }: StepComponentProps<MultipleChoiceStepPayload>) => {
     const { question, options } = payload;
     const [selected, setSelected] = React.useState<string[]>([]);
 
@@ -66,7 +83,7 @@ export const mockStepComponents: StepComponentRegistry = {
     return (
       <div data-testid="multiple-choice-step">
         <h2>{question}</h2>
-        {options?.map((option: any) => (
+        {options?.map((option) => (
           <label key={option.id}>
             <input
               type="checkbox"
@@ -79,12 +96,15 @@ export const mockStepComponents: StepComponentRegistry = {
       </div>
     );
   },
-  CHECKLIST: ({ payload, onDataChange }) => {
+  CHECKLIST: ({
+    payload,
+    onDataChange,
+  }: StepComponentProps<ChecklistStepPayload>) => {
     const { items } = payload;
     return (
       <div data-testid="checklist-step">
         <h2>Checklist Component</h2>
-        {items?.map((item: any) => (
+        {items?.map((item) => (
           <label key={item.id} htmlFor={item.id}>
             <input
               id={item.id}
@@ -101,14 +121,19 @@ export const mockStepComponents: StepComponentRegistry = {
       </div>
     );
   },
-  CONFIRMATION: ({ payload, onDataChange }) => (
+  CONFIRMATION: ({
+    payload,
+    onDataChange,
+  }: StepComponentProps<ConfirmationStepPayload>) => (
     <div data-testid="confirmation-step">
       <h2>Confirmation Component</h2>
       <p>{payload?.confirmationMessage}</p>
       <button onClick={() => onDataChange?.(true, true)}>Confirm</button>
     </div>
   ),
-  CUSTOM_COMPONENT: ({ payload, onDataChange }) => (
+  CUSTOM_COMPONENT: ({
+    payload,
+  }: StepComponentProps<CustomComponentStepPayload>) => (
     <div data-testid="custom-component-step">
       <h2>Custom Component</h2>
       <p>Component Key: {payload?.componentKey}</p>
@@ -134,7 +159,6 @@ export const mockSteps: OnboardingStep[] = [
     id: "step2",
     type: "SINGLE_CHOICE",
     payload: {
-      title: "Role Selection",
       question: "What is your role?",
       options: [
         { id: "dev", label: "Developer", value: "developer" },
@@ -149,7 +173,6 @@ export const mockSteps: OnboardingStep[] = [
     id: "step3",
     type: "CHECKLIST",
     payload: {
-      title: "Complete Tasks",
       items: [
         { id: "task1", label: "Task 1", isMandatory: true },
         { id: "task2", label: "Task 2", isMandatory: false },
@@ -163,7 +186,6 @@ export const mockSteps: OnboardingStep[] = [
     id: "step4",
     type: "CONFIRMATION",
     payload: {
-      title: "Final Step",
       confirmationMessage: "All done!",
     },
     previousStep: "step3",
@@ -177,7 +199,6 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
     id: "step1",
     type: "INFORMATION",
     payload: {
-      title: "Welcome Step",
       mainText: "Welcome to the onboarding flow!",
       subText: "Let's get started",
     },
@@ -188,7 +209,6 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
     id: "step2",
     type: "INFORMATION",
     payload: {
-      title: "Welcome Step",
       mainText: "Welcome to step 2!",
       subText: "Let's get started",
     },
@@ -197,7 +217,6 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
     id: "step3",
     type: "INFORMATION",
     payload: {
-      title: "Step 3",
       mainText: "Welcome to step 3!",
       subText: "Let's get started",
     },
@@ -206,7 +225,6 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
     id: "step4",
     type: "CONFIRMATION",
     payload: {
-      title: "Final Step",
       confirmationMessage: "All done!",
     },
     nextStep: null,
@@ -215,7 +233,9 @@ export const mockStepsWithoutCriteria: OnboardingStep[] = [
 
 // Custom render function with OnboardingProvider
 interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
-  onboardingConfig?: Partial<OnboardingEngineConfig>;
+  onboardingConfig?: Partial<
+    OnboardingEngineConfig & { componentRegistry: StepComponentRegistry }
+  >;
   localStoragePersistence?: any;
 }
 
@@ -229,8 +249,11 @@ export function renderWithOnboardingProvider(
     ...renderOptions
   } = options;
 
-  const defaultConfig: OnboardingEngineConfig = {
+  // **FIX:** Default config now includes the component registry.
+  // User-provided config will override these defaults.
+  const defaultConfig = {
     steps: mockSteps,
+    componentRegistry: mockStepComponents,
     onFlowComplete: vi.fn(),
     onStepChange: vi.fn(),
     ...onboardingConfig,

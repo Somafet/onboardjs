@@ -57,8 +57,16 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   CompletedScreen,
 }) => {
   const router = useRouter();
-  const { state, currentStep, isLoading, next, skip, reset, previous } =
-    useOnboarding();
+  const {
+    state,
+    currentStep,
+    isLoading,
+    next,
+    skip,
+    reset,
+    previous,
+    renderStep,
+  } = useOnboarding();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<
     Record<string, unknown>
   >({});
@@ -155,29 +163,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     );
   }
 
-  const componentKey =
-    currentStep.type === "CUSTOM_COMPONENT"
-      ? currentStep.payload?.componentKey
-      : currentStep.type;
-
-  const SpecificStepComponent = componentKey
-    ? stepComponentRegistry[componentKey]
-    : null;
-
-  if (!SpecificStepComponent) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="p-10 text-center text-red-500">
-          Error: UI Component not found for step ID ’{currentStep.id}’ (key:{" "}
-          {componentKey}).
-        </div>
-
-        <Button variant="outline" onClick={() => reset()}>
-          Reset Onboarding Flow
-        </Button>
-      </div>
-    );
-  }
+  console.log(state);
 
   return (
     <div className="w-full mx-auto h-full flex flex-col">
@@ -201,12 +187,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       </CardHeader>
 
       <CardContent className="min-h-[250px] p-6 sm:pt-12">
-        <SpecificStepComponent
-          payload={currentStep.payload}
-          coreContext={state.context}
-          initialData={currentActiveStepData} // Or derive from state.context.flowData for this step's keys
-          onDataChange={handleStepDataChange}
-        />
+        {renderStep()}
       </CardContent>
 
       {!currentStep.meta?.disableCta ? (
@@ -234,14 +215,10 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
                 {currentStep.payload.secondaryCtaLabel || "Back"}
               </Button>
             )}
-            {(state.canGoNext ||
-              (state.isLastStep &&
-                !state.canGoNext &&
-                currentStep.nextStep === null)) && (
+            {(state.canGoNext || state.isLastStep) && (
               <Button
                 onClick={() => next(currentActiveStepData)}
                 className="animate-fade"
-                disabled={isLoading || !isCurrentActiveStepValid}
               >
                 {currentStep.payload.ctaLabel ||
                   (state.isLastStep ? "Finish" : "Next")}

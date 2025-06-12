@@ -145,6 +145,7 @@ export const HeadlessOnboardingFlow: React.FC<HeadlessOnboardingFlowProps> = ({
       localStoragePersistence={localStoragePersistence}
       customOnDataLoad={customOnDataLoad}
       customOnDataPersist={customOnDataPersist}
+      componentRegistry={stepComponentRegistry}
     >
       <HeadlessFlowRendererInternal
         stepComponentRegistry={stepComponentRegistry}

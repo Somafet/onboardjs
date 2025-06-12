@@ -1,6 +1,9 @@
 "use client";
 
-import { demoOnboardingSteps } from "@/config/onboardingConfig";
+import {
+  demoOnboardingSteps,
+  demoStepComponentRegistry,
+} from "@/config/onboardingConfig";
 import { createSupabasePlugin } from "@/lib/supabase-plugin";
 import { OnboardingProvider } from "@onboardjs/react";
 
@@ -20,6 +23,7 @@ export default function OnboardingProviderWrapper({
       steps={demoOnboardingSteps}
       // Enable localStorage persistence for this demo
       plugins={[supabaseProvider]}
+      componentRegistry={demoStepComponentRegistry}
     >
       {children}
     </OnboardingProvider>

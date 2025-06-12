@@ -1,29 +1,31 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { renderHook, act, waitFor, render } from "@testing-library/react";
 import React from "react";
 import { useOnboarding } from "./useOnboarding";
 import { OnboardingProvider } from "../context/OnboardingProvider";
 import { OnboardingEngineConfig } from "@onboardjs/core";
-import { mockSteps } from "../test-utils";
+import { mockSteps, mockStepComponents } from "../test-utils";
 import { UseOnboardingOptions } from "./useOnboarding.types";
+import { StepComponentRegistry } from "../types";
 
 describe("useOnboarding", () => {
-  let mockConfig: OnboardingEngineConfig;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockConfig = {
-      steps: mockSteps,
-      onFlowComplete: vi.fn(),
-      onStepChange: vi.fn(),
-    };
-  });
+  const defaultConfig: OnboardingEngineConfig & {
+    componentRegistry: StepComponentRegistry;
+  } = {
+    steps: mockSteps,
+    componentRegistry: mockStepComponents,
+    onFlowComplete: vi.fn(),
+    onStepChange: vi.fn(),
+  };
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
-  const createWrapper = (config = mockConfig) => {
+  // The wrapper is now much simpler, using the default config
+  const createWrapper = (configOverrides?: Partial<typeof defaultConfig>) => {
+    const config = { ...defaultConfig, ...configOverrides };
     const Wrapper = ({ children }: { children: React.ReactNode }) => (
       <OnboardingProvider {...config}>{children}</OnboardingProvider>
     );
@@ -316,7 +318,7 @@ describe("useOnboarding", () => {
   });
 
   it("should handle engine re-initialization", async () => {
-    const initialConfig = { ...mockConfig };
+    const initialConfig = { ...defaultConfig };
     const { result, rerender } = renderHook(() => useOnboarding(), {
       wrapper: createWrapper(initialConfig),
     });
@@ -334,5 +336,102 @@ describe("useOnboarding", () => {
       // Engine reference should remain stable unless provider config changes
       expect(result.current.engine).toBe(firstEngine);
     });
+  });
+
+  describe("renderStep and component integration", () => {
+    it("should render the correct component for the current step", async () => {
+      const { result } = renderHook(() => useOnboarding(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() =>
+        expect(result.current.state?.currentStep?.id).toBe("step1"),
+      );
+
+      const { getByTestId, queryByTestId } = render(
+        <>{result.current.renderStep()}</>,
+      );
+      expect(getByTestId("information-step")).toBeTruthy();
+      expect(queryByTestId("single-choice-step")).toBeNull();
+    });
+
+    it("should render a fallback and warn when a component is not in the registry", async () => {
+      const consoleWarnSpy = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => {});
+
+      // ARRANGE
+      const incompleteRegistry = { ...mockStepComponents };
+      delete incompleteRegistry.CONFIRMATION;
+
+      const { result } = renderHook(() => useOnboarding(), {
+        wrapper: createWrapper({ componentRegistry: incompleteRegistry }),
+      });
+
+      // --- YOUR FIX: WAIT FOR INITIALIZATION ---
+      // Ensure the engine is ready and has navigated to the initial step before we act.
+      await waitFor(() => {
+        expect(result.current.state?.currentStep?.id).toBe("step1");
+      });
+
+      // ACT
+      await act(async () => {
+        await result.current.goToStep("step4");
+      });
+
+      // ASSERT
+      await waitFor(() => {
+        // Now, this check will reliably pass because the engine was ready.
+        expect(result.current.state?.currentStep?.id).toBe("step4");
+
+        const { getByText } = render(<>{result.current.renderStep()}</>);
+        expect(
+          getByText('Component for "CONFIRMATION" not found.'),
+        ).toBeTruthy();
+
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          '[OnboardJS] No component found in registry for key: "CONFIRMATION".',
+        );
+      });
+
+      consoleWarnSpy.mockRestore();
+    });
+  });
+
+  it("should register onFlowComplete callback from hook options", async () => {
+    const onFlowComplete = vi.fn();
+    const { result } = renderHook(() => useOnboarding({ onFlowComplete }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.engine).toBeTruthy());
+
+    await act(async () => await result.current.goToStep("step4"));
+    await act(async () => await result.current.next()); // This should trigger completion
+
+    await waitFor(() => {
+      expect(onFlowComplete).toHaveBeenCalled();
+    });
+  });
+
+  it("should handle reset with new configuration", async () => {
+    const { result } = renderHook(() => useOnboarding(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() =>
+      expect(result.current.state?.currentStep?.id).toBe("step1"),
+    );
+    await act(async () => await result.current.next());
+    await waitFor(() =>
+      expect(result.current.state?.currentStep?.id).toBe("step2"),
+    );
+
+    await act(async () => await result.current.reset());
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.state?.currentStep?.id).toBe("step1");
+    expect(result.current.isCompleted).toBe(false);
   });
 });

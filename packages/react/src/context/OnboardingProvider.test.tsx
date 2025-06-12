@@ -4,7 +4,12 @@ import React from "react";
 import { OnboardingProvider } from "./OnboardingProvider";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { OnboardingEngineConfig } from "@onboardjs/core";
-import { mockSteps, mockStepsWithoutCriteria } from "../test-utils";
+import {
+  mockStepComponents,
+  mockSteps,
+  mockStepsWithoutCriteria,
+} from "../test-utils";
+import { StepComponentRegistry } from "../types";
 
 // Test component that uses the context
 const TestConsumer: React.FC = () => {
@@ -31,16 +36,14 @@ const TestConsumer: React.FC = () => {
 };
 
 describe("OnboardingProvider", () => {
-  let mockConfig: OnboardingEngineConfig;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockConfig = {
-      steps: mockSteps,
-      onFlowComplete: vi.fn(),
-      onStepChange: vi.fn(),
-    };
-  });
+  const mockConfig: OnboardingEngineConfig & {
+    componentRegistry: StepComponentRegistry;
+  } = {
+    steps: mockSteps,
+    componentRegistry: mockStepComponents,
+    onFlowComplete: vi.fn(),
+    onStepChange: vi.fn(),
+  };
 
   afterEach(() => {
     vi.restoreAllMocks();

@@ -21,6 +21,7 @@ import {
   OnboardingContext as OnboardingContextType,
   ConfigurationBuilder,
 } from "@onboardjs/core";
+import { StepComponentProps, StepComponentRegistry } from "../types";
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<
@@ -51,6 +52,12 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType>
   isCompleted: boolean | undefined;
   /** The current error state of the engine, if any. */
   error: Error | null;
+
+  /**
+   * A convenience method to render the current step's content.
+   * This can be used by consumers to render the step UI.
+   */
+  renderStep: () => React.ReactNode;
 }
 
 // Default context for backward compatibility
@@ -81,6 +88,12 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
    * but can be used by consumers or future enhancements.
    */
   enablePluginManager?: boolean;
+
+  /**
+   * A registry mapping step types and ids to their React components.
+   * This allows users to provide their own custom step components.
+   */
+  componentRegistry: StepComponentRegistry;
 }
 
 export function OnboardingProvider<
@@ -97,6 +110,7 @@ export function OnboardingProvider<
   customOnDataPersist,
   customOnClearPersistedData,
   plugins,
+  componentRegistry,
   // enablePluginManager is not directly used in engineConfig in this version
 }: OnboardingProviderProps<TContext>) {
   const [engine, setEngine] = useState<OnboardingEngine<TContext> | null>(null);
@@ -106,6 +120,10 @@ export function OnboardingProvider<
   const [componentLoading, setComponentLoading] = useState(false);
   const [isEngineReadyAndInitialized, setIsEngineReadyAndInitialized] =
     useState(false);
+  const [stepSpecificData, setStepSpecificData] = useState<{
+    data: any;
+    isValid: boolean;
+  }>({ data: null, isValid: true });
 
   const stablePlugins = useMemo(() => plugins || [], [plugins]);
 
@@ -236,6 +254,51 @@ export function OnboardingProvider<
     },
     [passedOnFlowComplete, localStoragePersistence],
   );
+
+  const renderStep = useCallback((): React.ReactNode => {
+    if (!engineState?.currentStep) {
+      return null; // Or a loading/empty state component
+    }
+
+    const { currentStep, context } = engineState;
+
+    // For CUSTOM_COMPONENT, we use `componentKey`. Otherwise, we use `type`.
+    const registryKey =
+      currentStep.type === "CUSTOM_COMPONENT"
+        ? (currentStep.payload as any)?.componentKey
+        : currentStep.type;
+
+    if (!registryKey) {
+      console.error(
+        `[OnboardJS] Step ${currentStep.id} has no type or componentKey. Cannot render.`,
+      );
+      return null;
+    }
+
+    const StepComponent = componentRegistry[registryKey];
+
+    if (!StepComponent) {
+      console.warn(
+        `[OnboardJS] No component found in registry for key: "${registryKey}".`,
+      );
+      return <div>Component for "{registryKey}" not found.</div>; // Fallback UI
+    }
+
+    // Find initial data for the component if a dataKey is present
+    const dataKey = (currentStep.payload as any)?.dataKey;
+    const initialData = dataKey ? context.flowData[dataKey] : undefined;
+
+    const props: StepComponentProps = {
+      payload: currentStep.payload,
+      coreContext: context,
+      onDataChange: (data, isValid) => {
+        setStepSpecificData({ data, isValid });
+      },
+      initialData,
+    };
+
+    return <StepComponent {...props} />;
+  }, [engineState, componentRegistry]);
 
   useEffect(() => {
     console.log(
@@ -411,11 +474,21 @@ export function OnboardingProvider<
 
   const actions = useMemo(
     () => ({
-      next: async (data?: Record<string, unknown>) => {
+      next: async (overrideData?: Record<string, unknown>) => {
         if (!engine || !isEngineReadyAndInitialized) return;
+        const dataToPass =
+          overrideData !== undefined ? overrideData : stepSpecificData.data;
+
+        if (!stepSpecificData.isValid && overrideData === undefined) {
+          console.warn(
+            "[OnboardJS] `next()` called, but the current step component reports invalid state. Navigation blocked.",
+          );
+          return;
+        }
+
         setComponentLoading(true);
         try {
-          await engine.next(data);
+          await engine.next(dataToPass);
         } finally {
           setComponentLoading(false);
         }
@@ -428,6 +501,7 @@ export function OnboardingProvider<
         } finally {
           setComponentLoading(false);
         }
+        setStepSpecificData({ data: null, isValid: true });
       },
       skip: async () => {
         if (!engine || !isEngineReadyAndInitialized) return;
@@ -473,7 +547,7 @@ export function OnboardingProvider<
         }
       },
     }),
-    [engine, isEngineReadyAndInitialized],
+    [engine, isEngineReadyAndInitialized, stepSpecificData],
   );
 
   const value = useMemo(
@@ -488,9 +562,17 @@ export function OnboardingProvider<
       currentStep: engineState?.currentStep, // Derived for convenience
       isCompleted: engineState?.isCompleted, // Derived
       error: engineState?.error ?? null,
+      renderStep,
       ...actions,
     }),
-    [engine, engineState, isLoading, isEngineReadyAndInitialized, actions],
+    [
+      engine,
+      engineState,
+      isLoading,
+      isEngineReadyAndInitialized,
+      actions,
+      renderStep,
+    ],
   );
 
   return (

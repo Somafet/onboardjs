@@ -80,6 +80,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       localStoragePersistence={localStoragePersistence}
       customOnDataLoad={customOnDataLoad}
       customOnDataPersist={customOnDataPersist}
+      componentRegistry={stepComponentRegistry}
     >
       {WrapperComponent ? (
         <WrapperComponent>{content}</WrapperComponent>
