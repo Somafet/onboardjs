@@ -21,7 +21,6 @@ export default function OnboardingProviderWrapper({
   return (
     <OnboardingProvider
       steps={demoOnboardingSteps}
-      // Enable localStorage persistence for this demo
       plugins={[supabaseProvider]}
       componentRegistry={demoStepComponentRegistry}
     >
