@@ -1,5 +1,6 @@
 // @onboardjs/plugins-supabase/src/SupabasePlugin.ts
-import { BasePlugin, OnboardingContext, LoadedData } from "@onboardjs/core";
+import { LoadedData, OnboardingContext } from "@onboardjs/core";
+import { BasePlugin } from "@onboardjs/react";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 interface SupabasePluginConfig {
