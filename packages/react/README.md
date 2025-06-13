@@ -17,6 +17,7 @@
 - **React Hooks API:** Use `useOnboarding()` to access state and actions.
 - **Context-based:** `OnboardingProvider` manages and distributes onboarding state.
 - **Custom Step Components:** Map any step to your own React component.
+- **Dynamic Steps:** Define steps at runtime, allowing for flexible flows.
 - **Persistence:** Built-in localStorage support, or plug in your own (e.g., Supabase).
 - **TypeScript-first:** Full type safety and autocompletion.
 - **Next.js Ready:** Works with App Router and Pages Router.
@@ -77,30 +78,34 @@ export const steps: OnboardingStep[] = [
 ];
 
 export const stepRegistry = {
+  // Map step IDs to React components
   welcome: WelcomeStep,
   name: NameStep,
+
+  // Map step types to React components
+  INFORMATION: InformationTypeStep,
 };
 ```
 
 ### 3. Wrap Your App with OnboardingProvider
 
-```typescript jsx
-// pages/onboarding.tsx or app/onboarding/page.tsx
+```tsx
 'use client';
+
 import { OnboardingProvider } from '@onboardjs/react';
 import { steps, stepRegistry } from '@/config/onboarding';
-import OnboardingUIManager from '@/components/OnboardingUIManager';
 
 export default function OnboardingPage() {
   return (
     <OnboardingProvider
       steps={steps}
+      componentRegistry={stepRegistry}
       localStoragePersistence={{
         key: 'onboarding_v1',
         // ttl: 1000 * 60 * 60 * 24, // 1 day (optional)
       }}
     >
-      <OnboardingUIManager stepsConfig={steps} stepComponentRegistry={stepRegistry} />
+      <OnboardingUI />
     </OnboardingProvider>
   );
 }
@@ -108,33 +113,21 @@ export default function OnboardingPage() {
 
 ### 4. Build Your UI with useOnboarding
 
-```typescript jsx
-// components/OnboardingUIManager.tsx
+```tsx
 'use client';
-import { useOnboarding } from '@onboardjs/react';
+import { useOnboarding } from '@onboardjs/react'
 
-export default function OnboardingUIManager({ stepsConfig, stepComponentRegistry }) {
-  const { state, next, isLoading } = useOnboarding();
+export default function OnboardingUI({ stepsConfig, stepComponentRegistry }) {
+  const { state, next, isLoading, renderStep } = useOnboarding()
 
-  if (!state || !state.currentStep) return <p>Loading...</p>;
-  if (state.isCompleted) return <p>Onboarding complete! 🎉</p>;
-
-  const StepComponent =
-    state.currentStep.type === 'CUSTOM_COMPONENT'
-      ? stepComponentRegistry[state.currentStep.payload.componentKey]
-      : null;
+  if (!state || !state.currentStep) return <p>Loading...</p>
+  if (state.isCompleted) return <p>Onboarding complete! 🎉</p>
 
   return (
     <div>
       <h2>{state.currentStep.title}</h2>
-      {StepComponent && (
-        <StepComponent
-          payload={state.currentStep.payload}
-          coreContext={state.context}
-          onDataChange={() => {}}
-        />
-      )}
-      <button onClick={() => next()} disabled={isLoading}>Next</button>
+      {renderStep()}
+      <button onClick={() => next()} disabled={isLoading || !state.canGoNext}>Next</button>
     </div>
   );
 }
