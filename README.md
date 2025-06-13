@@ -53,20 +53,26 @@ const steps = [
   { type: 'CUSTOM_COMPONENT', payload: { componentKey: 'ProfileForm' } },
 ];
 
+const componentRegistry = {
+  INFORMATION: InformationTypeStep,
+  ProfileForm: ProfileFormComponent,
+}
+
 function OnboardingUI() {
-  const { state, actions } = useOnboarding();
-  // Render your custom UI based on state.currentStep
+  const { state, next, renderStep } = useOnboarding();
+
   return (
     <div>
       <h2>{state.currentStep?.payload.title}</h2>
-      <button onClick={actions.next}>Next</button>
+      {renderStep()}
+      <button onClick={() => next()}>Next</button>
     </div>
   );
 }
 
 export default function App() {
   return (
-    <OnboardingProvider steps={steps}>
+    <OnboardingProvider steps={steps} componentRegistry={componentRegistry}>
       <OnboardingUI />
     </OnboardingProvider>
   );
