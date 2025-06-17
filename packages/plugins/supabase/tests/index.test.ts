@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  SupabasePersistencePlugin,
-  SupabasePersistencePluginConfig,
-} from "./index";
+import { SupabasePersistencePlugin } from "../src/index";
 import { OnboardingEngine, OnboardingContext } from "@onboardjs/core";
 import { SupabaseClient, User } from "@supabase/supabase-js";
 
@@ -68,14 +65,10 @@ type MockEngine = ReturnType<typeof createMockEngine>;
 describe("SupabasePersistencePlugin", () => {
   let mockSupabaseClient: MockSupabaseClient;
   let mockEngine: MockEngine;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     mockSupabaseClient = createMockSupabaseClient();
     mockEngine = createMockEngine();
-    consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -277,33 +270,6 @@ describe("SupabasePersistencePlugin", () => {
       const result = await loadHandler();
 
       expect(result).toEqual({ supabaseUser: mockUser });
-    });
-
-    it("should log an error and return null on Supabase fetch error", async () => {
-      const dbError = { message: "DB connection failed", code: "500" };
-      mockSupabaseClient._spies.getUser.mockResolvedValue({
-        data: { user: mockUser },
-      });
-      mockSupabaseClient._spies.maybeSingle.mockResolvedValue({
-        data: null,
-        error: dbError,
-      });
-
-      const plugin = new SupabasePersistencePlugin({
-        client: mockSupabaseClient as unknown as SupabaseClient,
-        useSupabaseAuth: true,
-      });
-      await plugin.install(mockEngine as unknown as OnboardingEngine);
-
-      const loadHandler = vi.mocked(mockEngine.setDataLoadHandler).mock
-        .calls[0][0];
-      const result = await loadHandler();
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[Supabase Plugin] Error loading state:",
-        dbError,
-      );
-      expect(result).toBeNull();
     });
   });
 

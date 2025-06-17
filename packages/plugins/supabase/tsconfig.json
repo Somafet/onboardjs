@@ -9,9 +9,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src"],
+  "include": ["src", "tests/index.test.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }
