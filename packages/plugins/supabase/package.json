@@ -1,0 +1,42 @@
+{
+  "name": "@onboardjs/supabase-plugin",
+  "version": "0.1.0-alpha.0",
+  "description": "Official Supabase persistence plugin for OnboardJS.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run --coverage"
+  },
+  "keywords": [
+    "onboardjs",
+    "onboardjs-plugin",
+    "supabase",
+    "onboarding",
+    "persistence"
+  ],
+  "author": "Soma",
+  "license": "MIT",
+  "homepage": "https://github.com/Soma-ch/onboardjs/tree/main/packages/plugin-supabase-persistence",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Soma-ch/onboardjs.git",
+    "directory": "packages/plugin-supabase-persistence"
+  },
+  "peerDependencies": {
+    "@onboardjs/core": ">=0.1.0",
+    "@supabase/supabase-js": ">=2.0.0"
+  },
+  "devDependencies": {
+    "@onboardjs/core": "*",
+    "@supabase/supabase-js": "^2.43.5",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
