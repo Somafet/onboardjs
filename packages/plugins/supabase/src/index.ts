@@ -213,3 +213,16 @@ export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
     }
   }
 }
+
+/**
+ * A helper function to create an instance of the SupabasePersistencePlugin.
+ * This is the recommended way to instantiate the plugin.
+ *
+ * @param config The configuration options for the plugin.
+ * @returns An instance of SupabasePersistencePlugin.
+ */
+export function createSupabasePlugin(
+  config: SupabasePersistencePluginConfig,
+): SupabasePersistencePlugin {
+  return new SupabasePersistencePlugin(config);
+}
