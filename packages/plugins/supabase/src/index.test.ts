@@ -52,6 +52,7 @@ const createMockEngine = (
     setDataLoadHandler: vi.fn(),
     setDataPersistHandler: vi.fn(),
     setClearPersistedDataHandler: vi.fn(),
+    reportError: vi.fn(),
     // Use mockImplementation to dynamically return the current context
     getState: vi.fn().mockImplementation(() => ({ context })),
     // This helper will now work as expected
@@ -394,6 +395,47 @@ describe("SupabasePersistencePlugin", () => {
       await clearHandler();
 
       expect(mockSupabaseClient._spies.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Error Handling", () => {
+    const dbError = {
+      message: "Connection refused",
+      details: "The database is offline",
+      hint: "Check your connection string",
+      code: "500",
+    };
+
+    it("should call onError and engine.reportError on load failure", async () => {
+      const onError = vi.fn();
+      // ... (rest of arrange)
+      mockSupabaseClient._spies.getUser.mockResolvedValue({
+        data: { user: { id: "user-123" } },
+      });
+      mockSupabaseClient._spies.maybeSingle.mockResolvedValue({
+        data: null,
+        error: dbError,
+      });
+
+      const plugin = new SupabasePersistencePlugin({
+        client: mockSupabaseClient as unknown as SupabaseClient,
+        useSupabaseAuth: true,
+        onError,
+      });
+      await plugin.install(mockEngine as unknown as OnboardingEngine);
+
+      const loadHandler = vi.mocked(mockEngine.setDataLoadHandler).mock
+        .calls[0][0];
+      await loadHandler();
+
+      // Assert custom callback was called
+      expect(onError).toHaveBeenCalledWith(dbError, "load");
+
+      expect(mockEngine.reportError).toHaveBeenCalled();
+      const [errorArg, operationArg] = mockEngine.reportError.mock.calls[0];
+      expect(errorArg).toBeInstanceOf(Error);
+      expect(errorArg.message).toContain("Operation 'load' failed");
+      expect(operationArg).toBe("SupabasePlugin.load");
     });
   });
 });

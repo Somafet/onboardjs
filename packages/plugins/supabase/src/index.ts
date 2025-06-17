@@ -5,7 +5,9 @@ import {
   LoadedData,
   OnboardingEngine,
 } from "@onboardjs/core";
-import { SupabaseClient, User } from "@supabase/supabase-js";
+import { PostgrestError, SupabaseClient, User } from "@supabase/supabase-js";
+
+type SupabaseOperation = "load" | "persist" | "clear";
 
 // Define the shape of the data we'll store in Supabase
 interface SupabaseState {
@@ -32,6 +34,12 @@ export interface SupabasePersistencePluginConfig extends PluginConfig {
    * Defaults to `false`.
    */
   useSupabaseAuth?: boolean;
+
+  /**
+   * Optional callback to handle persistence errors.
+   * If provided, this function is called before the error is passed to the engine's global error handler.
+   */
+  onError?: (error: PostgrestError, operation: SupabaseOperation) => void;
 }
 
 export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
@@ -125,10 +133,7 @@ export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
         .maybeSingle();
 
       if (error) {
-        if (error && error.code !== "PGRST116") {
-          // PGRST116 = Row not found
-          console.error("[Supabase Plugin] Error loading state:", error);
-        }
+        this._handleError(error, "load");
         return null;
       }
 
@@ -162,7 +167,7 @@ export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
       });
 
       if (error) {
-        console.error("[Supabase Plugin] Error persisting state:", error);
+        this._handleError(error, "persist");
       }
     });
 
@@ -176,7 +181,7 @@ export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
         .eq(this.primaryKeyColumn, userId);
 
       if (error) {
-        console.error("[Supabase Plugin] Error clearing state:", error);
+        this._handleError(error, "clear");
       }
     });
 
@@ -186,5 +191,25 @@ export class SupabasePersistencePlugin extends BasePlugin<OnboardingContext> {
       engine.setDataPersistHandler(undefined);
       engine.setClearPersistedDataHandler(undefined);
     };
+  }
+
+  private _handleError(error: PostgrestError, operation: SupabaseOperation) {
+    if (this.config.onError) {
+      this.config.onError(error, operation);
+    }
+
+    if (this.engine) {
+      const wrappedError = new Error(
+        `[Supabase Plugin] Operation '${operation}' failed: ${error.message}`,
+      );
+      (wrappedError as any).cause = error;
+
+      this.engine.reportError(wrappedError, `SupabasePlugin.${operation}`);
+    } else {
+      console.error(
+        `[Supabase Plugin] Operation '${operation}' failed:`,
+        error,
+      );
+    }
   }
 }

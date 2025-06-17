@@ -20,21 +20,25 @@
     "onboarding",
     "persistence"
   ],
-  "author": "Soma",
+  "author": {
+    "name": "Soma Somorjai",
+    "email": "somafet@gmail.com",
+    "url": "https://somafet.com"
+  },
   "license": "MIT",
-  "homepage": "https://github.com/Soma-ch/onboardjs/tree/main/packages/plugin-supabase-persistence",
+  "homepage": "https://onboardjs.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Soma-ch/onboardjs.git",
-    "directory": "packages/plugin-supabase-persistence"
+    "url": "https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/plugins/supabase"
   },
   "peerDependencies": {
-    "@onboardjs/core": ">=0.1.0",
+    "@onboardjs/core": ">=0.2.1",
     "@supabase/supabase-js": ">=2.0.0"
   },
   "devDependencies": {
     "@onboardjs/core": "*",
-    "@supabase/supabase-js": "^2.43.5",
+    "@supabase/supabase-js": "^2.50.0",
     "tsup": "^8.1.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
