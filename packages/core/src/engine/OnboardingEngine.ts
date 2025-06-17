@@ -896,6 +896,17 @@ export class OnboardingEngine<
   }
 
   /**
+   * Allows plugins or external code to report an error to the engine's
+   * centralized error handler.
+   * @param error The error object or unknown value.
+   * @param operation A string describing the operation that failed (e.g., 'MyPlugin.saveData').
+   */
+  public reportError(error: unknown, operation: string): void {
+    // This method safely calls the internal handler with the correct context.
+    this.errorHandler.handleError(error, operation, this.contextInternal);
+  }
+
+  /**
    * Get checklist progress for current step
    */
   public getChecklistProgress(): ReturnType<

@@ -1426,6 +1426,19 @@ describe("OnboardingEngine", () => {
       const state = engine.getState();
       expect(state.currentStep?.id).toBe("step3"); // Should be on step3 (final operation)
     });
+
+    it("should allow external code to report errors", async () => {
+      const error = new Error("External error");
+      engine = new OnboardingEngine(basicConfig);
+      await engine.ready();
+
+      // Report an error
+      engine.reportError(error, "test-error");
+
+      const state = engine.getState();
+      expect(state.error).toEqual(error);
+      expect(state.isLoading).toBe(false);
+    });
   });
 
   describe("Concurrent Operations", () => {
