@@ -41,7 +41,7 @@ export class SupabasePersistencePlugin<
 > extends BasePlugin<TContext> {
   // Adhere to the OnboardingPlugin interface
   public readonly name = "onboardjs-supabase-plugin";
-  public readonly version = "0.1.0-rc.3"; // Should match package.json
+  public readonly version = "0.1.0"; // Should match package.json
 
   config: SupabasePersistencePluginConfig;
   private tableName: string;

@@ -15,7 +15,7 @@ export default function OnboardingProviderWrapper({
 }>) {
   const client = createClient();
 
-  const supabaseProvider = createSupabasePlugin({
+  const supabasePlugin = createSupabasePlugin({
     client,
     tableName: "onboarding_progress",
     contextKeyForId: "currentUser.id",
@@ -43,7 +43,7 @@ export default function OnboardingProviderWrapper({
         },
       }}
       steps={demoOnboardingSteps}
-      plugins={[supabaseProvider]}
+      plugins={[supabasePlugin]}
       componentRegistry={demoStepComponentRegistry}
     >
       {children}

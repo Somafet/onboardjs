@@ -26,9 +26,11 @@ This schema includes recommended Row Level Security (RLS) policies to ensure use
 ```sql
 -- 1. Create the table to store onboarding state
 CREATE TABLE public.onboarding_state (
-  id UUID PRIMARY KEY NOT NULL, -- This should match the type of your user IDs, typically auth.users.id
+  id UUID NOT NULL,
   state_data JSONB,
-  updated_at TIMESTAMPTZ DEFAULT now()
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  constraint onboarding_state_pkey primary key (id),
+  constraint onboarding_state_id_fkey foreign KEY (id) references auth.users (id) on delete CASCADE
 );
 
 -- 2. Enable Row Level Security (Highly Recommended)
@@ -70,10 +72,19 @@ import { createClient } from "@supabase/supabase-js";
 const supabase = createClient("YOUR_URL", "YOUR_ANON_KEY");
 
 // 2. Create an instance of the plugin
-const supabasePlugin = new SupabasePersistencePlugin({
-  client: supabase,
-  useSupabaseAuth: true, // Enable automatic user detection
-});
+const supabasePlugin = createSupabasePlugin({
+    client,
+    tableName: "onboarding_state",
+    contextKeyForId: "currentUser.id",
+    onError(error, operation) {
+      console.error(
+        `[SupabasePlugin] Error during ${operation}:`,
+        error.message,
+      );
+    },
+    stateDataColumn: "flow_data",
+    userIdColumn: "user_id",
+  });
 
 function App() {
   return (
