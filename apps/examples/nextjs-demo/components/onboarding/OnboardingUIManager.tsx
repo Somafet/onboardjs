@@ -1,8 +1,8 @@
 // components/onboarding-ui/OnboardingUIManager.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useOnboarding, StepComponentRegistry } from "@onboardjs/react";
+import React, { useState, useEffect } from "react";
+import { useOnboarding } from "@onboardjs/react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,7 +19,6 @@ import { OnboardingStep } from "@onboardjs/core";
 
 interface OnboardingUIManagerProps {
   stepsConfig: OnboardingStep[];
-  stepComponentRegistry: StepComponentRegistry;
   LoadingScreen?: React.ReactNode;
   ErrorScreen?: React.ComponentType<{ error: Error; onRetry?: () => void }>;
   CompletedScreen?: React.ReactNode;
@@ -27,7 +26,6 @@ interface OnboardingUIManagerProps {
 
 const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   stepsConfig,
-  stepComponentRegistry,
   LoadingScreen = (
     <div className="flex flex-col items-center justify-center p-10 text-xl text-gray-600 min-h-[300px]">
       <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mb-4" />
@@ -71,13 +69,10 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     Record<string, unknown>
   >({});
   const [animatedProgress, setAnimatedProgress] = useState(0);
-  const [isCurrentActiveStepValid, setIsCurrentActiveStepValid] =
-    useState<boolean>(true);
 
   useEffect(() => {
     setCurrentActiveStepData({});
-    setIsCurrentActiveStepValid(currentStep?.meta?.isValid ?? false);
-  }, [currentStep?.id, currentStep?.meta?.isValid]);
+  }, [currentStep?.id]);
 
   const currentStepIndex = stepsConfig.findIndex(
     (s) => s.id === currentStep?.id,
@@ -96,22 +91,6 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
 
     return () => clearTimeout(timeout);
   }, [progressPercentage]);
-
-  const handleStepDataChange = useCallback(
-    (data: unknown, isValid: boolean) => {
-      const prevData =
-        typeof currentActiveStepData === "object" &&
-        currentActiveStepData !== null
-          ? currentActiveStepData
-          : {};
-      const newData = typeof data === "object" && data !== null ? data : {};
-      const mergedData = { ...prevData, ...newData };
-
-      setCurrentActiveStepData(mergedData);
-      setIsCurrentActiveStepValid(isValid);
-    },
-    [currentActiveStepData],
-  );
 
   if (!state) return <>{LoadingScreen}</>; // Engine not ready
   // if (isLoading) return <>{LoadingScreen}</>; // Covers hydration and engine's isLoading
@@ -162,8 +141,6 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       </div>
     );
   }
-
-  console.log(state);
 
   return (
     <div className="w-full mx-auto h-full flex flex-col">

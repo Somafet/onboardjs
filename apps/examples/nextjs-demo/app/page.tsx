@@ -2,10 +2,7 @@
 
 import React from "react";
 import { useOnboarding } from "@onboardjs/react";
-import {
-  demoOnboardingSteps,
-  demoStepComponentRegistry,
-} from "@/config/onboardingConfig";
+import { demoOnboardingSteps } from "@/config/onboardingConfig";
 import OnboardingUIManager from "@/components/onboarding/OnboardingUIManager";
 import { toast } from "sonner";
 import OnboardJsLogo from "@/components/logo";
@@ -56,7 +53,6 @@ export default function OnboardingDemoPage() {
         <div className="flex flex-1 items-center justify-center py-4 sm:py-12">
           <OnboardingUIManager
             stepsConfig={demoOnboardingSteps} // Pass for progress bar, etc.
-            stepComponentRegistry={demoStepComponentRegistry}
             // You can also provide custom LoadingScreen, ErrorScreen, CompletedScreen components as props here
           />
         </div>

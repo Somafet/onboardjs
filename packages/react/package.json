@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": false,
   "author": {
     "name": "Soma Somorjai",
@@ -47,13 +47,13 @@
     "rollup-plugin-preserve-use-client": "^3.0.1",
     "typescript": "^5.8.2",
     "vite": "^6.3.5",
-    "vitest": "^3.1.4"
+    "vitest": "^3.1.4",
+    "@onboardjs/core": "^0.2.1"
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@onboardjs/core": ">=0.2.1"
   },
-  "dependencies": {
-    "@onboardjs/core": "^0.1.12-alpha"
-  }
+  "dependencies": {}
 }
