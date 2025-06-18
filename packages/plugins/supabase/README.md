@@ -58,7 +58,7 @@ The plugin can be configured in two ways:
 
 ### Mode 1: Automatic User Detection (Recommended)
 
-If your users are authenticated via Supabase Auth, this is the simplest method. The plugin will automatically get the user's ID and make the Supabase `User` object available in the context at `context.supabaseUser`.
+If your users are authenticated via Supabase Auth, this is the simplest method. The plugin will automatically get the user's ID and make the Supabase `User` object available in the context at `context.currentUser`.
 
 ```tsx
 // Example with @onboardjs/react
@@ -132,7 +132,7 @@ The plugin accepts the following configuration options:
 | useSupabaseAuth  | boolean                                            | No            | false              | If true, automatically uses the authenticated Supabase user's ID.                                           |
 | contextKeyForId  | string                                             | Conditionally | -                  | Dot-notation path to the unique user ID within the OnboardingContext. Required if useSupabaseAuth is false. |
 | tableName        | string                                             | No            | 'onboarding_state' | The name of the table in your database.                                                                     |
-| primaryKeyColumn | string                                             | No            | 'id'               | The name of the primary key column in your table.                                                           |
+| userIdColumn     | string                                             | No            | 'id'               | The name of the user ID column in your table.                                                               |
 | stateDataColumn  | string                                             | No            | 'state_data'       | The name of the JSONB column where the onboarding state will be stored.                                     |
 | onError          | (error: PostgrestError, operation: string) => void | No            | -                  | Optional callback to handle persistence errors for load, persist, or clear operations.                      |
 

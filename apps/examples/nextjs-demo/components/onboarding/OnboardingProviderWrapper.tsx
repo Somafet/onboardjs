@@ -18,8 +18,7 @@ export default function OnboardingProviderWrapper({
   const supabaseProvider = createSupabasePlugin({
     client,
     tableName: "onboarding_progress",
-    userIdField: "user_id",
-    contextKeyForId: "userId",
+    contextKeyForId: "currentUser.id",
     onError(error, operation) {
       console.error(
         `[SupabasePlugin] Error during ${operation}:`,
@@ -32,7 +31,16 @@ export default function OnboardingProviderWrapper({
   return (
     <OnboardingProvider
       initialContext={{
-        userId: "a84d94de-2d2e-4861-a956-60d17393cf78",
+        // You can provide your actual user here. This is just the demo user.
+        currentUser: {
+          id: "a84d94de-2d2e-4861-a956-60d17393cf78",
+          app_metadata: {
+            provider: "supabase",
+          },
+          user_metadata: {},
+          created_at: "2023-10-01T12:00:00Z",
+          aud: "authenticated",
+        },
       }}
       steps={demoOnboardingSteps}
       plugins={[supabaseProvider]}
