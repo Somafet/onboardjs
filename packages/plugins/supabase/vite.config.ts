@@ -10,5 +10,8 @@ export default defineConfig({
       fileName: (format) => `index.${format}.js`,
       formats: ["es", "cjs"],
     },
+    rollupOptions: {
+      external: ["@onboardjs/core", "@supabase/supabase-js"],
+    },
   },
 });

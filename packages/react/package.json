@@ -51,9 +51,8 @@
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@onboardjs/core": ">=0.2.1"
   },
-  "dependencies": {
-    "@onboardjs/core": "^0.1.12-alpha"
-  }
+  "dependencies": {}
 }

@@ -14,11 +14,11 @@ const createMockSupabaseClient = () => {
     .mockReturnValue({ eq: mockEq, maybeSingle: mockMaybeSingle });
   // const mockEq = vi.fn().mockResolvedValue({ error: null });
   const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-  const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+  const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
   const mockFrom = vi.fn().mockReturnValue({
     select: mockSelect,
     upsert: mockUpsert,
-    delete: mockDelete,
+    update: mockUpdate,
   });
   const mockGetUser = vi.fn();
 
@@ -34,7 +34,7 @@ const createMockSupabaseClient = () => {
       eq: mockEq,
       maybeSingle: mockMaybeSingle,
       upsert: mockUpsert,
-      delete: mockDelete,
+      update: mockUpdate,
       getUser: mockGetUser,
     },
   };
@@ -99,7 +99,7 @@ describe("SupabasePersistencePlugin", () => {
         contextKeyForId: "user.id",
       });
       expect(plugin["tableName"]).toBe("onboarding_state");
-      expect(plugin["primaryKeyColumn"]).toBe("id");
+      expect(plugin["userIdColumn"]).toBe("user_id");
       expect(plugin["stateDataColumn"]).toBe("state_data");
     });
 
@@ -108,11 +108,11 @@ describe("SupabasePersistencePlugin", () => {
         client: mockSupabaseClient as unknown as SupabaseClient,
         contextKeyForId: "user.id",
         tableName: "custom_table",
-        primaryKeyColumn: "user_uuid",
+        userIdColumn: "user_uuid",
         stateDataColumn: "flow_json",
       });
       expect(plugin["tableName"]).toBe("custom_table");
-      expect(plugin["primaryKeyColumn"]).toBe("user_uuid");
+      expect(plugin["userIdColumn"]).toBe("user_uuid");
       expect(plugin["stateDataColumn"]).toBe("flow_json");
     });
   });
@@ -183,10 +183,10 @@ describe("SupabasePersistencePlugin", () => {
 
       expect(mockSupabaseClient._spies.getUser).toHaveBeenCalled();
       expect(mockSupabaseClient._spies.eq).toHaveBeenCalledWith(
-        "id",
+        "user_id",
         mockUser.id,
       );
-      expect(result).toEqual({ ...mockState, supabaseUser: mockUser });
+      expect(result).toEqual({ ...mockState, currentUser: mockUser });
     });
 
     it("mode `useSupabaseAuth`: should return null if no user is authenticated", async () => {
@@ -210,7 +210,7 @@ describe("SupabasePersistencePlugin", () => {
     it("mode `contextKeyForId`: should load data using a nested context key", async () => {
       mockEngine._setContext({
         flowData: {},
-        currentUser: { details: { id: "user-xyz-789" } },
+        currentUser: { id: "user-xyz-789" },
       });
       mockSupabaseClient._spies.maybeSingle.mockResolvedValue({
         data: { state_data: mockState },
@@ -219,7 +219,7 @@ describe("SupabasePersistencePlugin", () => {
 
       const plugin = new SupabasePersistencePlugin({
         client: mockSupabaseClient as unknown as SupabaseClient,
-        contextKeyForId: "currentUser.details.id",
+        contextKeyForId: "currentUser.id",
       });
       await plugin.install(mockEngine as unknown as OnboardingEngine);
 
@@ -228,7 +228,7 @@ describe("SupabasePersistencePlugin", () => {
       const result = await loadHandler();
 
       expect(mockSupabaseClient._spies.eq).toHaveBeenCalledWith(
-        "id",
+        "user_id",
         "user-xyz-789",
       );
       expect(result).toEqual(mockState);
@@ -269,7 +269,7 @@ describe("SupabasePersistencePlugin", () => {
         .calls[0][0];
       const result = await loadHandler();
 
-      expect(result).toEqual({ supabaseUser: mockUser });
+      expect(result).toEqual({ currentUser: mockUser });
     });
   });
 
@@ -277,7 +277,7 @@ describe("SupabasePersistencePlugin", () => {
     it("should upsert the correct state structure to Supabase", async () => {
       const contextToSave: OnboardingContext = {
         flowData: { name: "Soma" },
-        supabaseUser: { id: "user-abc-123" },
+        currentUser: { id: "user-abc-123" },
       };
       const currentStepId = "step3";
 
@@ -293,13 +293,20 @@ describe("SupabasePersistencePlugin", () => {
         .calls[0][0];
       await persistHandler(contextToSave, currentStepId);
 
-      expect(mockSupabaseClient._spies.upsert).toHaveBeenCalledWith({
-        id: "user-abc-123",
-        state_data: {
-          flowData: { name: "Soma" },
-          currentStepId: "step3",
+      expect(mockSupabaseClient._spies.upsert).toHaveBeenCalledWith(
+        {
+          state_data: {
+            currentUser: {
+              id: contextToSave.currentUser.id,
+            },
+            flowData: { name: "Soma" },
+          },
+          user_id: contextToSave.currentUser.id,
         },
-      });
+        {
+          onConflict: "user_id",
+        },
+      );
     });
 
     it("should not attempt to persist if no user ID can be found", async () => {
@@ -318,7 +325,7 @@ describe("SupabasePersistencePlugin", () => {
   });
 
   describe("Data Clearing (`setClearPersistedDataHandler`)", () => {
-    it("should delete the correct row from Supabase", async () => {
+    it("should clear the correct column from Supabase", async () => {
       // --- THE FIX: Set the context BEFORE installing the plugin ---
 
       // 1. ARRANGE: Set up the mock engine with the desired context first.
@@ -342,14 +349,14 @@ describe("SupabasePersistencePlugin", () => {
       await clearHandler();
 
       // 5. ASSERT: The test will now pass.
-      expect(mockSupabaseClient._spies.delete).toHaveBeenCalled();
+      expect(mockSupabaseClient._spies.update).toHaveBeenCalled();
       expect(mockSupabaseClient._spies.eq).toHaveBeenCalledWith(
-        "id",
+        "user_id",
         "user-to-delete",
       );
     });
 
-    it("should not attempt to delete if no user ID can be found", async () => {
+    it("should not attempt to update if no user ID can be found", async () => {
       const plugin = new SupabasePersistencePlugin({
         client: mockSupabaseClient as unknown as SupabaseClient,
         contextKeyForId: "user.id",
@@ -360,7 +367,7 @@ describe("SupabasePersistencePlugin", () => {
         .mock.calls[0][0];
       await clearHandler();
 
-      expect(mockSupabaseClient._spies.delete).not.toHaveBeenCalled();
+      expect(mockSupabaseClient._spies.update).not.toHaveBeenCalled();
     });
   });
 

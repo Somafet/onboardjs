@@ -1,5 +1,5 @@
 "use client";
-import { StepComponentProps } from "@onboardjs/react";
+import { StepComponentProps, useOnboarding } from "@onboardjs/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ZodError, ZodType } from "zod";
@@ -20,10 +20,10 @@ export interface DemoNamePayload {
 
 const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
   payload: { fields },
-  onDataChange,
   initialData,
   coreContext,
 }) => {
+  const { updateContext } = useOnboarding();
   // Track field values and errors locally
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
     {},
@@ -45,7 +45,6 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
   const handleOnChange = (fieldKey: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [fieldKey]: value }));
 
-    let valid = true;
     let errorMsg = "";
     const validationSchema = fields.find((f) => f.key === fieldKey)?.validation;
 
@@ -53,7 +52,6 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
       try {
         validationSchema.parse(value);
       } catch (error) {
-        valid = false;
         if (error instanceof ZodError) {
           errorMsg = error.errors[0]?.message || "Invalid value";
         } else {
@@ -63,14 +61,7 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
     }
 
     setFieldErrors((prev) => ({ ...prev, [fieldKey]: errorMsg }));
-
-    // If any field has an error, the step is not valid
-    const allValid = Object.values({
-      ...fieldErrors,
-      [fieldKey]: errorMsg,
-    }).every((msg) => !msg);
-
-    onDataChange?.({ ...fieldValues, [fieldKey]: value }, allValid && valid);
+    updateContext({ flowData: { ...fieldValues, [fieldKey]: value } });
   };
 
   return (

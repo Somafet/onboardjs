@@ -4,22 +4,36 @@ import {
   demoOnboardingSteps,
   demoStepComponentRegistry,
 } from "@/config/onboardingConfig";
-import { createSupabasePlugin } from "@/lib/supabase-plugin";
+import { createClient } from "@/lib/supabase";
 import { OnboardingProvider } from "@onboardjs/react";
+import { createSupabasePlugin } from "@onboardjs/supabase-plugin";
 
 export default function OnboardingProviderWrapper({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const client = createClient();
+
   const supabaseProvider = createSupabasePlugin({
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    client,
     tableName: "onboarding_progress",
     userIdField: "user_id",
+    contextKeyForId: "userId",
+    onError(error, operation) {
+      console.error(
+        `[SupabasePlugin] Error during ${operation}:`,
+        error.message,
+      );
+    },
+    stateDataColumn: "flow_data",
+    userIdColumn: "user_id",
   });
   return (
     <OnboardingProvider
+      initialContext={{
+        userId: "a84d94de-2d2e-4861-a956-60d17393cf78",
+      }}
       steps={demoOnboardingSteps}
       plugins={[supabaseProvider]}
       componentRegistry={demoStepComponentRegistry}

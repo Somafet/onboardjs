@@ -3,12 +3,19 @@
   "version": "0.1.0-rc.2",
   "private": false,
   "description": "Official Supabase persistence plugin for OnboardJS.",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
+    }
+  },
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly true",
     "test": "vitest --coverage"
