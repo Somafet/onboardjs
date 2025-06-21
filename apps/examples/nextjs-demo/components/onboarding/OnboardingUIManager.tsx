@@ -29,7 +29,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
   LoadingScreen = (
     <div className="flex flex-col items-center justify-center p-10 text-xl text-gray-600 min-h-[300px]">
       <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mb-4" />
-      Initializing Onboarding...
+      Unclogging the pipes for a smooth onboarding flow...
     </div>
   ),
   ErrorScreen = ({ error, onRetry }) => (
@@ -37,7 +37,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
       <CardHeader>
         <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-2" />
         <CardTitle className="text-2xl text-red-600">
-          Onboarding Error!
+          Oops! The flow’s gone off the rails—time to call the plumber!
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -74,14 +74,11 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     setCurrentActiveStepData({});
   }, [currentStep?.id]);
 
-  const currentStepIndex = stepsConfig.findIndex(
-    (s) => s.id === currentStep?.id,
-  );
-
-  const progressPercentage =
-    stepsConfig.length > 0
-      ? ((currentStepIndex + 1) / stepsConfig.length) * 100
-      : 0;
+  const progressPercentage = state
+    ? state.totalSteps > 0
+      ? (state.currentStepNumber / state.totalSteps) * 100
+      : 0
+    : 0;
 
   useEffect(() => {
     // Optional: clear any previous timeouts if you want to be robust
@@ -157,7 +154,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
             )}
           </div>
           <span className="text-xs uppercase font-semibold text-[#2D2D2D] bg-[#AFCBFF] px-2 py-1 rounded-full text-nowrap">
-            Step {currentStepIndex + 1} / {stepsConfig.length}
+            Step {state.currentStepNumber} / {state.totalSteps}
           </span>
         </div>
         <Progress value={animatedProgress} className="my-3 sm:my-8" />

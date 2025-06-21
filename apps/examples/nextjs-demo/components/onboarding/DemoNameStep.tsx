@@ -30,7 +30,7 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
   );
   const [fieldValues, setFieldValues] = React.useState<Record<string, string>>(
     () =>
-      fields.reduce(
+      fields?.reduce(
         (acc, field) => ({
           ...acc,
           [field.key]:
@@ -46,7 +46,9 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
     setFieldValues((prev) => ({ ...prev, [fieldKey]: value }));
 
     let errorMsg = "";
-    const validationSchema = fields.find((f) => f.key === fieldKey)?.validation;
+    const validationSchema = fields?.find(
+      (f) => f.key === fieldKey,
+    )?.validation;
 
     if (validationSchema) {
       try {
@@ -70,7 +72,7 @@ const DemoNameStep: React.FC<StepComponentProps<DemoNamePayload>> = ({
         This is a simple example on how you can capture user input in your
         onboarding flow
       </p>
-      {fields.map((field) => (
+      {fields?.map((field) => (
         <div key={field.key} className="space-y-1">
           <Label htmlFor={field.key}>{field.label}</Label>
           <Input

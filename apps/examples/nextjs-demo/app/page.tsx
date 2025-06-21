@@ -2,13 +2,13 @@
 
 import React from "react";
 import { useOnboarding } from "@onboardjs/react";
-import { demoOnboardingSteps } from "@/config/onboardingConfig";
 import OnboardingUIManager from "@/components/onboarding/OnboardingUIManager";
 import { toast } from "sonner";
 import OnboardJsLogo from "@/components/logo";
 import confetti from "canvas-confetti";
 import Link from "next/link";
 import { OnboardingContext } from "@onboardjs/core";
+import { commonFlowSteps } from "@/components/onboarding/common-flow-config";
 
 export default function OnboardingDemoPage() {
   useOnboarding({
@@ -52,7 +52,7 @@ export default function OnboardingDemoPage() {
         </div>
         <div className="flex flex-1 items-center justify-center py-4 sm:py-12">
           <OnboardingUIManager
-            stepsConfig={demoOnboardingSteps} // Pass for progress bar, etc.
+            stepsConfig={commonFlowSteps} // Pass for progress bar, etc.
             // You can also provide custom LoadingScreen, ErrorScreen, CompletedScreen components as props here
           />
         </div>

@@ -3,6 +3,7 @@ import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import OnboardingProviderWrapper from "@/components/onboarding/OnboardingProviderWrapper";
+import { createClient } from "@/lib/supabase-server";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -14,15 +15,22 @@ export const metadata: Metadata = {
   description: "OnboardJs Next.js Demo - Build Custom Onboarding Flows",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const client = await createClient();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+
   return (
     <html lang="en">
       <body className={`${lexend.variable} antialiased font-lexend`}>
-        <OnboardingProviderWrapper>{children}</OnboardingProviderWrapper>
+        <OnboardingProviderWrapper user={user}>
+          {children}
+        </OnboardingProviderWrapper>
         <Toaster />
       </body>
     </html>

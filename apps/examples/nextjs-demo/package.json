@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
     "@onboardjs/core": "*",
     "@onboardjs/react": "*",
     "@onboardjs/supabase-plugin": "*",

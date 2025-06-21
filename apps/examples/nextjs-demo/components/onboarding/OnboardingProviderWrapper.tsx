@@ -1,16 +1,20 @@
 "use client";
 
-import {
-  demoOnboardingSteps,
-  demoStepComponentRegistry,
-} from "@/config/onboardingConfig";
 import { createClient } from "@/lib/supabase";
 import { OnboardingProvider } from "@onboardjs/react";
 import { createSupabasePlugin } from "@onboardjs/supabase-plugin";
+import {
+  AppOnboardingContext,
+  commonFlowSteps,
+  commonRegistry,
+} from "./common-flow-config";
+import { type User } from "@supabase/auth-js";
 
 export default function OnboardingProviderWrapper({
+  user,
   children,
 }: Readonly<{
+  user: User | null;
   children: React.ReactNode;
 }>) {
   const client = createClient();
@@ -28,23 +32,23 @@ export default function OnboardingProviderWrapper({
     stateDataColumn: "flow_data",
     userIdColumn: "user_id",
   });
+
+  console.log(
+    "[OnboardingProviderWrapper] Initializing OnboardingProvider with user:",
+    user,
+  );
+
   return (
-    <OnboardingProvider
+    <OnboardingProvider<AppOnboardingContext>
       initialContext={{
-        // You can provide your actual user here. This is just the demo user.
-        currentUser: {
-          id: "a84d94de-2d2e-4861-a956-60d17393cf78",
-          app_metadata: {
-            provider: "supabase",
-          },
-          user_metadata: {},
-          created_at: "2023-10-01T12:00:00Z",
-          aud: "authenticated",
+        flowData: {
+          selectedOption: "simple-flow", // Default to simple flow for demo
         },
+        currentUser: user ?? undefined, // Pass the user object from props
       }}
-      steps={demoOnboardingSteps}
+      steps={commonFlowSteps}
       plugins={[supabasePlugin]}
-      componentRegistry={demoStepComponentRegistry}
+      componentRegistry={commonRegistry}
     >
       {children}
     </OnboardingProvider>
