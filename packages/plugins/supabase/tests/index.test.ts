@@ -296,6 +296,7 @@ describe("SupabasePersistencePlugin", () => {
       expect(mockSupabaseClient._spies.upsert).toHaveBeenCalledWith(
         {
           state_data: {
+            currentStepId,
             currentUser: {
               id: contextToSave.currentUser.id,
             },
