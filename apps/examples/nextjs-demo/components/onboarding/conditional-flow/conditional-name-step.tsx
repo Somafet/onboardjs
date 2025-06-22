@@ -32,6 +32,7 @@ const ConditionalNameStep: React.FC<
   const [name, setName] = useState(state?.context.flowData.userName ?? "");
 
   const handleOnChange = (value: string) => {
+    setName(value);
     updateContext({
       flowData: {
         userName: value,
@@ -40,7 +41,6 @@ const ConditionalNameStep: React.FC<
   };
 
   const handleTypeChange = (value: string) => {
-    setName(value);
     updateContext({
       flowData: {
         userType: value,

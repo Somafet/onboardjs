@@ -2,7 +2,7 @@
 import { StepComponentProps, useOnboarding } from "@onboardjs/react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import React from "react";
+import React, { useState } from "react";
 import { AppOnboardingContext } from "../common-flow-config";
 import { MailIcon, Building2Icon } from "lucide-react";
 import { twMerge } from "tailwind-merge";
@@ -13,8 +13,10 @@ const OrganisationStep: React.FC<
   StepComponentProps<unknown, AppOnboardingContext>
 > = () => {
   const { updateContext, state } = useOnboarding();
+  const [orgName, setOrgName] = useState(state?.context.flowData.orgName ?? "");
 
   const handleOrgNameChange = (value: string) => {
+    setOrgName(value);
     updateContext({
       flowData: {
         orgName: value,
@@ -36,7 +38,7 @@ const OrganisationStep: React.FC<
         <Input
           id="org-name-input"
           type="text"
-          value={state?.context.flowData.orgName || ""}
+          defaultValue={orgName}
           onChange={(e) => handleOrgNameChange(e.target.value)}
           placeholder="Enter your organisation name"
         />
