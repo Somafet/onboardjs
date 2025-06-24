@@ -262,26 +262,25 @@ export function OnboardingProvider<
 
     const { currentStep, context } = engineState;
 
-    // For CUSTOM_COMPONENT, we use `componentKey`. Otherwise, we use `type`.
-    const registryKey =
+    // Look for a component by step ID first, then by type/componentKey.
+    let StepComponent = componentRegistry[currentStep.id];
+
+    const typeKey =
       currentStep.type === "CUSTOM_COMPONENT"
         ? (currentStep.payload as any)?.componentKey
         : currentStep.type;
 
-    if (!registryKey) {
-      console.error(
-        `[OnboardJS] Step ${currentStep.id} has no type or componentKey. Cannot render.`,
-      );
-      return null;
+    if (!StepComponent) {
+      if (typeKey) {
+        StepComponent = componentRegistry[typeKey];
+      }
     }
-
-    const StepComponent = componentRegistry[registryKey];
 
     if (!StepComponent) {
       console.warn(
-        `[OnboardJS] No component found in registry for key: "${registryKey}".`,
+        `[OnboardJS] No component found in registry for step ${currentStep.id}. Tried keys: "${currentStep.id}" (by ID) and "${typeKey}" (by type/componentKey).`,
       );
-      return <div>Component for "{registryKey}" not found.</div>; // Fallback UI
+      return <div>Component for step "{currentStep.id}" not found.</div>; // Fallback UI
     }
 
     // Find initial data for the component if a dataKey is present
