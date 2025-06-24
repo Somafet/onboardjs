@@ -32,11 +32,11 @@ export type OnboardingStep<TContext extends OnboardingContext = OnboardingContex
       TContext
     > & {
       type: "MULTIPLE_CHOICE";
-      payload?: MultipleChoiceStepPayload;
+      payload: MultipleChoiceStepPayload;
     })
   | (BaseOnboardingStep<"SINGLE_CHOICE", SingleChoiceStepPayload, TContext> & {
       type: "SINGLE_CHOICE";
-      payload?: SingleChoiceStepPayload;
+      payload: SingleChoiceStepPayload;
     })
   | (BaseOnboardingStep<"CONFIRMATION", ConfirmationStepPayload, TContext> & {
       type: "CONFIRMATION";
@@ -48,7 +48,7 @@ export type OnboardingStep<TContext extends OnboardingContext = OnboardingContex
       TContext
     > & {
       type: "CHECKLIST";
-      payload?: ChecklistStepPayload<TContext>; // Use generic ChecklistStepPayload
+      payload: ChecklistStepPayload<TContext>; // Use generic ChecklistStepPayload
     })
   | (BaseOnboardingStep<
       "CUSTOM_COMPONENT",
