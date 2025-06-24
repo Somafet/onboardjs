@@ -17,12 +17,14 @@ export type OnboardingStepType =
   | "CHECKLIST";
 
 // Make OnboardingStep generic for TContext
-export type OnboardingStep<
-  TContext extends OnboardingContext = OnboardingContext,
-> =
+export type OnboardingStep<TContext extends OnboardingContext = OnboardingContext> =
+  | (BaseOnboardingStep<"INFORMATION", CustomComponentStepPayload, TContext> & {
+      type?: never;
+      payload?: CustomComponentStepPayload;
+    })
   | (BaseOnboardingStep<"INFORMATION", InformationStepPayload, TContext> & {
       type: "INFORMATION";
-      payload: InformationStepPayload;
+      payload?: InformationStepPayload;
     })
   | (BaseOnboardingStep<
       "MULTIPLE_CHOICE",
@@ -30,15 +32,15 @@ export type OnboardingStep<
       TContext
     > & {
       type: "MULTIPLE_CHOICE";
-      payload: MultipleChoiceStepPayload;
+      payload?: MultipleChoiceStepPayload;
     })
   | (BaseOnboardingStep<"SINGLE_CHOICE", SingleChoiceStepPayload, TContext> & {
       type: "SINGLE_CHOICE";
-      payload: SingleChoiceStepPayload;
+      payload?: SingleChoiceStepPayload;
     })
   | (BaseOnboardingStep<"CONFIRMATION", ConfirmationStepPayload, TContext> & {
       type: "CONFIRMATION";
-      payload: ConfirmationStepPayload;
+      payload?: ConfirmationStepPayload;
     })
   | (BaseOnboardingStep<
       "CHECKLIST",
@@ -46,7 +48,7 @@ export type OnboardingStep<
       TContext
     > & {
       type: "CHECKLIST";
-      payload: ChecklistStepPayload<TContext>; // Use generic ChecklistStepPayload
+      payload?: ChecklistStepPayload<TContext>; // Use generic ChecklistStepPayload
     })
   | (BaseOnboardingStep<
       "CUSTOM_COMPONENT",
@@ -54,5 +56,5 @@ export type OnboardingStep<
       TContext
     > & {
       type: "CUSTOM_COMPONENT";
-      payload: CustomComponentStepPayload;
+      payload?: CustomComponentStepPayload;
     });
