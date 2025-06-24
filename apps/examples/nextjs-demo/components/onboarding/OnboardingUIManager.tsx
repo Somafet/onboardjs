@@ -145,11 +145,11 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
         <div className="flex justify-between items-start mb-2">
           <div>
             <CardTitle className="text-2xl font-bold mb-2">
-              {currentStep.payload.title}
+              {currentStep.payload?.title}
             </CardTitle>
-            {currentStep.payload.description && (
+            {currentStep.payload?.description && (
               <CardDescription className="mt-1 text-md">
-                {currentStep.payload.description}
+                {currentStep.payload?.description}
               </CardDescription>
             )}
           </div>
@@ -174,7 +174,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
                 disabled={isLoading}
                 className="w-full sm:w-auto animate-fade delay-100"
               >
-                {currentStep.payload.skipLabel || "Skip"}
+                {currentStep.payload?.skipLabel || "Skip"}
               </Button>
             )}
           </div>
@@ -186,7 +186,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
                 onClick={() => previous()}
                 disabled={isLoading}
               >
-                {currentStep.payload.secondaryCtaLabel || "Back"}
+                {currentStep.payload?.secondaryCtaLabel || "Back"}
               </Button>
             )}
             {(state.canGoNext || state.isLastStep) && (
@@ -194,7 +194,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
                 onClick={() => next(currentActiveStepData)}
                 className="animate-fade"
               >
-                {currentStep.payload.ctaLabel ||
+                {currentStep.payload?.ctaLabel ||
                   (state.isLastStep ? "Finish" : "Next")}
               </Button>
             )}
