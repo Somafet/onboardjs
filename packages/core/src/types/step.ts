@@ -19,7 +19,7 @@ export type OnboardingStepType =
 // Make OnboardingStep generic for TContext
 export type OnboardingStep<TContext extends OnboardingContext = OnboardingContext> =
   | (BaseOnboardingStep<"INFORMATION", CustomComponentStepPayload, TContext> & {
-      type?: never;
+      type?: never; // Allow type to be optional for INFORMATION step
       payload?: CustomComponentStepPayload;
     })
   | (BaseOnboardingStep<"INFORMATION", InformationStepPayload, TContext> & {
