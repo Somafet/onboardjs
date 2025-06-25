@@ -82,7 +82,9 @@ describe("HeadlessOnboardingFlow", () => {
             <div>
               <span data-testid="step-id">{currentStep?.id}</span>
               <span data-testid="step-type">{currentStep?.type}</span>
-              <span data-testid="step-title">{currentStep?.payload.title}</span>
+              <span data-testid="step-title">
+                {currentStep?.payload?.title}
+              </span>
             </div>
           )}
         </HeadlessOnboardingFlow>,

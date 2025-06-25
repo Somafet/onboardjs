@@ -79,7 +79,9 @@ const HeadlessFlowRendererInternal: React.FC<{
       ComponentToRender =
         stepComponentRegistry[(step.payload as any)?.componentKey];
     } else {
-      ComponentToRender = stepComponentRegistry[step.type] ?? stepComponentRegistry[step.id];
+      ComponentToRender =
+        stepComponentRegistry[step.type ?? "INFORMATION"] ??
+        stepComponentRegistry[step.id];
     }
 
     if (!ComponentToRender) {

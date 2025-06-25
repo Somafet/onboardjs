@@ -368,8 +368,6 @@ describe("useOnboarding", () => {
         wrapper: createWrapper({ componentRegistry: incompleteRegistry }),
       });
 
-      // --- YOUR FIX: WAIT FOR INITIALIZATION ---
-      // Ensure the engine is ready and has navigated to the initial step before we act.
       await waitFor(() => {
         expect(result.current.state?.currentStep?.id).toBe("step1");
       });
@@ -385,12 +383,10 @@ describe("useOnboarding", () => {
         expect(result.current.state?.currentStep?.id).toBe("step4");
 
         const { getByText } = render(<>{result.current.renderStep()}</>);
-        expect(
-          getByText('Component for "CONFIRMATION" not found.'),
-        ).toBeTruthy();
+        expect(getByText('Component for step "step4" not found.')).toBeTruthy();
 
         expect(consoleWarnSpy).toHaveBeenCalledWith(
-          '[OnboardJS] No component found in registry for key: "CONFIRMATION".',
+          '[OnboardJS] No component found in registry for step step4. Tried keys: "step4" (by ID) and "CONFIRMATION" (by type/componentKey).',
         );
       });
 

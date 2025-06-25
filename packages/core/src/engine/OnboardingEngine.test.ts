@@ -24,7 +24,6 @@ describe("OnboardingEngine", () => {
     mockSteps = [
       {
         id: "step1",
-        type: "INFORMATION",
         payload: { mainText: "Welcome to onboarding" },
         nextStep: "step2",
       },

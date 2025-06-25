@@ -17,12 +17,14 @@ export type OnboardingStepType =
   | "CHECKLIST";
 
 // Make OnboardingStep generic for TContext
-export type OnboardingStep<
-  TContext extends OnboardingContext = OnboardingContext,
-> =
+export type OnboardingStep<TContext extends OnboardingContext = OnboardingContext> =
+  | (BaseOnboardingStep<"INFORMATION", CustomComponentStepPayload, TContext> & {
+      type?: never; // Allow type to be optional for INFORMATION step
+      payload?: CustomComponentStepPayload;
+    })
   | (BaseOnboardingStep<"INFORMATION", InformationStepPayload, TContext> & {
       type: "INFORMATION";
-      payload: InformationStepPayload;
+      payload?: InformationStepPayload;
     })
   | (BaseOnboardingStep<
       "MULTIPLE_CHOICE",
@@ -38,7 +40,7 @@ export type OnboardingStep<
     })
   | (BaseOnboardingStep<"CONFIRMATION", ConfirmationStepPayload, TContext> & {
       type: "CONFIRMATION";
-      payload: ConfirmationStepPayload;
+      payload?: ConfirmationStepPayload;
     })
   | (BaseOnboardingStep<
       "CHECKLIST",
@@ -54,5 +56,5 @@ export type OnboardingStep<
       TContext
     > & {
       type: "CUSTOM_COMPONENT";
-      payload: CustomComponentStepPayload;
+      payload?: CustomComponentStepPayload;
     });

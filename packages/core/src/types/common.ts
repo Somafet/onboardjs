@@ -53,8 +53,8 @@ type NonSkipableStep = {
  * Base properties common to all onboarding steps.
  */
 export type BaseOnboardingStep<
-  TStepType extends string = string,
-  TPayload = any,
+  TStepType extends string = "INFORMATION",
+  TPayload = Record<string, any>,
   TContext extends OnboardingContext = OnboardingContext,
 > = {
   /** A unique identifier for this step. */
