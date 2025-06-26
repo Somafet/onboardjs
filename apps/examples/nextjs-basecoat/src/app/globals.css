@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "basecoat-css";
+@import "tw-animate-css";
+@import "tailwindcss-animated";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #141414;
+  --foreground: #ededed;
+  --muted: #6b7280;
+}
+
+.green-slider::-webkit-slider-runnable-track,
+.green-slider::-moz-range-track {
+  background: linear-gradient(
+    to right,
+    var(--color-green-500) var(--slider-value),
+    var(--muted) var(--slider-value)
+  );
+}
+
+.pink-slider::-webkit-slider-runnable-track,
+.pink-slider::-moz-range-track {
+  background: linear-gradient(
+    to right,
+    #bf37c2 var(--slider-value),
+    var(--muted) var(--slider-value)
+  );
+}
+
+:root {
+  --chart-1: var(--color-green-500);
+  --chart-2: #bf37c2;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
