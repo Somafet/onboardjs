@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { OnboardingProvider } from "@onboardjs/react";
-import { steps } from "../../lib/onboarding/onboarding-steps";
+import { steps } from "../lib/onboarding/onboarding-steps";
 
 import "./globals.css";
-import { componentRegistry } from "../../lib/onboarding/onboarding-registry";
+import { componentRegistry } from "../lib/onboarding/onboarding-registry";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Basecoat Next.js Example",
+  title: "OnboardJS + Basecoat Next.js Example",
   description: "Using OnboardJS with Basecoat in Next.js",
 };
 
@@ -31,7 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}
       >
-        <OnboardingProvider steps={steps} componentRegistry={componentRegistry}>
+        <OnboardingProvider
+          steps={steps}
+          componentRegistry={componentRegistry}
+          localStoragePersistence={{ key: "onboarding-example" }}
+        >
           {children}
         </OnboardingProvider>
       </body>
