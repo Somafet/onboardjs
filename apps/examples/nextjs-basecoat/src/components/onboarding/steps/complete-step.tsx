@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import StepLayout from "../StepLayout";
 import confetti from "canvas-confetti";
+import Link from "next/link";
 
 export default function CompleteStep() {
   useEffect(() => {
@@ -33,9 +34,12 @@ export default function CompleteStep() {
             to see the details and start managing your projects effectively.
           </p>
 
-          <button className="btn mt-8 animate-fade-up animate-delay-600">
+          <Link
+            href="https://onboardjs.com/docs"
+            className="btn mt-8 animate-fade-up animate-delay-600"
+          >
             Go to Dashboard
-          </button>
+          </Link>
         </div>
       </div>
     </StepLayout>
