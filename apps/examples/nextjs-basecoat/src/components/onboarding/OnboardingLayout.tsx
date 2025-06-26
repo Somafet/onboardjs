@@ -27,6 +27,12 @@ export default function OnboardingLayout() {
                 OnboardJS
               </span>
             </Link>
+
+            <Link href="https://www.youtube.com/watch?v=G8U0qAc2MZE">
+              <p className="text-sm text-gray-400">
+                Credits to @radzion for the layout!
+              </p>
+            </Link>
             <nav className="flex flex-1 flex-col mt-4">
               <span className="text-2xl font-semibold mb-2">
                 Quick Setup{" "}
