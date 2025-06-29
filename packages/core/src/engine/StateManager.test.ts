@@ -330,16 +330,18 @@ describe("StateManager", () => {
       expect(mockEventManager.notifyListeners).toHaveBeenCalledTimes(1);
       expect(mockEventManager.notifyListeners).toHaveBeenCalledWith(
         "stateChange",
-        expect.any(Object),
+        {
+          state: expect.any(Object),
+        },
       );
 
       // Check that the state passed to the listener is correct
       const emittedState = mockEventManager.notifyListeners.mock
-        .calls[0][1] as EngineState<OnboardingContext>;
+        .calls[0][1] as { state: EngineState<OnboardingContext> };
 
-      expect(emittedState.currentStep?.id).toBe("step1");
-      expect(emittedState.isFirstStep).toBe(true);
-      expect(emittedState.canGoNext).toBe(true); // Verifies the core logic is used here too
+      expect(emittedState.state.currentStep?.id).toBe("step1");
+      expect(emittedState.state.isFirstStep).toBe(true);
+      expect(emittedState.state.canGoNext).toBe(true); // Verifies the core logic is used here too
     });
   });
 

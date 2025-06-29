@@ -1,6 +1,15 @@
 // @onboardjs/core/src/plugins/types.ts
 
 import { OnboardingEngine } from "../engine/OnboardingEngine";
+import {
+  BeforeStepChangeEvent,
+  ContextUpdateEvent,
+  ErrorEvent,
+  FlowCompletedEvent,
+  StepActiveEvent,
+  StepChangeEvent,
+  StepCompletedEvent,
+} from "../engine/types";
 import { OnboardingContext, OnboardingStep } from "../types";
 
 export interface OnboardingPlugin<
@@ -39,47 +48,35 @@ export interface PluginManager<
   cleanup(): Promise<any>;
 }
 
-export interface PluginHooks<
-  TContext extends OnboardingContext = OnboardingContext,
-> {
+export interface PluginHooks<TContext extends OnboardingContext = OnboardingContext> {
   /** Called before step change */
   beforeStepChange?: (
-    currentStep: OnboardingStep<TContext> | null,
-    nextStep: OnboardingStep<TContext>,
-    context: TContext,
+    event: BeforeStepChangeEvent<TContext>,
   ) => void | Promise<void>;
 
   /** Called after step change */
-  afterStepChange?: (
-    previousStep: OnboardingStep<TContext> | null,
-    currentStep: OnboardingStep<TContext> | null,
-    context: TContext,
-  ) => void | Promise<void>;
+  afterStepChange?: (event: StepChangeEvent<TContext>) => void | Promise<void>;
 
   /** Called when step becomes active */
-  onStepActive?: (
-    step: OnboardingStep<TContext>,
-    context: TContext,
-  ) => void | Promise<void>;
+  onStepActive?: (event: StepActiveEvent<TContext>) => void | Promise<void>;
 
   /** Called when step is completed */
-  onStepComplete?: (
-    step: OnboardingStep<TContext>,
-    stepData: any,
-    context: TContext,
+  onStepCompleted?: (
+    event: StepCompletedEvent<TContext>,
   ) => void | Promise<void>;
 
   /** Called when flow is completed */
-  onFlowComplete?: (context: TContext) => void | Promise<void>;
+  onFlowCompleted?: (
+    event: FlowCompletedEvent<TContext>,
+  ) => void | Promise<void>;
 
   /** Called when context is updated */
   onContextUpdate?: (
-    oldContext: TContext,
-    newContext: TContext,
+    event: ContextUpdateEvent<TContext>,
   ) => void | Promise<void>;
 
   /** Called on engine errors */
-  onError?: (error: Error, context: TContext) => void | Promise<void>;
+  onError?: (event: ErrorEvent<TContext>) => void | Promise<void>;
 }
 
 export interface PluginConfig {

@@ -74,19 +74,17 @@ export class PersistenceManager<TContext extends OnboardingContext> {
 
       const persistenceTime = Date.now() - startTime;
 
-      this.eventManager?.notifyListeners(
-        "persistenceSuccess",
+      this.eventManager?.notifyListeners("persistenceSuccess", {
         context,
         persistenceTime,
-      );
+      });
 
       console.log("[PersistenceManager] Data persisted successfully");
     } catch (error) {
-      this.eventManager?.notifyListeners(
-        "persistenceFailure",
+      this.eventManager?.notifyListeners("persistenceFailure", {
         context,
-        error as Error,
-      );
+        error: error as Error,
+      });
       console.error("[PersistenceManager] Error during persistData:", error);
       if (this.errorHandler) {
         this.errorHandler.handleError(error, "persistData", context);

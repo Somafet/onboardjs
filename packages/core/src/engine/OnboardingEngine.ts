@@ -9,6 +9,13 @@ import {
   LoadedData,
   DataLoadFn,
   DataPersistFn,
+  StepActiveEvent,
+  StepChangeEvent,
+  StepCompletedEvent,
+  FlowCompletedEvent,
+  ContextUpdateEvent,
+  ErrorEvent,
+  BeforeStepChangeEvent,
 } from "./types";
 import { OnboardingPlugin } from "../plugins/types";
 import { PluginManagerImpl } from "../plugins/PluginManager";
@@ -776,61 +783,43 @@ export class OnboardingEngine<
   }
 
   public addBeforeStepChangeListener(
-    listener: (
-      currentStep: OnboardingStep<TContext> | null,
-      nextStep: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addBeforeStepChangeListener(listener);
   }
 
   public addAfterStepChangeListener(
-    listener: (
-      previousStep: OnboardingStep<TContext> | null,
-      currentStep: OnboardingStep<TContext> | null,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addAfterStepChangeListener(listener);
   }
 
   public addStepActiveListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepActiveEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addStepActiveListener(listener);
   }
 
-  public addStepCompleteListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      stepData: unknown,
-      context: TContext,
-    ) => void | Promise<void>,
+  public addStepCompletedListener(
+    listener: (event: StepCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventRegistry.addStepCompleteListener(listener);
+    return this.eventRegistry.addStepCompletedListener(listener);
   }
 
-  public addFlowCompleteListener(
-    listener: (context: TContext) => void | Promise<void>,
+  public addFlowCompletedListener(
+    listener: (event: FlowCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventRegistry.addFlowCompleteListener(listener);
+    return this.eventRegistry.addFlowCompletedListener(listener);
   }
 
   public addContextUpdateListener(
-    listener: (
-      oldContext: TContext,
-      newContext: TContext,
-    ) => void | Promise<void>,
+    listener: (event: ContextUpdateEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addContextUpdateListener(listener);
   }
 
   public addErrorListener(
-    listener: (error: Error, context: TContext) => void | Promise<void>,
+    listener: (event: ErrorEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addErrorListener(listener);
   }

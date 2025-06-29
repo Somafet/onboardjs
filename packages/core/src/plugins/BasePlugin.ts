@@ -65,16 +65,16 @@ export abstract class BasePlugin<
       this.unsubscribeFunctions.push(unsubscribe);
     }
 
-    if (hooks.onStepComplete) {
-      const unsubscribe = this.engine.addStepCompleteListener(
-        hooks.onStepComplete,
+    if (hooks.onStepCompleted) {
+      const unsubscribe = this.engine.addStepCompletedListener(
+        hooks.onStepCompleted,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }
 
-    if (hooks.onFlowComplete) {
-      const unsubscribe = this.engine.addFlowCompleteListener(
-        hooks.onFlowComplete,
+    if (hooks.onFlowCompleted) {
+      const unsubscribe = this.engine.addFlowCompletedListener(
+        hooks.onFlowCompleted,
       );
       this.unsubscribeFunctions.push(unsubscribe);
     }

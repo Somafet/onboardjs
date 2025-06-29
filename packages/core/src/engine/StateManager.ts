@@ -172,7 +172,7 @@ export class StateManager<TContext extends OnboardingContext> {
     history: string[],
   ): void {
     const state = this.getState(currentStep, context, history);
-    this.eventManager.notifyListeners("stateChange", state);
+    this.eventManager.notifyListeners("stateChange", { state });
   }
 
   private _findNextStep(

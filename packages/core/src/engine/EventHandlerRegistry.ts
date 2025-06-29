@@ -3,9 +3,15 @@ import { OnboardingStep, OnboardingContext } from "../types";
 import { EventManager } from "./EventManager";
 import {
   UnsubscribeFunction,
-  BeforeStepChangeListener,
-  FlowCompleteListener,
   EventListenerMap,
+  FlowCompletedEvent,
+  StepChangeEvent,
+  StepActiveEvent,
+  StepCompletedEvent,
+  ContextUpdateEvent,
+  EngineState,
+  ErrorEvent,
+  BeforeStepChangeEvent,
 } from "./types";
 
 export class EventHandlerRegistry<TContext extends OnboardingContext> {
@@ -23,87 +29,65 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
 
   // Convenience methods for common event types
   public onStepChange(
-    listener: (
-      newStep: OnboardingStep<TContext> | null,
-      oldStep: OnboardingStep<TContext> | null,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("stepChange", listener);
   }
 
-  public onFlowComplete(
-    listener: FlowCompleteListener<TContext>,
+  public onFlowCompleted(
+    listener: (event: FlowCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventManager.addEventListener("flowComplete", listener);
+    return this.eventManager.addEventListener("flowCompleted", listener);
   }
 
   public onStepActive(
-    listener: (
-      step: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepActiveEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("stepActive", listener);
   }
 
-  public onStepComplete(
-    listener: (
-      step: OnboardingStep<TContext>,
-      stepData: unknown,
-      context: TContext,
-    ) => void | Promise<void>,
+  public onStepCompleted(
+    listener: (event: StepCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventManager.addEventListener("stepComplete", listener);
+    return this.eventManager.addEventListener("stepCompleted", listener);
   }
 
   public onContextUpdate(
-    listener: (
-      oldContext: TContext,
-      newContext: TContext,
-    ) => void | Promise<void>,
+    listener: (event: ContextUpdateEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("contextUpdate", listener);
   }
 
   public onError(
-    listener: (error: Error, context: TContext) => void | Promise<void>,
+    listener: (event: ErrorEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("error", listener);
   }
 
   public onStateChange(
-    listener: (state: any) => void | Promise<void>,
+    listener: (event: { state: EngineState<TContext> }) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("stateChange", listener);
   }
 
   public onBeforeStepChange(
-    listener: BeforeStepChangeListener<TContext>,
+    listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("beforeStepChange", listener);
   }
 
   // Plugin compatibility methods
   public addBeforeStepChangeListener(
-    listener: (
-      currentStep: OnboardingStep<TContext> | null,
-      nextStep: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     // Convert to BeforeStepChangeListener format
-    const wrappedListener: BeforeStepChangeListener<TContext> = async (
-      event,
-    ) => {
+    const wrappedListener: (
+      event: BeforeStepChangeEvent<TContext>,
+    ) => void | Promise<void> = async (event) => {
       if (event.targetStepId) {
         const nextStep = this.findStepById(event.targetStepId);
         if (nextStep) {
-          await listener(
-            event.currentStep,
-            nextStep,
-            event.currentStep?.id as any,
-          );
+          await listener(event);
         }
       }
     };
@@ -112,51 +96,37 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
   }
 
   public addAfterStepChangeListener(
-    listener: (
-      previousStep: OnboardingStep<TContext> | null,
-      currentStep: OnboardingStep<TContext> | null,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("stepChange", listener);
   }
 
   public addStepActiveListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepActiveEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("stepActive", listener);
   }
 
-  public addStepCompleteListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      stepData: unknown,
-      context: TContext,
-    ) => void | Promise<void>,
+  public addStepCompletedListener(
+    listener: (event: StepCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.addEventListener("stepComplete", listener);
+    return this.addEventListener("stepCompleted", listener);
   }
 
-  public addFlowCompleteListener(
-    listener: (context: TContext) => void | Promise<void>,
+  public addFlowCompletedListener(
+    listener: (event: FlowCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.addEventListener("flowComplete", listener);
+    return this.addEventListener("flowCompleted", listener);
   }
 
   public addContextUpdateListener(
-    listener: (
-      oldContext: TContext,
-      newContext: TContext,
-    ) => void | Promise<void>,
+    listener: (event: ContextUpdateEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("contextUpdate", listener);
   }
 
   public addErrorListener(
-    listener: (error: Error, context: TContext) => void | Promise<void>,
+    listener: (event: ErrorEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.addEventListener("error", listener);
   }

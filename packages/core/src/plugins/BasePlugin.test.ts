@@ -9,8 +9,8 @@ const mockEngine = {
   addBeforeStepChangeListener: vi.fn(() => vi.fn()),
   addAfterStepChangeListener: vi.fn(() => vi.fn()),
   addStepActiveListener: vi.fn(() => vi.fn()),
-  addStepCompleteListener: vi.fn(() => vi.fn()),
-  addFlowCompleteListener: vi.fn(() => vi.fn()),
+  addStepCompletedListener: vi.fn(() => vi.fn()),
+  addFlowCompletedListener: vi.fn(() => vi.fn()),
   addContextUpdateListener: vi.fn(() => vi.fn()),
   addErrorListener: vi.fn(() => vi.fn()),
 } as unknown as OnboardingEngine<OnboardingContext>;
@@ -84,10 +84,10 @@ describe("BasePlugin", () => {
     vi.mocked(mockEngine.addStepActiveListener)
       .mockClear()
       .mockReturnValue(vi.fn());
-    vi.mocked(mockEngine.addStepCompleteListener)
+    vi.mocked(mockEngine.addStepCompletedListener)
       .mockClear()
       .mockReturnValue(vi.fn());
-    vi.mocked(mockEngine.addFlowCompleteListener)
+    vi.mocked(mockEngine.addFlowCompletedListener)
       .mockClear()
       .mockReturnValue(vi.fn());
     vi.mocked(mockEngine.addContextUpdateListener)
@@ -156,10 +156,10 @@ describe("BasePlugin", () => {
     });
 
     it("should call setupHooks (implicitly, by checking listener registrations)", () => {
-      plugin.hooksToReturn = { onFlowComplete: vi.fn() };
+      plugin.hooksToReturn = { onFlowCompleted: vi.fn() };
       // Re-install to trigger setupHooks with new hooks
       plugin.install(mockEngine);
-      expect(mockEngine.addFlowCompleteListener).toHaveBeenCalled();
+      expect(mockEngine.addFlowCompletedListener).toHaveBeenCalled();
     });
 
     it("should return a cleanup function", () => {
@@ -205,8 +205,8 @@ describe("BasePlugin", () => {
       expect(mockEngine.addBeforeStepChangeListener).not.toHaveBeenCalled();
       expect(mockEngine.addAfterStepChangeListener).not.toHaveBeenCalled();
       expect(mockEngine.addStepActiveListener).not.toHaveBeenCalled();
-      expect(mockEngine.addStepCompleteListener).not.toHaveBeenCalled();
-      expect(mockEngine.addFlowCompleteListener).not.toHaveBeenCalled();
+      expect(mockEngine.addStepCompletedListener).not.toHaveBeenCalled();
+      expect(mockEngine.addFlowCompletedListener).not.toHaveBeenCalled();
       expect(mockEngine.addContextUpdateListener).not.toHaveBeenCalled();
       expect(mockEngine.addErrorListener).not.toHaveBeenCalled();
       expect(plugin.getUnsubscribeFunctions()).toHaveLength(0);
@@ -216,8 +216,8 @@ describe("BasePlugin", () => {
       const mockBeforeStepChange = vi.fn();
       const mockAfterStepChange = vi.fn();
       const mockOnStepActive = vi.fn();
-      const mockOnStepComplete = vi.fn();
-      const mockOnFlowComplete = vi.fn();
+      const mockOnStepCompleted = vi.fn();
+      const mockOnFlowCompleted = vi.fn();
       const mockOnContextUpdate = vi.fn();
       const mockOnError = vi.fn();
 
@@ -225,8 +225,8 @@ describe("BasePlugin", () => {
         beforeStepChange: mockBeforeStepChange,
         afterStepChange: mockAfterStepChange,
         onStepActive: mockOnStepActive,
-        onStepComplete: mockOnStepComplete,
-        onFlowComplete: mockOnFlowComplete,
+        onStepCompleted: mockOnStepCompleted,
+        onFlowCompleted: mockOnFlowCompleted,
         onContextUpdate: mockOnContextUpdate,
         onError: mockOnError,
       };
@@ -246,10 +246,10 @@ describe("BasePlugin", () => {
         unsubAfter,
       );
       vi.mocked(mockEngine.addStepActiveListener).mockReturnValue(unsubActive);
-      vi.mocked(mockEngine.addStepCompleteListener).mockReturnValue(
+      vi.mocked(mockEngine.addStepCompletedListener).mockReturnValue(
         unsubComplete,
       );
-      vi.mocked(mockEngine.addFlowCompleteListener).mockReturnValue(unsubFlow);
+      vi.mocked(mockEngine.addFlowCompletedListener).mockReturnValue(unsubFlow);
       vi.mocked(mockEngine.addContextUpdateListener).mockReturnValue(
         unsubContext,
       );
@@ -266,11 +266,11 @@ describe("BasePlugin", () => {
       expect(mockEngine.addStepActiveListener).toHaveBeenCalledWith(
         mockOnStepActive,
       );
-      expect(mockEngine.addStepCompleteListener).toHaveBeenCalledWith(
-        mockOnStepComplete,
+      expect(mockEngine.addStepCompletedListener).toHaveBeenCalledWith(
+        mockOnStepCompleted,
       );
-      expect(mockEngine.addFlowCompleteListener).toHaveBeenCalledWith(
-        mockOnFlowComplete,
+      expect(mockEngine.addFlowCompletedListener).toHaveBeenCalledWith(
+        mockOnFlowCompleted,
       );
       expect(mockEngine.addContextUpdateListener).toHaveBeenCalledWith(
         mockOnContextUpdate,
@@ -303,8 +303,8 @@ describe("BasePlugin", () => {
       expect(mockEngine.addStepActiveListener).toHaveBeenCalledWith(
         mockOnStepActive,
       );
-      expect(mockEngine.addStepCompleteListener).not.toHaveBeenCalled();
-      expect(mockEngine.addFlowCompleteListener).not.toHaveBeenCalled();
+      expect(mockEngine.addStepCompletedListener).not.toHaveBeenCalled();
+      expect(mockEngine.addFlowCompletedListener).not.toHaveBeenCalled();
       expect(mockEngine.addContextUpdateListener).not.toHaveBeenCalled();
       expect(mockEngine.addErrorListener).not.toHaveBeenCalled();
 

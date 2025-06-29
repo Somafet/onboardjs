@@ -98,21 +98,19 @@ export class ChecklistManager<TContext extends OnboardingContext> {
       return;
     }
 
-    this.eventManager.notifyListeners(
-      "checklistItemToggled",
+    this.eventManager.notifyListeners("checklistItemToggled", {
       itemId,
       isCompleted,
       step,
       context,
-    );
+    });
 
     const progress = this.getChecklistProgress(step, context);
-    this.eventManager.notifyListeners(
-      "checklistProgressChanged",
+    this.eventManager.notifyListeners("checklistProgressChanged", {
       step,
       context,
       progress,
-    );
+    });
 
     if (itemIndex !== -1) {
       // Create a new array for immutability

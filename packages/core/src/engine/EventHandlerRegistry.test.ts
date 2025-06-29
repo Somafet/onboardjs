@@ -15,7 +15,6 @@ import { EventManager } from "./EventManager";
 import {
   EventListenerMap,
   UnsubscribeFunction,
-  BeforeStepChangeListener,
   BeforeStepChangeEvent,
 } from "./types";
 
@@ -110,9 +109,9 @@ describe("EventHandlerRegistry", () => {
     methodName: keyof EventHandlerRegistry<TestContext>;
   }[] = [
     { eventType: "stepChange", methodName: "onStepChange" },
-    { eventType: "flowComplete", methodName: "onFlowComplete" },
+    { eventType: "flowCompleted", methodName: "onFlowCompleted" },
     { eventType: "stepActive", methodName: "onStepActive" },
-    { eventType: "stepComplete", methodName: "onStepComplete" },
+    { eventType: "stepCompleted", methodName: "onStepCompleted" },
     { eventType: "contextUpdate", methodName: "onContextUpdate" },
     { eventType: "error", methodName: "onError" },
     { eventType: "stateChange", methodName: "onStateChange" },
@@ -130,14 +129,14 @@ describe("EventHandlerRegistry", () => {
           case "onStepChange":
             registry.onStepChange(listener);
             break;
-          case "onFlowComplete":
-            registry.onFlowComplete(listener);
+          case "onFlowCompleted":
+            registry.onFlowCompleted(listener);
             break;
           case "onStepActive":
             registry.onStepActive(listener);
             break;
-          case "onStepComplete":
-            registry.onStepComplete(listener);
+          case "onStepCompleted":
+            registry.onStepCompleted(listener);
             break;
           case "onContextUpdate":
             registry.onContextUpdate(listener);
@@ -150,9 +149,7 @@ describe("EventHandlerRegistry", () => {
             break;
           case "onBeforeStepChange":
             // Ensure listener type matches for onBeforeStepChange
-            registry.onBeforeStepChange(
-              listener as BeforeStepChangeListener<TestContext>,
-            );
+            registry.onBeforeStepChange(listener);
             break;
           default:
             // This case should not be reached if convenienceMethodsConfig is correct
@@ -175,14 +172,14 @@ describe("EventHandlerRegistry", () => {
           case "onStepChange":
             unsubscribe = registry.onStepChange(listener);
             break;
-          case "onFlowComplete":
-            unsubscribe = registry.onFlowComplete(listener);
+          case "onFlowCompleted":
+            unsubscribe = registry.onFlowCompleted(listener);
             break;
           case "onStepActive":
             unsubscribe = registry.onStepActive(listener);
             break;
-          case "onStepComplete":
-            unsubscribe = registry.onStepComplete(listener);
+          case "onStepCompleted":
+            unsubscribe = registry.onStepCompleted(listener);
             break;
           case "onContextUpdate":
             unsubscribe = registry.onContextUpdate(listener);
@@ -194,9 +191,7 @@ describe("EventHandlerRegistry", () => {
             unsubscribe = registry.onStateChange(listener);
             break;
           case "onBeforeStepChange":
-            unsubscribe = registry.onBeforeStepChange(
-              listener as BeforeStepChangeListener<TestContext>,
-            );
+            unsubscribe = registry.onBeforeStepChange(listener);
             break;
           default:
             throw new Error(
@@ -273,9 +268,13 @@ describe("EventHandlerRegistry", () => {
 
         await wrappedListener(event);
         expect(originalListener).toHaveBeenCalledWith(
-          mockCurrentStep,
-          mockNextStep,
-          mockCurrentStep.id, // context argument in the original listener
+          expect.objectContaining({
+            currentStep: mockCurrentStep,
+            targetStepId: "nextStepId",
+            direction: "next",
+            cancel: expect.any(Function),
+            redirect: expect.any(Function),
+          }),
         );
       });
 
@@ -333,8 +332,8 @@ describe("EventHandlerRegistry", () => {
     }[] = [
       { methodName: "addAfterStepChangeListener", eventType: "stepChange" },
       { methodName: "addStepActiveListener", eventType: "stepActive" },
-      { methodName: "addStepCompleteListener", eventType: "stepComplete" },
-      { methodName: "addFlowCompleteListener", eventType: "flowComplete" },
+      { methodName: "addStepCompletedListener", eventType: "stepCompleted" },
+      { methodName: "addFlowCompletedListener", eventType: "flowCompleted" },
       { methodName: "addContextUpdateListener", eventType: "contextUpdate" },
       { methodName: "addErrorListener", eventType: "error" },
     ];

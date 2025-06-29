@@ -37,12 +37,11 @@ export class ActivityTracker<TContext extends OnboardingContext> {
       const awayDuration = now - this.lastActivity;
       const currentStep = this.getCurrentStep();
       if (currentStep) {
-        this.eventManager.notifyListeners(
-          "userReturned",
-          currentStep,
-          this.getContext(),
+        this.eventManager.notifyListeners("userReturned", {
+          step: currentStep,
+          context: this.getContext(),
           awayDuration,
-        );
+        });
       }
       this.isIdle = false;
     }
@@ -60,12 +59,11 @@ export class ActivityTracker<TContext extends OnboardingContext> {
       const currentStep = this.getCurrentStep();
       if (currentStep && !this.isIdle) {
         const idleDuration = Date.now() - this.lastActivity;
-        this.eventManager.notifyListeners(
-          "userIdle",
-          currentStep,
-          this.getContext(),
+        this.eventManager.notifyListeners("userIdle", {
+          step: currentStep,
+          context: this.getContext(),
           idleDuration,
-        );
+        });
         this.isIdle = true;
       }
     }, this.IDLE_THRESHOLD);

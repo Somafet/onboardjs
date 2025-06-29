@@ -2012,12 +2012,12 @@ describe("OnboardingEngine", () => {
 
         await engine.next();
 
-        expect(listener).toHaveBeenCalledWith(
-          expect.objectContaining({
+        expect(listener).toHaveBeenCalledWith({
+          state: expect.objectContaining({
             currentStep: expect.objectContaining({ id: "step2" }),
             isLoading: false,
           }),
-        );
+        });
 
         unsubscribe();
       });
@@ -2046,12 +2046,12 @@ describe("OnboardingEngine", () => {
         expect(listener).toHaveBeenCalled();
 
         // Check that the final state is correct
-        expect(listener).toHaveBeenLastCalledWith(
-          expect.objectContaining({
+        expect(listener).toHaveBeenLastCalledWith({
+          state: expect.objectContaining({
             currentStep: expect.objectContaining({ id: "step2" }),
             isLoading: false,
           }),
-        );
+        });
       });
 
       it("should notify state change listeners on error state changes", async () => {
@@ -2083,7 +2083,9 @@ describe("OnboardingEngine", () => {
 
         expect(errorListener).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.any(Error),
+            state: expect.objectContaining({
+              error: expect.any(Error),
+            }),
           }),
         );
       });
