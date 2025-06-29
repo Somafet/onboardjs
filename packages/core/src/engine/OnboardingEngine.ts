@@ -99,6 +99,7 @@ export class OnboardingEngine<
       config.persistData,
       config.clearPersistedData,
       this.errorHandler,
+      this.eventManager,
     );
     this.checklistManager = new ChecklistManager(
       this.eventManager,
@@ -115,7 +116,7 @@ export class OnboardingEngine<
       this.persistenceManager,
       this.errorHandler,
     );
-    this.pluginManager = new PluginManagerImpl(this);
+    this.pluginManager = new PluginManagerImpl(this, this.eventManager);
     this.eventRegistry = new EventHandlerRegistry(this.eventManager);
 
     // Store callbacks
@@ -170,6 +171,15 @@ export class OnboardingEngine<
           const { data: loadedData, error: dataLoadError } =
             await this.loadPersistedData();
 
+          const startMethod: "fresh" | "resumed" = loadedData?.currentStepId
+            ? "resumed"
+            : "fresh";
+
+          this.eventManager.notifyListeners("flowStarted", {
+            context: this.contextInternal,
+            startMethod,
+          });
+
           // 4. Build context
           this.buildContext(loadedData);
 
@@ -178,11 +188,10 @@ export class OnboardingEngine<
             this.stateManager.setError(dataLoadError);
             this.currentStepInternal = null;
             this.stateManager.setCompleted(false);
-            this.eventManager.notifyListeners(
-              "error",
-              dataLoadError,
-              this.contextInternal,
-            );
+            this.eventManager.notifyListeners("error", {
+              error: dataLoadError,
+              context: this.contextInternal,
+            });
             // Still resolve initialization - engine is ready but in error state
             this.resolveInitialization();
           } else {
@@ -563,11 +572,10 @@ export class OnboardingEngine<
           newContextJSON,
         );
 
-        this.eventManager.notifyListeners(
-          "contextUpdate",
+        this.eventManager.notifyListeners("contextUpdate", {
           oldContext,
-          this.contextInternal,
-        );
+          newContext: this.contextInternal,
+        });
         await this.persistenceManager.persistDataIfNeeded(
           this.contextInternal,
           this.currentStepInternal?.id || null,
@@ -635,6 +643,14 @@ export class OnboardingEngine<
     newConfigInput?: Partial<OnboardingEngineConfig<TContext>>,
   ): Promise<void> {
     console.log("[OnboardingEngine] Resetting engine...");
+
+    const resetReason = newConfigInput
+      ? "configuration_change"
+      : "manual_reset";
+    this.eventManager.notifyListeners("flowReset", {
+      context: this.contextInternal,
+      resetReason,
+    });
 
     // Capture current clear handler
     const activeClearHandler =
@@ -925,6 +941,33 @@ export class OnboardingEngine<
       },
       this.contextInternal,
     );
+  }
+
+  // For plugins to report step validation failures
+  public reportStepValidationFailure(
+    step: OnboardingStep<TContext>,
+    validationErrors: string[],
+  ): void {
+    this.eventManager.notifyListeners("stepValidationFailed", {
+      step,
+      context: this.contextInternal,
+      validationErrors,
+    });
+  }
+
+  // For plugins to report help requests
+  public reportHelpRequest(helpType: string): void {
+    if (this.currentStepInternal) {
+      this.eventManager.notifyListeners("stepHelpRequested", {
+        step: this.currentStepInternal,
+        context: this.contextInternal,
+        helpType,
+      });
+    }
+  }
+
+  public getContext(): TContext {
+    return { ...this.contextInternal };
   }
 
   /**

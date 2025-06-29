@@ -29,11 +29,49 @@ describe("EventManager", () => {
     "stateChange",
     "beforeStepChange",
     "stepChange",
-    "flowComplete",
+    "flowCompleted",
     "stepActive",
-    "stepComplete",
+    "stepCompleted",
     "contextUpdate",
     "error",
+
+    // Flow-level
+    "flowStarted",
+    "flowPaused",
+    "flowResumed",
+    "flowAbandoned",
+    "flowReset",
+
+    // Step-level
+    "stepStarted",
+    "stepSkipped",
+    "stepRetried",
+    "stepValidationFailed",
+    "stepHelpRequested",
+    "stepAbandoned",
+
+    // Navigation
+    "navigationBack",
+    "navigationForward",
+    "navigationJump",
+
+    // Interaction
+    "userIdle",
+    "userReturned",
+    "dataChanged",
+
+    // Performance
+    "stepRenderTime",
+    "persistenceSuccess",
+    "persistenceFailure",
+
+    // Checklist
+    "checklistItemToggled",
+    "checklistProgressChanged",
+
+    // Plugin
+    "pluginInstalled",
+    "pluginError",
   ];
 
   beforeEach(() => {
@@ -61,7 +99,7 @@ describe("EventManager", () => {
 
   describe("addEventListener", () => {
     it("should add a listener and return an unsubscribe function", () => {
-      const listener = vi.fn();
+      const listener = vi.fn(() => {});
       const unsubscribe = eventManager.addEventListener("stepChange", listener);
       expect(eventManager.getListenerCount("stepChange")).toBe(1);
       expect(typeof unsubscribe).toBe("function");
@@ -112,10 +150,10 @@ describe("EventManager", () => {
       const oldStep = { id: "old", type: "INFO" } as any;
       const context = { flowData: {} } as TestContext;
 
-      eventManager.notifyListeners("stepChange", newStep, oldStep, context);
+      eventManager.notifyListeners("stepChange", { newStep, oldStep, context });
 
-      expect(listener1).toHaveBeenCalledWith(newStep, oldStep, context);
-      expect(listener2).toHaveBeenCalledWith(newStep, oldStep, context);
+      expect(listener1).toHaveBeenCalledWith({ newStep, oldStep, context });
+      expect(listener2).toHaveBeenCalledWith({ newStep, oldStep, context });
     });
 
     it("should handle synchronous listeners that throw errors and log them", () => {
@@ -128,10 +166,19 @@ describe("EventManager", () => {
 
       const errorArg = new Error("Test error");
       const contextArg = {} as TestContext;
-      eventManager.notifyListeners("error", errorArg, contextArg);
+      eventManager.notifyListeners("error", {
+        error: errorArg,
+        context: contextArg,
+      });
 
-      expect(erroringListener).toHaveBeenCalledWith(errorArg, contextArg);
-      expect(normalListener).toHaveBeenCalledWith(errorArg, contextArg);
+      expect(erroringListener).toHaveBeenCalledWith({
+        error: errorArg,
+        context: contextArg,
+      });
+      expect(normalListener).toHaveBeenCalledWith({
+        error: errorArg,
+        context: contextArg,
+      });
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error in error listener:",
         new Error("Sync error"),
@@ -142,11 +189,11 @@ describe("EventManager", () => {
       const asyncListener = vi.fn(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
       });
-      eventManager.addEventListener("flowComplete", asyncListener);
+      eventManager.addEventListener("flowCompleted", asyncListener);
       const contextArg = {} as TestContext;
-      eventManager.notifyListeners("flowComplete", contextArg);
+      eventManager.notifyListeners("flowCompleted", { context: contextArg });
 
-      expect(asyncListener).toHaveBeenCalledWith(contextArg);
+      expect(asyncListener).toHaveBeenCalledWith({ context: contextArg });
       // We don't wait for the promise here, just check it's called
       // Error handling for rejected promises is tested next
     });
@@ -155,11 +202,11 @@ describe("EventManager", () => {
       const rejectingListener = vi.fn(async () => {
         throw new Error("Async reject");
       });
-      eventManager.addEventListener("flowComplete", rejectingListener);
+      eventManager.addEventListener("flowCompleted", rejectingListener);
       const contextArg = {} as TestContext;
-      eventManager.notifyListeners("flowComplete", contextArg);
+      eventManager.notifyListeners("flowCompleted", { context: contextArg });
 
-      expect(rejectingListener).toHaveBeenCalledWith(contextArg);
+      expect(rejectingListener).toHaveBeenCalledWith({ context: contextArg });
 
       // Allow microtasks to run for the promise rejection to be caught
       await vi.runAllTimersAsync();
@@ -176,7 +223,11 @@ describe("EventManager", () => {
       const context = { flowData: {} } as TestContext;
 
       expect(() =>
-        eventManager.notifyListeners("stepChange", newStep, oldStep, context),
+        eventManager.notifyListeners("stepChange", {
+          newStep,
+          oldStep,
+          context,
+        }),
       ).not.toThrow();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -185,7 +236,7 @@ describe("EventManager", () => {
       expect(() =>
         eventManager.notifyListeners(
           "unknownEvent" as keyof EventListenerMap<TestContext>,
-          { flowData: {} },
+          { context: { flowData: {} } },
         ),
       ).not.toThrow();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -200,7 +251,11 @@ describe("EventManager", () => {
       });
 
       eventManager.addEventListener("stepChange", erroringListener);
-      eventManager.notifyListeners("stepChange", null, null, {} as TestContext);
+      eventManager.notifyListeners("stepChange", {
+        newStep: null,
+        oldStep: null,
+        context: {} as TestContext,
+      });
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error in stepChange listener:",
         new Error("Sync error"),
@@ -208,11 +263,10 @@ describe("EventManager", () => {
       consoleErrorSpy.mockClear();
 
       eventManager.addEventListener("contextUpdate", rejectingListener);
-      eventManager.notifyListeners(
-        "contextUpdate",
-        {} as TestContext,
-        {} as TestContext,
-      );
+      eventManager.notifyListeners("contextUpdate", {
+        oldContext: {} as TestContext,
+        newContext: {} as TestContext,
+      });
       await vi.runAllTimersAsync();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error in contextUpdate listener:",
@@ -328,7 +382,7 @@ describe("EventManager", () => {
     });
 
     it("should return 0 for an event type with no listeners", () => {
-      expect(eventManager.getListenerCount("flowComplete")).toBe(0);
+      expect(eventManager.getListenerCount("flowCompleted")).toBe(0);
     });
 
     it("should return 0 for an unknown event type", () => {
@@ -340,7 +394,7 @@ describe("EventManager", () => {
   describe("clearAllListeners", () => {
     it("should remove all listeners for all event types", () => {
       eventManager.addEventListener("stepChange", vi.fn());
-      eventManager.addEventListener("flowComplete", vi.fn());
+      eventManager.addEventListener("flowCompleted", vi.fn());
       eventManager.addEventListener("error", vi.fn());
 
       eventManager.clearAllListeners();
@@ -376,7 +430,9 @@ describe("EventManager", () => {
         "beforeStepChange",
       );
       expect(getLegacyName(eventManager, "stepActive")).toBe("stepActive");
-      expect(getLegacyName(eventManager, "stepComplete")).toBe("stepComplete");
+      expect(getLegacyName(eventManager, "stepCompleted")).toBe(
+        "stepCompleted",
+      );
       expect(getLegacyName(eventManager, "contextUpdate")).toBe(
         "contextUpdate",
       );

@@ -2,6 +2,7 @@
 
 import { OnboardingContext } from "../types";
 import { ErrorHandler } from "./ErrorHandler";
+import { EventManager } from "./EventManager";
 import { DataLoadFn, DataPersistFn, LoadedData } from "./types";
 
 export class PersistenceManager<TContext extends OnboardingContext> {
@@ -14,6 +15,7 @@ export class PersistenceManager<TContext extends OnboardingContext> {
     persistData?: DataPersistFn<TContext>,
     clearPersistedData?: () => Promise<void> | void,
     private errorHandler?: ErrorHandler<TContext>,
+    private eventManager?: EventManager<TContext>,
   ) {
     this.loadData = loadData;
     this.persistData = persistData;
@@ -61,14 +63,30 @@ export class PersistenceManager<TContext extends OnboardingContext> {
       return;
     }
 
+    const startTime = Date.now();
+
     try {
       console.log(
         "[PersistenceManager] Persisting data for step:",
         currentStepId,
       );
       await this.persistData(context, currentStepId);
+
+      const persistenceTime = Date.now() - startTime;
+
+      this.eventManager?.notifyListeners(
+        "persistenceSuccess",
+        context,
+        persistenceTime,
+      );
+
       console.log("[PersistenceManager] Data persisted successfully");
     } catch (error) {
+      this.eventManager?.notifyListeners(
+        "persistenceFailure",
+        context,
+        error as Error,
+      );
       console.error("[PersistenceManager] Error during persistData:", error);
       if (this.errorHandler) {
         this.errorHandler.handleError(error, "persistData", context);

@@ -1685,13 +1685,13 @@ describe("OnboardingEngine", () => {
 
         await engine.next();
 
-        expect(listener).toHaveBeenCalledWith(
-          expect.objectContaining({ id: "step2" }), // new step
-          expect.objectContaining({ id: "step1" }), // old step
-          expect.objectContaining({
+        expect(listener).toHaveBeenCalledWith({
+          newStep: expect.objectContaining({ id: "step2" }),
+          oldStep: expect.objectContaining({ id: "step1" }),
+          context: expect.objectContaining({
             flowData: expect.any(Object),
           }),
-        );
+        });
 
         unsubscribe();
       });
@@ -1744,7 +1744,7 @@ describe("OnboardingEngine", () => {
     describe("Flow Complete Listeners", () => {
       it("should notify flow complete listeners when flow completes", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addEventListener("flowComplete", listener);
+        const unsubscribe = engine.addEventListener("flowCompleted", listener);
 
         // Navigate to last step and complete the flow
         await engine.goToStep("step3");
@@ -1752,7 +1752,9 @@ describe("OnboardingEngine", () => {
 
         expect(listener).toHaveBeenCalledWith(
           expect.objectContaining({
-            flowData: expect.any(Object),
+            context: expect.objectContaining({
+              flowData: expect.any(Object),
+            }),
           }),
         );
 
@@ -1761,7 +1763,7 @@ describe("OnboardingEngine", () => {
 
       it("should unsubscribe flow complete listeners", async () => {
         const listener = vi.fn();
-        const unsubscribe = engine.addEventListener("flowComplete", listener);
+        const unsubscribe = engine.addEventListener("flowCompleted", listener);
 
         unsubscribe();
 
@@ -1781,7 +1783,7 @@ describe("OnboardingEngine", () => {
         });
 
         const unsubscribe = engine.addEventListener(
-          "flowComplete",
+          "flowCompleted",
           errorListener,
         );
 
@@ -1801,11 +1803,11 @@ describe("OnboardingEngine", () => {
           .spyOn(console, "error")
           .mockImplementation(() => {});
         const asyncErrorListener = vi.fn().mockImplementation(async () => {
-          throw new Error("Async listener error");
+          throw new Error("Error in async flowComplete listener:");
         });
 
         const unsubscribe = engine.addEventListener(
-          "flowComplete",
+          "flowCompleted",
           asyncErrorListener,
         );
 
@@ -1830,9 +1832,9 @@ describe("OnboardingEngine", () => {
         const listener2 = vi.fn();
         const listener3 = vi.fn();
 
-        engine.addEventListener("flowComplete", listener1);
-        engine.addEventListener("flowComplete", listener2);
-        engine.addEventListener("flowComplete", listener3);
+        engine.addEventListener("flowCompleted", listener1);
+        engine.addEventListener("flowCompleted", listener2);
+        engine.addEventListener("flowCompleted", listener3);
 
         // Complete the flow
         await engine.goToStep("step3");
