@@ -90,9 +90,9 @@ describe("useOnboarding", () => {
   });
 
   it("should register onFlowComplete callback", async () => {
-    const onFlowComplete = vi.fn();
+    const onFlowCompleted = vi.fn();
 
-    const { result } = renderHook(() => useOnboarding({ onFlowComplete }), {
+    const { result } = renderHook(() => useOnboarding({ onFlowCompleted }), {
       wrapper: createWrapper(),
     });
 
@@ -107,7 +107,7 @@ describe("useOnboarding", () => {
     });
 
     await waitFor(() => {
-      expect(onFlowComplete).toHaveBeenCalled();
+      expect(onFlowCompleted).toHaveBeenCalled();
     });
   });
 
@@ -133,8 +133,8 @@ describe("useOnboarding", () => {
   });
 
   it("should update callback references when options change", async () => {
-    const onFlowComplete = vi.fn();
-    let options: UseOnboardingOptions = { onFlowComplete };
+    const onFlowCompleted = vi.fn();
+    let options: UseOnboardingOptions = { onFlowCompleted };
 
     const { result, rerender } = renderHook(() => useOnboarding(options), {
       wrapper: createWrapper(),
@@ -145,8 +145,8 @@ describe("useOnboarding", () => {
     });
 
     // Change the callback
-    const newOnFlowComplete = vi.fn();
-    options = { onFlowComplete: newOnFlowComplete };
+    const newOnFlowCompleted = vi.fn();
+    options = { onFlowCompleted: newOnFlowCompleted };
     rerender();
 
     // Complete the flow
@@ -156,8 +156,8 @@ describe("useOnboarding", () => {
     });
 
     await waitFor(() => {
-      expect(newOnFlowComplete).toHaveBeenCalled();
-      expect(onFlowComplete).not.toHaveBeenCalled();
+      expect(newOnFlowCompleted).toHaveBeenCalled();
+      expect(onFlowCompleted).not.toHaveBeenCalled();
     });
   });
 
@@ -290,7 +290,7 @@ describe("useOnboarding", () => {
     const { result, unmount } = renderHook(
       () =>
         useOnboarding({
-          onFlowComplete: vi.fn(),
+          onFlowCompleted: vi.fn(),
           onStepChange: vi.fn(),
         }),
       { wrapper: createWrapper() },
@@ -394,9 +394,9 @@ describe("useOnboarding", () => {
     });
   });
 
-  it("should register onFlowComplete callback from hook options", async () => {
-    const onFlowComplete = vi.fn();
-    const { result } = renderHook(() => useOnboarding({ onFlowComplete }), {
+  it("should register onFlowCompleted callback from hook options", async () => {
+    const onFlowCompleted = vi.fn();
+    const { result } = renderHook(() => useOnboarding({ onFlowCompleted }), {
       wrapper: createWrapper(),
     });
 
@@ -406,7 +406,7 @@ describe("useOnboarding", () => {
     await act(async () => await result.current.next()); // This should trigger completion
 
     await waitFor(() => {
-      expect(onFlowComplete).toHaveBeenCalled();
+      expect(onFlowCompleted).toHaveBeenCalled();
     });
   });
 
