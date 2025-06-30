@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@onboardjs/core": "^0.2.1",
-    "@onboardjs/react": "^0.2.2",
+    "@onboardjs/react": "^0.2.1",
     "basecoat-css": "^0.2.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

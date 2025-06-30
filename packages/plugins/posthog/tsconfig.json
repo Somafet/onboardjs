@@ -1,17 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "NodeNext",
     "declaration": true,
+    "declarationDir": "dist",
     "outDir": "dist",
     "rootDir": "src",
+    "jsx": "react-jsx",
     "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "target": "ESNext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node", "vitest/globals", "react", "react-dom", "jest"]
   },
-  "include": ["src", "tests/index.test.ts"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist", "tests"]
 }

@@ -11,7 +11,20 @@ export default defineConfig({
       formats: ["es", "cjs"],
     },
     rollupOptions: {
-      external: ["@onboardjs/core"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@onboardjs/core",
+        "posthog-js",
+      ],
+      output: {
+        globals: {
+          react: "React",
+          "react-dom": "ReactDOM",
+          "posthog-js": "posthog",
+        },
+      },
     },
   },
 });
