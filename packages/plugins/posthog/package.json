@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/posthog-plugin",
-  "version": "0.0.1-alpha.3",
+  "version": "0.0.1-alpha.4",
   "private": false,
   "description": "Official PostHog analytics plugin for OnboardJS.",
   "files": [
