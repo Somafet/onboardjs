@@ -14,7 +14,13 @@ export default defineConfig({
     },
     rollupOptions: {
       // Externalize peer deps (like react, react-dom)
-      external: ["react", "react-dom", "react/jsx-runtime", "@onboardjs/core"],
+      external: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@onboardjs/core",
+      ],
       output: {
         globals: {
           react: "React",
