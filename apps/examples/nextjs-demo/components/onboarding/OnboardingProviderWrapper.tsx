@@ -3,12 +3,14 @@
 import { createClient } from "@/lib/supabase";
 import { OnboardingProvider } from "@onboardjs/react";
 import { createSupabasePlugin } from "@onboardjs/supabase-plugin";
+import { createPostHogPlugin, saasConfig } from "@onboardjs/posthog-plugin";
 import {
   AppOnboardingContext,
   commonFlowSteps,
   commonRegistry,
 } from "./common-flow-config";
 import { type User } from "@supabase/auth-js";
+import posthog from "posthog-js";
 
 export default function OnboardingProviderWrapper({
   user,
@@ -33,6 +35,15 @@ export default function OnboardingProviderWrapper({
     userIdColumn: "user_id",
   });
 
+  const basicPostHogPlugin = createPostHogPlugin({
+    ...saasConfig,
+    apiKey: process.env.NEXT_PUBLIC_POSTHOG_KEY!,
+    host: process.env.NEXT_PUBLIC_POSTHOG_HOST!,
+    posthogInstance: posthog,
+    // We can enable debug logging during development
+    debug: process.env.NODE_ENV === "development",
+  });
+
   console.log(
     "[OnboardingProviderWrapper] Initializing OnboardingProvider with user:",
     user,
@@ -47,7 +58,7 @@ export default function OnboardingProviderWrapper({
         currentUser: user ?? undefined, // Pass the user object from props
       }}
       steps={commonFlowSteps}
-      plugins={[supabasePlugin]}
+      plugins={[supabasePlugin, basicPostHogPlugin]}
       componentRegistry={commonRegistry}
     >
       {children}
