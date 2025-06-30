@@ -6,9 +6,33 @@ import {
   ContextUpdateEvent,
   ErrorEvent,
   FlowCompletedEvent,
+  FlowStartedEvent,
+  FlowPausedEvent,
+  FlowResumedEvent,
+  FlowAbandonedEvent,
+  FlowResetEvent,
   StepActiveEvent,
   StepChangeEvent,
   StepCompletedEvent,
+  StepStartedEvent,
+  StepSkippedEvent,
+  StepRetriedEvent,
+  StepValidationFailedEvent,
+  StepHelpRequestedEvent,
+  StepAbandonedEvent,
+  NavigationBackEvent,
+  NavigationForwardEvent,
+  NavigationJumpEvent,
+  UserIdleEvent,
+  UserReturnedEvent,
+  DataChangedEvent,
+  StepRenderTimeEvent,
+  PersistenceSuccessEvent,
+  PersistenceFailureEvent,
+  ChecklistItemToggledEvent,
+  ChecklistProgressChangedEvent,
+  PluginInstalledEvent,
+  PluginErrorEvent,
 } from "../engine/types";
 import { OnboardingContext, OnboardingStep } from "../types";
 
@@ -48,7 +72,9 @@ export interface PluginManager<
   cleanup(): Promise<any>;
 }
 
-export interface PluginHooks<TContext extends OnboardingContext = OnboardingContext> {
+export interface PluginHooks<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
   /** Called before step change */
   beforeStepChange?: (
     event: BeforeStepChangeEvent<TContext>,
@@ -77,6 +103,102 @@ export interface PluginHooks<TContext extends OnboardingContext = OnboardingCont
 
   /** Called on engine errors */
   onError?: (event: ErrorEvent<TContext>) => void | Promise<void>;
+
+  /** Called when flow starts */
+  onFlowStarted?: (event: FlowStartedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when flow is paused */
+  onFlowPaused?: (event: FlowPausedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when flow is resumed */
+  onFlowResumed?: (event: FlowResumedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when flow is abandoned */
+  onFlowAbandoned?: (
+    event: FlowAbandonedEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when flow is reset */
+  onFlowReset?: (event: FlowResetEvent<TContext>) => void | Promise<void>;
+
+  /** Called when a step is started */
+  onStepStarted?: (event: StepStartedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when a step is skipped */
+  onStepSkipped?: (event: StepSkippedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when a step is retried */
+  onStepRetried?: (event: StepRetriedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when step validation fails */
+  onStepValidationFailed?: (
+    event: StepValidationFailedEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when help is requested on a step */
+  onStepHelpRequested?: (
+    event: StepHelpRequestedEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when a step is abandoned */
+  onStepAbandoned?: (
+    event: StepAbandonedEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called on navigation back */
+  onNavigationBack?: (
+    event: NavigationBackEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called on navigation forward */
+  onNavigationForward?: (
+    event: NavigationForwardEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called on navigation jump */
+  onNavigationJump?: (
+    event: NavigationJumpEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when user is idle */
+  onUserIdle?: (event: UserIdleEvent<TContext>) => void | Promise<void>;
+
+  /** Called when user returns */
+  onUserReturned?: (event: UserReturnedEvent<TContext>) => void | Promise<void>;
+
+  /** Called when data changes */
+  onDataChanged?: (event: DataChangedEvent<TContext>) => void | Promise<void>;
+
+  /** Called on step render time event */
+  onStepRenderTime?: (
+    event: StepRenderTimeEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called on persistence success */
+  onPersistenceSuccess?: (
+    event: PersistenceSuccessEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called on persistence failure */
+  onPersistenceFailure?: (
+    event: PersistenceFailureEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when a checklist item is toggled */
+  onChecklistItemToggled?: (
+    event: ChecklistItemToggledEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when checklist progress changes */
+  onChecklistProgressChanged?: (
+    event: ChecklistProgressChangedEvent<TContext>,
+  ) => void | Promise<void>;
+
+  /** Called when a plugin is installed */
+  onPluginInstalled?: (event: PluginInstalledEvent) => void | Promise<void>;
+
+  /** Called on plugin error */
+  onPluginError?: (event: PluginErrorEvent<TContext>) => void | Promise<void>;
 }
 
 export interface PluginConfig {

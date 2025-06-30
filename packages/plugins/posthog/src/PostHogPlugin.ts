@@ -9,6 +9,7 @@ import {
   ContextUpdateEvent,
   ErrorEvent,
   StepCompletedEvent,
+  FlowStartedEvent,
 } from "@onboardjs/core";
 import { PostHog } from "posthog-js";
 import { EventNameMapping, PostHogPluginConfig } from "./types";
@@ -16,10 +17,9 @@ import { EventDataBuilder } from "./utils/eventBuilder";
 import { ChurnDetectionManager } from "./utils/churnDetection";
 import { PerformanceTracker } from "./utils/performanceMetrics";
 
-export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugin<
-  TContext,
-  PostHogPluginConfig
-> {
+export class PostHogPlugin<
+  TContext extends OnboardingContext,
+> extends BasePlugin<TContext, PostHogPluginConfig> {
   readonly name = "@onboardjs/plugin-posthog";
   readonly version = "1.0.0";
   readonly description = "Official PostHog analytics plugin for OnboardJS";
@@ -110,21 +110,50 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
   protected getHooks(): PluginHooks<TContext> {
     return {
       // Flow-level events
+      onFlowStarted: this.handleFlowStarted.bind(this),
       onFlowCompleted: this.handleFlowCompleted.bind(this),
+      onFlowPaused: this.handleFlowPaused.bind(this),
+      onFlowResumed: this.handleFlowResumed.bind(this),
+      onFlowAbandoned: this.handleFlowAbandoned.bind(this),
+      onFlowReset: this.handleFlowReset.bind(this),
 
       // Step-level events
       onStepActive: this.handleStepActive.bind(this),
       onStepCompleted: this.handleStepCompleted.bind(this),
+      onStepStarted: this.handleStepStarted.bind(this),
+      onStepSkipped: this.handleStepSkipped.bind(this),
+      onStepRetried: this.handleStepRetried.bind(this),
+      onStepValidationFailed: this.handleStepValidationFailed.bind(this),
+      onStepHelpRequested: this.handleStepHelpRequested.bind(this),
+      onStepAbandoned: this.handleStepAbandoned.bind(this),
 
       // Navigation events
       beforeStepChange: this.handleBeforeStepChange.bind(this),
       afterStepChange: this.handleAfterStepChange.bind(this),
+      onNavigationBack: this.handleNavigationBack.bind(this),
+      onNavigationForward: this.handleNavigationForward.bind(this),
+      onNavigationJump: this.handleNavigationJump.bind(this),
 
       // Context events
       onContextUpdate: this.handleContextUpdate.bind(this),
+      onDataChanged: this.handleDataChanged.bind(this),
 
       // Error events
       onError: this.handleError.bind(this),
+
+      // Performance events
+      onStepRenderTime: this.handleStepRenderTime.bind(this),
+      onPersistenceSuccess: this.handlePersistenceSuccess.bind(this),
+      onPersistenceFailure: this.handlePersistenceFailure.bind(this),
+
+      // Checklist events
+      onChecklistItemToggled: this.handleChecklistItemToggled.bind(this),
+      onChecklistProgressChanged:
+        this.handleChecklistProgressChanged.bind(this),
+
+      // Plugin events
+      onPluginInstalled: this.handlePluginInstalled.bind(this),
+      onPluginError: this.handlePluginError.bind(this),
     };
   }
 
@@ -245,6 +274,261 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
     ) {
       this.trackSlowRender(step, context, renderTime);
     }
+  }
+
+  private async handleFlowStarted(
+    event: FlowStartedEvent<TContext>,
+  ): Promise<void> {
+    if (!this.shouldTrackEvent("flowStarted")) return;
+    const { context, startMethod } = event;
+
+    const eventData = this.eventBuilder.buildEventData(
+      "flowStarted",
+      {
+        start_method: startMethod,
+        total_steps: this.getTotalSteps(),
+        flow_start_time_ms: Date.now(),
+        initial_flow_data_size: JSON.stringify(context.flowData).length,
+      },
+      undefined,
+      context,
+      this.performanceTracker.getCurrentMetrics(),
+    );
+
+    this.captureEvent("flowStarted", eventData);
+  }
+
+  private async handleFlowPaused(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("flowPaused")) return;
+    const { context, reason } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "flowPaused",
+      { reason },
+      undefined,
+      context,
+    );
+    this.captureEvent("flowPaused", eventData);
+  }
+
+  private async handleFlowResumed(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("flowResumed")) return;
+    const { context, resumePoint } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "flowResumed",
+      { resume_point: resumePoint },
+      undefined,
+      context,
+    );
+    this.captureEvent("flowResumed", eventData);
+  }
+
+  private async handleFlowAbandoned(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("flowAbandoned")) return;
+    const { context, abandonmentReason } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "flowAbandoned",
+      { abandonment_reason: abandonmentReason },
+      undefined,
+      context,
+    );
+    this.captureEvent("flowAbandoned", eventData);
+  }
+
+  private async handleFlowReset(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("flowReset")) return;
+    const { context, resetReason } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "flowReset",
+      { reset_reason: resetReason },
+      undefined,
+      context,
+    );
+    this.captureEvent("flowReset", eventData);
+  }
+
+  private async handleStepStarted(event: any): Promise<void> {
+    // Not in EventNameMapping by default. Add if you want to track this event.
+    // if (!this.shouldTrackEvent("stepStarted" as any)) return;
+    // this.captureEvent("stepStarted" as any, event);
+    // For now, just log:
+    if (this.config.debug) {
+      console.log("[PostHogPlugin] stepStarted event", event);
+    }
+  }
+
+  private async handleStepSkipped(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("stepSkipped")) return;
+    const { step, context, skipReason } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "stepSkipped",
+      { step_id: step.id, skip_reason: skipReason },
+      step,
+      context,
+    );
+    this.captureEvent("stepSkipped", eventData);
+  }
+
+  private async handleStepRetried(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("stepRetried")) return;
+    const { step, context, retryCount } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "stepRetried",
+      { step_id: step.id, retry_count: retryCount },
+      step,
+      context,
+    );
+    this.captureEvent("stepRetried", eventData);
+  }
+
+  private async handleStepValidationFailed(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("stepValidationFailed")) return;
+    const { step, context, validationErrors } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "stepValidationFailed",
+      { step_id: step.id, validation_errors: validationErrors },
+      step,
+      context,
+    );
+    this.captureEvent("stepValidationFailed", eventData);
+  }
+
+  private async handleStepHelpRequested(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("stepHelpRequested")) return;
+    const { step, context, helpType } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "stepHelpRequested",
+      { step_id: step.id, help_type: helpType },
+      step,
+      context,
+    );
+    this.captureEvent("stepHelpRequested", eventData);
+  }
+
+  private async handleStepAbandoned(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("stepAbandoned")) return;
+    const { step, context, timeOnStep } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "stepAbandoned",
+      { step_id: step.id, time_on_step: timeOnStep },
+      step,
+      context,
+    );
+    this.captureEvent("stepAbandoned", eventData);
+  }
+
+  private async handleNavigationBack(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("navigationBack")) return;
+    const { fromStep, toStep, context } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "navigationBack",
+      { from_step_id: fromStep.id, to_step_id: toStep.id },
+      toStep,
+      context,
+    );
+    this.captureEvent("navigationBack", eventData);
+  }
+
+  private async handleNavigationForward(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("navigationForward")) return;
+    const { fromStep, toStep, context } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "navigationForward",
+      { from_step_id: fromStep.id, to_step_id: toStep.id },
+      toStep,
+      context,
+    );
+    this.captureEvent("navigationForward", eventData);
+  }
+
+  private async handleNavigationJump(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("navigationJump")) return;
+    const { fromStep, toStep, context } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "navigationJump",
+      { from_step_id: fromStep.id, to_step_id: toStep.id },
+      toStep,
+      context,
+    );
+    this.captureEvent("navigationJump", eventData);
+  }
+
+  private async handleDataChanged(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("dataChanged")) return;
+    // This is a stub, as contextUpdate is already handled. Implement if needed.
+  }
+
+  private async handleStepRenderTime(event: any): Promise<void> {
+    // Not in EventNameMapping by default. Add if you want to track this event.
+    if (this.config.debug) {
+      console.log("[PostHogPlugin] stepRenderTime event", event);
+    }
+  }
+
+  private async handlePersistenceSuccess(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("persistenceSuccess")) return;
+    const { context, persistenceTime } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "persistenceSuccess",
+      { persistence_time: persistenceTime },
+      undefined,
+      context,
+    );
+    this.captureEvent("persistenceSuccess", eventData);
+  }
+
+  private async handlePersistenceFailure(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("persistenceFailure")) return;
+    const { context, error } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "persistenceFailure",
+      { error_message: error.message },
+      undefined,
+      context,
+    );
+    this.captureEvent("persistenceFailure", eventData);
+  }
+
+  private async handleChecklistItemToggled(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("checklistItemToggled")) return;
+    const { itemId, isCompleted, step, context } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "checklistItemToggled",
+      { item_id: itemId, is_completed: isCompleted },
+      step,
+      context,
+    );
+    this.captureEvent("checklistItemToggled", eventData);
+  }
+
+  private async handleChecklistProgressChanged(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("checklistProgress")) return;
+    const { step, context, progress } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "checklistProgress",
+      { ...progress },
+      step,
+      context,
+    );
+    this.captureEvent("checklistProgress", eventData);
+  }
+
+  private async handlePluginInstalled(event: any): Promise<void> {
+    // Not in EventNameMapping by default. Add if you want to track this event.
+    if (this.config.debug) {
+      console.log("[PostHogPlugin] pluginInstalled event", event);
+    }
+  }
+
+  private async handlePluginError(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("pluginError")) return;
+    const { pluginName, error, context } = event;
+    const eventData = this.eventBuilder.buildEventData(
+      "pluginError",
+      { plugin_name: pluginName, error_message: error.message },
+      undefined,
+      context,
+    );
+    this.captureEvent("pluginError", eventData);
   }
 
   private async handleFlowCompleted(
@@ -494,6 +778,21 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
     this.captureEvent("stepRenderSlow", eventData);
   }
 
+  private async handleUserIdle(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("userIdle" as keyof EventNameMapping)) return;
+    if (this.config.debug) {
+      console.log("[PostHogPlugin] userIdle event", event);
+    }
+  }
+
+  private async handleUserReturned(event: any): Promise<void> {
+    if (!this.shouldTrackEvent("userReturned" as keyof EventNameMapping))
+      return;
+    if (this.config.debug) {
+      console.log("[PostHogPlugin] userReturned event", event);
+    }
+  }
+
   // Utility methods
   private shouldTrackEvent(eventType: keyof EventNameMapping): boolean {
     if (this.config.includeOnlyEvents) {
@@ -610,12 +909,6 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
     // Determine if it's forward, back, or jump navigation
     const prevIndex = this.getStepIndex(previousStep);
     const currIndex = this.getStepIndex(currentStep);
-
-    console.log(previousStep, currentStep);
-    
-
-    console.log(prevIndex, currIndex);
-    
 
     if (currIndex > prevIndex) return "Forward";
     if (currIndex < prevIndex) return "Back";

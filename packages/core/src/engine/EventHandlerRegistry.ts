@@ -12,6 +12,7 @@ import {
   EngineState,
   ErrorEvent,
   BeforeStepChangeEvent,
+  FlowStartedEvent,
 } from "./types";
 
 export class EventHandlerRegistry<TContext extends OnboardingContext> {
@@ -74,6 +75,160 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
     listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventManager.addEventListener("beforeStepChange", listener);
+  }
+
+  // Flow-level events
+  public onFlowStarted(
+    listener: (event: FlowStartedEvent<TContext>) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("flowStarted", listener);
+  }
+
+  public onFlowPaused(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("flowPaused", listener);
+  }
+
+  public onFlowResumed(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("flowResumed", listener);
+  }
+
+  public onFlowAbandoned(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("flowAbandoned", listener);
+  }
+
+  public onFlowReset(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("flowReset", listener);
+  }
+
+  // Step-level events
+  public onStepStarted(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepStarted", listener);
+  }
+
+  public onStepSkipped(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepSkipped", listener);
+  }
+
+  public onStepRetried(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepRetried", listener);
+  }
+
+  public onStepValidationFailed(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepValidationFailed", listener);
+  }
+
+  public onStepHelpRequested(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepHelpRequested", listener);
+  }
+
+  public onStepAbandoned(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepAbandoned", listener);
+  }
+
+  // Navigation events
+  public onNavigationBack(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("navigationBack", listener);
+  }
+
+  public onNavigationForward(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("navigationForward", listener);
+  }
+
+  public onNavigationJump(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("navigationJump", listener);
+  }
+
+  // Interaction events
+  public onUserIdle(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("userIdle", listener);
+  }
+
+  public onUserReturned(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("userReturned", listener);
+  }
+
+  public onDataChanged(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("dataChanged", listener);
+  }
+
+  // Performance events
+  public onStepRenderTime(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("stepRenderTime", listener);
+  }
+
+  public onPersistenceSuccess(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("persistenceSuccess", listener);
+  }
+
+  public onPersistenceFailure(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("persistenceFailure", listener);
+  }
+
+  // Checklist events
+  public onChecklistItemToggled(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("checklistItemToggled", listener);
+  }
+
+  public onChecklistProgressChanged(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener(
+      "checklistProgressChanged",
+      listener,
+    );
+  }
+
+  // Plugin events
+  public onPluginInstalled(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("pluginInstalled", listener);
+  }
+
+  public onPluginError(
+    listener: (event: any) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.eventManager.addEventListener("pluginError", listener);
   }
 
   // Plugin compatibility methods

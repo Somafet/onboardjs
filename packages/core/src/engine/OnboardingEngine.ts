@@ -182,6 +182,10 @@ export class OnboardingEngine<
             ? "resumed"
             : "fresh";
 
+          console.log(
+            `[OnboardingEngine] Onboarding Flow started: ${startMethod}`,
+          );
+
           this.eventManager.notifyListeners("flowStarted", {
             context: this.contextInternal,
             startMethod,
