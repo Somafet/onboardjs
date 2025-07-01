@@ -28,6 +28,8 @@ export const defaultPostHogConfig: Partial<PostHogPluginConfig> = {
   milestonePercentages: [25, 50, 75, 100],
   enablePerformanceTracking: true,
   debug: false,
+  // These events are excluded by default as they are not relevant for tracking
+  excludeEvents: ["persistenceSuccess", "dataChanged"],
 };
 
 // Configuration presets for different use cases
