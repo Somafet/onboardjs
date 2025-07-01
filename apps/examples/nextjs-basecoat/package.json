@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@onboardjs/core": "^0.2.1",
-    "@onboardjs/react": "^0.2.1",
+    "@onboardjs/core": "^0.3.0-rc.1",
+    "@onboardjs/react": "^0.3.0-rc.1",
     "basecoat-css": "^0.2.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
