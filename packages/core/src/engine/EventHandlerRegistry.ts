@@ -109,12 +109,6 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
   }
 
   // Step-level events
-  public onStepStarted(
-    listener: (event: any) => void | Promise<void>,
-  ): UnsubscribeFunction {
-    return this.eventManager.addEventListener("stepStarted", listener);
-  }
-
   public onStepSkipped(
     listener: (event: any) => void | Promise<void>,
   ): UnsubscribeFunction {

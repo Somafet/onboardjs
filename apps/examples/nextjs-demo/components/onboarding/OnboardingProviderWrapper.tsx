@@ -42,6 +42,7 @@ export default function OnboardingProviderWrapper({
     posthogInstance: posthog,
     // We can enable debug logging during development
     debug: process.env.NODE_ENV === "development",
+    enableConsoleLogging: process.env.NODE_ENV === "development",
   });
 
   console.log(

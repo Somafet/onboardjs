@@ -43,7 +43,6 @@ describe("EventManager", () => {
     "flowReset",
 
     // Step-level
-    "stepStarted",
     "stepSkipped",
     "stepRetried",
     "stepValidationFailed",

@@ -30,7 +30,6 @@ export class EventManager<
       "flowReset",
 
       // Step-level
-      "stepStarted",
       "stepSkipped",
       "stepRetried",
       "stepValidationFailed",

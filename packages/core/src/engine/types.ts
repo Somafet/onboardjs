@@ -68,6 +68,7 @@ export interface StepActiveEvent<
 > {
   step: OnboardingStep<TContext>;
   context: TContext;
+  startTime: number;
 }
 
 export interface StepCompletedEvent<
@@ -125,14 +126,6 @@ export interface FlowResetEvent<
 > {
   context: TContext;
   resetReason: string;
-}
-
-export interface StepStartedEvent<
-  TContext extends OnboardingContext = OnboardingContext,
-> {
-  step: OnboardingStep<TContext>;
-  context: TContext;
-  startTime: number;
 }
 
 export interface StepSkippedEvent<
@@ -306,7 +299,6 @@ export interface EventListenerMap<
   flowReset: (event: FlowResetEvent<TContext>) => void | Promise<void>;
 
   // Step-level events
-  stepStarted: (event: StepStartedEvent<TContext>) => void | Promise<void>;
   stepSkipped: (event: StepSkippedEvent<TContext>) => void | Promise<void>;
   stepRetried: (event: StepRetriedEvent<TContext>) => void | Promise<void>;
   stepValidationFailed: (

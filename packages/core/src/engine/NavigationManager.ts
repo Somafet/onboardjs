@@ -151,11 +151,6 @@ export class NavigationManager<TContext extends OnboardingContext> {
     if (newCurrentStep) {
       const startTime = Date.now();
       this.stepStartTimes.set(newCurrentStep.id.toString(), startTime);
-      this.eventManager.notifyListeners("stepStarted", {
-        step: newCurrentStep,
-        context,
-        startTime,
-      });
 
       // Initialize checklist data on activation
       if (newCurrentStep.type === "CHECKLIST") {
@@ -186,6 +181,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
         this.eventManager.notifyListeners("stepActive", {
           step: newCurrentStep,
           context,
+          startTime,
         });
       } catch (error) {
         this.errorHandler.handleError(

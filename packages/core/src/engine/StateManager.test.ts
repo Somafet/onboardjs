@@ -1,4 +1,4 @@
- import { describe, it, expect, vi, beforeEach, Mocked } from "vitest";
+import { describe, it, expect, vi, beforeEach, Mocked } from "vitest";
 import { StateManager } from "./StateManager";
 import { EventManager } from "./EventManager";
 import { OnboardingContext, OnboardingStep } from "../types";
@@ -503,6 +503,344 @@ describe("StateManager", () => {
       );
       expect(state.completedSteps).toBe(0);
       expect(state.progressPercentage).toBe(0);
+    });
+  });
+
+  describe("getRelevantSteps", () => {
+    it("should return all steps when no conditions are present", () => {
+      const stepsWithoutConditions: OnboardingStep<OnboardingContext>[] = [
+        { id: "step1", type: "INFORMATION", payload: {} },
+        { id: "step2", type: "INFORMATION", payload: {} },
+        { id: "step3", type: "INFORMATION", payload: {} },
+      ];
+      const manager = new StateManager(
+        mockEventManager,
+        stepsWithoutConditions,
+        "step1",
+      );
+
+      const relevantSteps = manager.getRelevantSteps(mockContext);
+
+      expect(relevantSteps).toHaveLength(3);
+      expect(relevantSteps.map((s) => s.id)).toEqual([
+        "step1",
+        "step2",
+        "step3",
+      ]);
+    });
+
+    it("should filter out steps with failing conditions", () => {
+      const contextWithFalseCondition = {
+        flowData: {
+          shouldShowConditional: false,
+          shouldShowConditional2: true,
+        },
+      };
+
+      const relevantSteps = stateManager.getRelevantSteps(
+        contextWithFalseCondition,
+      );
+
+      // Should exclude 'conditionalStep' because its condition is false
+      const stepIds = relevantSteps.map((step) => step.id);
+      expect(stepIds).not.toContain("conditionalStep");
+      expect(stepIds).toContain("conditionalStep2");
+      expect(stepIds).toContain("step1");
+      expect(stepIds).toContain("step2");
+      expect(stepIds).toContain("step3");
+    });
+
+    it("should include steps with passing conditions", () => {
+      const contextWithTrueConditions = {
+        flowData: {
+          shouldShowConditional: true,
+          shouldShowConditional2: true,
+        },
+      };
+
+      const relevantSteps = stateManager.getRelevantSteps(
+        contextWithTrueConditions,
+      );
+
+      // Should include all steps
+      expect(relevantSteps).toHaveLength(5);
+      const stepIds = relevantSteps.map((step) => step.id);
+      expect(stepIds).toEqual([
+        "step1",
+        "conditionalStep",
+        "conditionalStep2",
+        "step2",
+        "step3",
+      ]);
+    });
+
+    it("should return empty array when all steps have failing conditions", () => {
+      const stepsAllConditional: OnboardingStep<OnboardingContext>[] = [
+        {
+          id: "conditional1",
+          type: "INFORMATION",
+          payload: {},
+          condition: () => false,
+        },
+        {
+          id: "conditional2",
+          type: "INFORMATION",
+          payload: {},
+          condition: () => false,
+        },
+      ];
+      const manager = new StateManager(
+        mockEventManager,
+        stepsAllConditional,
+        "conditional1",
+      );
+
+      const relevantSteps = manager.getRelevantSteps(mockContext);
+
+      expect(relevantSteps).toHaveLength(0);
+    });
+
+    it("should handle dynamic conditions that depend on context data", () => {
+      const dynamicSteps: OnboardingStep<OnboardingContext>[] = [
+        { id: "base", type: "INFORMATION", payload: {} },
+        {
+          id: "userTypeAdmin",
+          type: "INFORMATION",
+          payload: {},
+          condition: (context) => context.flowData.userType === "admin",
+        },
+        {
+          id: "userTypeUser",
+          type: "INFORMATION",
+          payload: {},
+          condition: (context) => context.flowData.userType === "user",
+        },
+      ];
+      const manager = new StateManager(mockEventManager, dynamicSteps, "base");
+
+      const adminContext = { flowData: { userType: "admin" } };
+      const userContext = { flowData: { userType: "user" } };
+
+      const adminRelevantSteps = manager.getRelevantSteps(adminContext);
+      const userRelevantSteps = manager.getRelevantSteps(userContext);
+
+      expect(adminRelevantSteps.map((s) => s.id)).toEqual([
+        "base",
+        "userTypeAdmin",
+      ]);
+      expect(userRelevantSteps.map((s) => s.id)).toEqual([
+        "base",
+        "userTypeUser",
+      ]);
+    });
+  });
+
+  describe("getStepById", () => {
+    it("should return the correct step when found by string id", () => {
+      const step = stateManager.getStepById("step1");
+
+      expect(step).toBeDefined();
+      expect(step?.id).toBe("step1");
+      expect(step?.type).toBe("INFORMATION");
+    });
+
+    it("should return the correct step when found by number id", () => {
+      const numericSteps: OnboardingStep<OnboardingContext>[] = [
+        { id: 1, type: "INFORMATION", payload: {} },
+        { id: 2, type: "INFORMATION", payload: {} },
+        { id: 3, type: "INFORMATION", payload: {} },
+      ];
+      const manager = new StateManager(mockEventManager, numericSteps, 1);
+
+      const step = manager.getStepById(2);
+
+      expect(step).toBeDefined();
+      expect(step?.id).toBe(2);
+    });
+
+    it("should return undefined when step is not found", () => {
+      const step = stateManager.getStepById("nonexistent");
+
+      expect(step).toBeUndefined();
+    });
+
+    it("should return undefined when searching for number id in string id steps", () => {
+      const step = stateManager.getStepById(123);
+
+      expect(step).toBeUndefined();
+    });
+
+    it("should handle mixed id types correctly", () => {
+      const mixedSteps: OnboardingStep<OnboardingContext>[] = [
+        { id: "stringId", type: "INFORMATION", payload: {} },
+        { id: 42, type: "INFORMATION", payload: {} },
+        { id: "anotherString", type: "INFORMATION", payload: {} },
+      ];
+      const manager = new StateManager(
+        mockEventManager,
+        mixedSteps,
+        "stringId",
+      );
+
+      expect(manager.getStepById("stringId")).toBeDefined();
+      expect(manager.getStepById(42)).toBeDefined();
+      expect(manager.getStepById("42")).toBeUndefined(); // String "42" should not match number 42
+      expect(manager.getStepById("nonexistent")).toBeUndefined();
+    });
+  });
+
+  describe("getCompletedSteps", () => {
+    it("should return empty array when no steps are completed", () => {
+      const contextWithoutCompletions = {
+        flowData: {},
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithoutCompletions,
+      );
+
+      expect(completedSteps).toHaveLength(0);
+    });
+
+    it("should return empty array when _internal data is missing", () => {
+      const contextWithoutInternal = {
+        flowData: { someData: "value" },
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithoutInternal,
+      );
+
+      expect(completedSteps).toHaveLength(0);
+    });
+
+    it("should return completed steps that exist in the steps array", () => {
+      const contextWithCompletions = {
+        flowData: {
+          _internal: {
+            completedSteps: {
+              step1: Date.now(),
+              conditionalStep: Date.now(),
+              step3: Date.now(),
+            },
+          },
+        },
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithCompletions,
+      );
+
+      expect(completedSteps).toHaveLength(3);
+      const completedIds = completedSteps.map((step) => step.id);
+      expect(completedIds).toContain("step1");
+      expect(completedIds).toContain("conditionalStep");
+      expect(completedIds).toContain("step3");
+    });
+
+    it("should ignore completed step IDs that don't exist in the steps array", () => {
+      const contextWithInvalidCompletions = {
+        flowData: {
+          _internal: {
+            completedSteps: {
+              step1: Date.now(),
+              nonExistentStep: Date.now(),
+              anotherInvalidStep: Date.now(),
+            },
+          },
+        },
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithInvalidCompletions,
+      );
+
+      expect(completedSteps).toHaveLength(1);
+      expect(completedSteps[0].id).toBe("step1");
+    });
+
+    it("should handle numeric step IDs correctly", () => {
+      const numericSteps: OnboardingStep<OnboardingContext>[] = [
+        { id: 1, type: "INFORMATION", payload: {} },
+        { id: 2, type: "INFORMATION", payload: {} },
+        { id: 3, type: "INFORMATION", payload: {} },
+      ];
+      const manager = new StateManager(mockEventManager, numericSteps, 1);
+
+      const contextWithNumericCompletions = {
+        flowData: {
+          _internal: {
+            completedSteps: {
+              "1": Date.now(),
+              "3": Date.now(),
+            },
+          },
+        },
+      };
+
+      const completedSteps = manager.getCompletedSteps(
+        contextWithNumericCompletions,
+      );
+
+      expect(completedSteps).toHaveLength(2);
+      const completedIds = completedSteps.map((step) => step.id);
+      expect(completedIds).toContain(1);
+      expect(completedIds).toContain(3);
+    });
+
+    it("should return steps in the same order as they appear in the original steps array", () => {
+      const contextWithAllCompletions = {
+        flowData: {
+          _internal: {
+            completedSteps: {
+              step3: Date.now(),
+              step1: Date.now(),
+              conditionalStep: Date.now(),
+              step2: Date.now(),
+              conditionalStep2: Date.now(),
+            },
+          },
+        },
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithAllCompletions,
+      );
+
+      expect(completedSteps).toHaveLength(5);
+      const completedIds = completedSteps.map((step) => step.id);
+      // Should maintain the original order from mockSteps array
+      expect(completedIds).toEqual([
+        "step1",
+        "conditionalStep",
+        "conditionalStep2",
+        "step2",
+        "step3",
+      ]);
+    });
+
+    it("should include completed conditional steps regardless of their current condition", () => {
+      const contextWithCompletedConditionalStep = {
+        flowData: {
+          shouldShowConditional: false, // Condition is now false
+          shouldShowConditional2: true,
+          _internal: {
+            completedSteps: {
+              conditionalStep: Date.now(), // But it was completed when condition was true
+              step1: Date.now(),
+            },
+          },
+        },
+      };
+
+      const completedSteps = stateManager.getCompletedSteps(
+        contextWithCompletedConditionalStep,
+      );
+
+      expect(completedSteps).toHaveLength(2);
+      const completedIds = completedSteps.map((step) => step.id);
+      expect(completedIds).toContain("conditionalStep");
+      expect(completedIds).toContain("step1");
     });
   });
 });

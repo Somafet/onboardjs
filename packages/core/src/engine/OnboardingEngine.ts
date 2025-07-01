@@ -848,8 +848,32 @@ export class OnboardingEngine<
     this.persistenceManager.setClearPersistedDataHandler(handler);
   }
 
+  /**
+   * Get all steps in the onboarding flow.
+   * This includes all steps defined in the initial configuration.
+   * @returns An array of all steps in the onboarding flow.
+   */
   public getSteps(): OnboardingStep<TContext>[] {
     return [...this.steps];
+  }
+
+  /**
+   * Get the index of a specific step in the onboarding flow based on relevant steps.
+   * @param stepId The ID of the step to find.
+   * @returns The index of the step, or -1 if not found.
+   */
+  public getStepIndex(stepId: string | number): number {
+    return this.stateManager
+      .getRelevantSteps(this.contextInternal)
+      .findIndex((step) => step.id === stepId);
+  }
+
+  /**
+   * Get relevant steps in the flow based on the current context.
+   * @returns An array of steps that are relevant to the current context.
+   */
+  public getRelevantSteps(): OnboardingStep<TContext>[] {
+    return this.stateManager.getRelevantSteps(this.contextInternal);
   }
 
   // =============================================================================

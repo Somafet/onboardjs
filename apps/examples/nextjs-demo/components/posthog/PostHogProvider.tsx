@@ -14,7 +14,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         capture_pageview: false, // We capture pageviews manually
         capture_pageleave: true, // Enable pageleave capture
         capture_exceptions: true, // This enables capturing exceptions using Error Tracking
-        debug: process.env.NODE_ENV === "development",
+        debug: false,
       });
     }
   }, []);

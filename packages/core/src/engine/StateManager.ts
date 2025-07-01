@@ -285,6 +285,28 @@ export class StateManager<TContext extends OnboardingContext> {
     return this.isCompletedInternal;
   }
 
+  /**
+   * Get all relevant steps in the flow based on the current context.
+   * @param context The current onboarding context.
+   * @returns An array of relevant onboarding steps in the current flow.
+   */
+  public getRelevantSteps(context: TContext): OnboardingStep<TContext>[] {
+    return this.steps.filter(
+      (step) => !step.condition || step.condition(context),
+    );
+  }
+
+  public getStepById(stepId: string | number) {
+    return findStepById(this.steps, stepId);
+  }
+
+  public getCompletedSteps(context: TContext): OnboardingStep<TContext>[] {
+    const completedIds = new Set(
+      Object.keys(context.flowData?._internal?.completedSteps || {}),
+    );
+    return this.steps.filter((step) => completedIds.has(String(step.id)));
+  }
+
   // Setters for internal state
   setLoading(loading: boolean): void {
     this.isLoadingInternal = loading;

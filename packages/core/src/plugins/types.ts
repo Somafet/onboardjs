@@ -14,7 +14,6 @@ import {
   StepActiveEvent,
   StepChangeEvent,
   StepCompletedEvent,
-  StepStartedEvent,
   StepSkippedEvent,
   StepRetriedEvent,
   StepValidationFailedEvent,
@@ -120,9 +119,6 @@ export interface PluginHooks<
 
   /** Called when flow is reset */
   onFlowReset?: (event: FlowResetEvent<TContext>) => void | Promise<void>;
-
-  /** Called when a step is started */
-  onStepStarted?: (event: StepStartedEvent<TContext>) => void | Promise<void>;
 
   /** Called when a step is skipped */
   onStepSkipped?: (event: StepSkippedEvent<TContext>) => void | Promise<void>;
