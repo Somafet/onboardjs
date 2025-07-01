@@ -14,6 +14,12 @@ import { StateManager } from "./StateManager";
 import { BeforeStepChangeEvent } from "./types";
 
 export class NavigationManager<TContext extends OnboardingContext> {
+  /**
+   * Maps step IDs to their start times.
+   * Used to track how long each step has been active.
+   */
+  private stepStartTimes = new Map<string, number>();
+
   constructor(
     private steps: OnboardingStep<TContext>[],
     private eventManager: EventManager<TContext>,
@@ -85,7 +91,8 @@ export class NavigationManager<TContext extends OnboardingContext> {
     this.stateManager.setLoading(true);
     this.stateManager.setError(null);
 
-    let candidateStep: OnboardingStep<TContext> | undefined | null = findStepById(this.steps, finalTargetStepId);
+    let candidateStep: OnboardingStep<TContext> | undefined | null =
+      findStepById(this.steps, finalTargetStepId);
 
     // This loop now correctly handles skipping by using our robust helper methods.
     while (
@@ -114,7 +121,37 @@ export class NavigationManager<TContext extends OnboardingContext> {
     const oldStep = currentStep;
     const newCurrentStep = candidateStep ?? null;
 
+    // Emit navigation events based on direction
+    if (currentStep && newCurrentStep && currentStep.id !== newCurrentStep.id) {
+      switch (direction) {
+        case "previous":
+          this.eventManager.notifyListeners("navigationBack", {
+            fromStep: currentStep,
+            toStep: newCurrentStep,
+            context,
+          });
+          break;
+        case "next":
+          this.eventManager.notifyListeners("navigationForward", {
+            fromStep: currentStep,
+            toStep: newCurrentStep,
+            context,
+          });
+          break;
+        case "goto":
+          this.eventManager.notifyListeners("navigationJump", {
+            fromStep: currentStep,
+            toStep: newCurrentStep,
+            context,
+          });
+          break;
+      }
+    }
+
     if (newCurrentStep) {
+      const startTime = Date.now();
+      this.stepStartTimes.set(newCurrentStep.id.toString(), startTime);
+
       // Initialize checklist data on activation
       if (newCurrentStep.type === "CHECKLIST") {
         this.checklistManager.getChecklistItemsState(
@@ -141,11 +178,11 @@ export class NavigationManager<TContext extends OnboardingContext> {
         if (newCurrentStep.onStepActive) {
           await newCurrentStep.onStepActive(context);
         }
-        this.eventManager.notifyListeners(
-          "stepActive",
-          newCurrentStep,
+        this.eventManager.notifyListeners("stepActive", {
+          step: newCurrentStep,
           context,
-        );
+          startTime,
+        });
       } catch (error) {
         this.errorHandler.handleError(
           error,
@@ -173,7 +210,9 @@ export class NavigationManager<TContext extends OnboardingContext> {
         }
       }
 
-      this.eventManager.notifyListeners("flowComplete", finalContext);
+      this.eventManager.notifyListeners("flowCompleted", {
+        context: finalContext,
+      });
       await this.persistenceManager.persistDataIfNeeded(
         context,
         null,
@@ -190,12 +229,11 @@ export class NavigationManager<TContext extends OnboardingContext> {
       }
     }
 
-    this.eventManager.notifyListeners(
-      "stepChange",
-      newCurrentStep,
+    this.eventManager.notifyListeners("stepChange", {
       oldStep,
+      newStep: newCurrentStep,
       context,
-    );
+    });
 
     this.stateManager.setLoading(false);
     return newCurrentStep;
@@ -232,7 +270,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
           `[NavigationManager] Cannot proceed from checklist step '${currentStep.id}': Not all completion criteria met.`,
         );
         this.stateManager.setError(error);
-        this.eventManager.notifyListeners("error", error, context);
+        this.eventManager.notifyListeners("error", { error, context });
         return currentStep;
       }
 
@@ -265,12 +303,11 @@ export class NavigationManager<TContext extends OnboardingContext> {
         await currentStep.onStepComplete(stepSpecificData || {}, context);
       }
 
-      this.eventManager.notifyListeners(
-        "stepComplete",
-        currentStep,
-        stepSpecificData || {},
+      this.eventManager.notifyListeners("stepCompleted", {
+        step: currentStep,
+        stepData: stepSpecificData || {},
         context,
-      );
+      });
 
       // Mark step as completed
       const currentStepId = currentStep.id;
@@ -385,6 +422,15 @@ export class NavigationManager<TContext extends OnboardingContext> {
     ) {
       return currentStep;
     }
+
+    const skipReason = currentStep.skipToStep
+      ? "explicit_skip_target"
+      : "default_skip";
+    this.eventManager.notifyListeners("stepSkipped", {
+      step: currentStep,
+      context,
+      skipReason,
+    });
 
     let finalSkipTargetId: string | number | null | undefined;
 

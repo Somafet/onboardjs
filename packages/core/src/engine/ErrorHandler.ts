@@ -60,7 +60,10 @@ export class ErrorHandler<TContext extends OnboardingContext> {
     this.stateManager.setError(processedError);
 
     // Notify error listeners
-    this.eventManager.notifyListeners("error", processedError, engineContext);
+    this.eventManager.notifyListeners("error", {
+      error: processedError,
+      context: engineContext,
+    });
 
     return processedError;
   }

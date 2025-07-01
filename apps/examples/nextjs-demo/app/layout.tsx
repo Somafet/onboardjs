@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import OnboardingProviderWrapper from "@/components/onboarding/OnboardingProviderWrapper";
 import { createClient } from "@/lib/supabase-server";
+import { PostHogProvider } from "@/components/posthog/PostHogProvider";
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -28,9 +29,11 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${lexend.variable} antialiased font-lexend`}>
-        <OnboardingProviderWrapper user={user}>
-          {children}
-        </OnboardingProviderWrapper>
+        <PostHogProvider>
+          <OnboardingProviderWrapper user={user}>
+            {children}
+          </OnboardingProviderWrapper>
+        </PostHogProvider>
         <Toaster />
       </body>
     </html>

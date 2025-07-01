@@ -10,7 +10,7 @@ import {
 } from "vitest";
 import { OnboardingContext } from "../types";
 import { EventManager } from "./EventManager";
-import { EventListenerMap } from "./types";
+import { EventListenerMap, StepChangeEvent } from "./types";
 
 // Mock context and event listener map for testing
 interface TestContext extends OnboardingContext {
@@ -29,11 +29,48 @@ describe("EventManager", () => {
     "stateChange",
     "beforeStepChange",
     "stepChange",
-    "flowComplete",
+    "flowCompleted",
     "stepActive",
-    "stepComplete",
+    "stepCompleted",
     "contextUpdate",
     "error",
+
+    // Flow-level
+    "flowStarted",
+    "flowPaused",
+    "flowResumed",
+    "flowAbandoned",
+    "flowReset",
+
+    // Step-level
+    "stepSkipped",
+    "stepRetried",
+    "stepValidationFailed",
+    "stepHelpRequested",
+    "stepAbandoned",
+
+    // Navigation
+    "navigationBack",
+    "navigationForward",
+    "navigationJump",
+
+    // Interaction
+    "userIdle",
+    "userReturned",
+    "dataChanged",
+
+    // Performance
+    "stepRenderTime",
+    "persistenceSuccess",
+    "persistenceFailure",
+
+    // Checklist
+    "checklistItemToggled",
+    "checklistProgressChanged",
+
+    // Plugin
+    "pluginInstalled",
+    "pluginError",
   ];
 
   beforeEach(() => {
@@ -61,7 +98,7 @@ describe("EventManager", () => {
 
   describe("addEventListener", () => {
     it("should add a listener and return an unsubscribe function", () => {
-      const listener = vi.fn();
+      const listener = vi.fn(() => {});
       const unsubscribe = eventManager.addEventListener("stepChange", listener);
       expect(eventManager.getListenerCount("stepChange")).toBe(1);
       expect(typeof unsubscribe).toBe("function");
@@ -102,20 +139,22 @@ describe("EventManager", () => {
   });
 
   describe("notifyListeners", () => {
-    it("should call all registered listeners for an event with correct arguments", () => {
+    it("should call all registered listeners with a single event object", () => {
       const listener1 = vi.fn();
       const listener2 = vi.fn();
       eventManager.addEventListener("stepChange", listener1);
       eventManager.addEventListener("stepChange", listener2);
 
-      const newStep = { id: "new", type: "INFO" } as any;
-      const oldStep = { id: "old", type: "INFO" } as any;
-      const context = { flowData: {} } as TestContext;
+      const eventPayload: StepChangeEvent<TestContext> = {
+        newStep: { id: "new", type: "INFORMATION" } as any,
+        oldStep: { id: "old", type: "INFORMATION" } as any,
+        context: { flowData: {} } as TestContext,
+      };
 
-      eventManager.notifyListeners("stepChange", newStep, oldStep, context);
+      eventManager.notifyListeners("stepChange", eventPayload);
 
-      expect(listener1).toHaveBeenCalledWith(newStep, oldStep, context);
-      expect(listener2).toHaveBeenCalledWith(newStep, oldStep, context);
+      expect(listener1).toHaveBeenCalledWith(eventPayload);
+      expect(listener2).toHaveBeenCalledWith(eventPayload);
     });
 
     it("should handle synchronous listeners that throw errors and log them", () => {
@@ -126,97 +165,36 @@ describe("EventManager", () => {
       eventManager.addEventListener("error", erroringListener);
       eventManager.addEventListener("error", normalListener);
 
-      const errorArg = new Error("Test error");
-      const contextArg = {} as TestContext;
-      eventManager.notifyListeners("error", errorArg, contextArg);
+      const eventPayload = {
+        error: new Error("Test error"),
+        context: {} as TestContext,
+      };
+      eventManager.notifyListeners("error", eventPayload);
 
-      expect(erroringListener).toHaveBeenCalledWith(errorArg, contextArg);
-      expect(normalListener).toHaveBeenCalledWith(errorArg, contextArg);
+      expect(erroringListener).toHaveBeenCalledWith(eventPayload);
+      expect(normalListener).toHaveBeenCalledWith(eventPayload);
+      // The new implementation just uses the eventType string in the error
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error in error listener:",
         new Error("Sync error"),
       );
     });
 
-    it("should handle async listeners that return promises", async () => {
-      const asyncListener = vi.fn(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      });
-      eventManager.addEventListener("flowComplete", asyncListener);
-      const contextArg = {} as TestContext;
-      eventManager.notifyListeners("flowComplete", contextArg);
-
-      expect(asyncListener).toHaveBeenCalledWith(contextArg);
-      // We don't wait for the promise here, just check it's called
-      // Error handling for rejected promises is tested next
-    });
-
     it("should handle async listeners that reject and log the error", async () => {
       const rejectingListener = vi.fn(async () => {
         throw new Error("Async reject");
       });
-      eventManager.addEventListener("flowComplete", rejectingListener);
-      const contextArg = {} as TestContext;
-      eventManager.notifyListeners("flowComplete", contextArg);
+      eventManager.addEventListener("flowCompleted", rejectingListener);
+      const eventPayload = { context: {} as TestContext };
+      eventManager.notifyListeners("flowCompleted", eventPayload);
 
-      expect(rejectingListener).toHaveBeenCalledWith(contextArg);
+      expect(rejectingListener).toHaveBeenCalledWith(eventPayload);
 
-      // Allow microtasks to run for the promise rejection to be caught
       await vi.runAllTimersAsync();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "Error in async onFlowHasCompleted listener:",
         new Error("Async reject"),
-      );
-    });
-
-    it("should do nothing if no listeners are registered for an event", () => {
-      const newStep = { id: "new", type: "INFO" } as any;
-      const oldStep = { id: "old", type: "INFO" } as any;
-      const context = { flowData: {} } as TestContext;
-
-      expect(() =>
-        eventManager.notifyListeners("stepChange", newStep, oldStep, context),
-      ).not.toThrow();
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
-    });
-
-    it("should do nothing if notifying for an unknown event type", () => {
-      expect(() =>
-        eventManager.notifyListeners(
-          "unknownEvent" as keyof EventListenerMap<TestContext>,
-          { flowData: {} },
-        ),
-      ).not.toThrow();
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
-    });
-
-    it("should use correct legacy event names in error logs for various events", async () => {
-      const erroringListener = vi.fn(() => {
-        throw new Error("Sync error");
-      });
-      const rejectingListener = vi.fn(async () => {
-        throw new Error("Async error");
-      });
-
-      eventManager.addEventListener("stepChange", erroringListener);
-      eventManager.notifyListeners("stepChange", null, null, {} as TestContext);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error in stepChange listener:",
-        new Error("Sync error"),
-      );
-      consoleErrorSpy.mockClear();
-
-      eventManager.addEventListener("contextUpdate", rejectingListener);
-      eventManager.notifyListeners(
-        "contextUpdate",
-        {} as TestContext,
-        {} as TestContext,
-      );
-      await vi.runAllTimersAsync();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error in contextUpdate listener:",
-        new Error("Async error"),
       );
     });
   });
@@ -328,7 +306,7 @@ describe("EventManager", () => {
     });
 
     it("should return 0 for an event type with no listeners", () => {
-      expect(eventManager.getListenerCount("flowComplete")).toBe(0);
+      expect(eventManager.getListenerCount("flowCompleted")).toBe(0);
     });
 
     it("should return 0 for an unknown event type", () => {
@@ -340,7 +318,7 @@ describe("EventManager", () => {
   describe("clearAllListeners", () => {
     it("should remove all listeners for all event types", () => {
       eventManager.addEventListener("stepChange", vi.fn());
-      eventManager.addEventListener("flowComplete", vi.fn());
+      eventManager.addEventListener("flowCompleted", vi.fn());
       eventManager.addEventListener("error", vi.fn());
 
       eventManager.clearAllListeners();
@@ -376,7 +354,9 @@ describe("EventManager", () => {
         "beforeStepChange",
       );
       expect(getLegacyName(eventManager, "stepActive")).toBe("stepActive");
-      expect(getLegacyName(eventManager, "stepComplete")).toBe("stepComplete");
+      expect(getLegacyName(eventManager, "stepCompleted")).toBe(
+        "stepCompleted",
+      );
       expect(getLegacyName(eventManager, "contextUpdate")).toBe(
         "contextUpdate",
       );

@@ -368,13 +368,13 @@ export function OnboardingProvider<
 
             unsubscribeStateChange = currentEngine.addEventListener(
               "stateChange",
-              (newState) => {
+              (event) => {
                 console.log(
                   "[OnboardingProvider] stateChange event received:",
-                  newState.currentStep?.id,
-                  newState.isLoading,
+                  event.state.currentStep?.id,
+                  event.state.isLoading,
                 );
-                setEngineState(newState);
+                setEngineState(event.state);
               },
             );
           }

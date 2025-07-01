@@ -7,12 +7,12 @@ import { toast } from "sonner";
 import OnboardJsLogo from "@/components/logo";
 import confetti from "canvas-confetti";
 import Link from "next/link";
-import { OnboardingContext } from "@onboardjs/core";
 import { commonFlowSteps } from "@/components/onboarding/common-flow-config";
 
 export default function OnboardingDemoPage() {
   useOnboarding({
-    onFlowComplete: (context: OnboardingContext) => {
+    onFlowCompleted: (event) => {
+      const { context } = event;
       console.log("DEMO PAGE: Flow completed! Final data:", context.flowData);
       toast("Onboarding Complete!", {
         description: `Welcome, ${context.flowData?.userName || "friend"}! You're all set.`,

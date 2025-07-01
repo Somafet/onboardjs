@@ -1,6 +1,14 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.2.2",
+  "version": "0.3.0",
+  "description": "Official React bindings for OnboardJS.",
+  "keywords": [
+    "onboarding",
+    "react",
+    "hooks",
+    "typescript",
+    "onboardjs"
+  ],
   "private": false,
   "author": {
     "name": "Soma Somorjai",
@@ -48,12 +56,12 @@
     "typescript": "^5.8.2",
     "vite": "^6.3.5",
     "vitest": "^3.1.4",
-    "@onboardjs/core": "^0.2.1"
+    "@onboardjs/core": "^0.3.0-alpha.1"
   },
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@onboardjs/core": ">=0.2.1"
+    "@onboardjs/core": ">=0.3.0-alpha.1"
   },
   "dependencies": {}
 }

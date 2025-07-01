@@ -66,11 +66,6 @@ We welcome all contributions: code, documentation, bug reports, feature requests
    pnpm test
    ```
 
-5. **Start Storybook (for UI work):**
-   ```bash
-   pnpm --filter storybook storybook
-   ```
-
 ---
 
 ## Code Style & Standards

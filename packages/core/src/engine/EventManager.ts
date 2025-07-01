@@ -16,11 +16,48 @@ export class EventManager<
       "stateChange",
       "beforeStepChange",
       "stepChange",
-      "flowComplete",
+      "flowCompleted",
       "stepActive",
-      "stepComplete",
+      "stepCompleted",
       "contextUpdate",
       "error",
+
+      // Flow-level
+      "flowStarted",
+      "flowPaused",
+      "flowResumed",
+      "flowAbandoned",
+      "flowReset",
+
+      // Step-level
+      "stepSkipped",
+      "stepRetried",
+      "stepValidationFailed",
+      "stepHelpRequested",
+      "stepAbandoned",
+
+      // Navigation
+      "navigationBack",
+      "navigationForward",
+      "navigationJump",
+
+      // Interaction
+      "userIdle",
+      "userReturned",
+      "dataChanged",
+
+      // Performance
+      "stepRenderTime",
+      "persistenceSuccess",
+      "persistenceFailure",
+
+      // Checklist
+      "checklistItemToggled",
+      "checklistProgressChanged",
+
+      // Plugin
+      "pluginInstalled",
+      "pluginError",
     ];
 
     eventTypes.forEach((eventType) => {
@@ -61,7 +98,7 @@ export class EventManager<
           result.catch((err) => {
             // Use legacy error message format for backward compatibility
             const legacyEventName =
-              eventType === "flowComplete"
+              eventType === "flowCompleted"
                 ? "async onFlowHasCompleted"
                 : this.getLegacyEventName(eventType);
             console.error(`Error in ${legacyEventName} listener:`, err);
@@ -70,7 +107,7 @@ export class EventManager<
       } catch (err) {
         // Use legacy error message format for backward compatibility
         const legacyEventName =
-          eventType === "flowComplete"
+          eventType === "flowCompleted"
             ? "sync onFlowHasCompleted"
             : this.getLegacyEventName(eventType);
         console.error(`Error in ${legacyEventName} listener:`, err);
@@ -93,8 +130,8 @@ export class EventManager<
         return "beforeStepChange";
       case "stepActive":
         return "stepActive";
-      case "stepComplete":
-        return "stepComplete";
+      case "stepCompleted":
+        return "stepCompleted";
       case "contextUpdate":
         return "contextUpdate";
       case "error":

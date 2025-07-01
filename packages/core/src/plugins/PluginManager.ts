@@ -1,5 +1,6 @@
 // @onboardjs/core/src/plugins/PluginManager.ts
 
+import { EventManager } from "../engine/EventManager";
 import { OnboardingEngine } from "../engine/OnboardingEngine";
 import { OnboardingContext } from "../types";
 import { OnboardingPlugin, PluginManager, PluginCleanup } from "./types";
@@ -12,8 +13,12 @@ export class PluginManagerImpl<
   private cleanupFunctions = new Map<string, PluginCleanup>();
   private engine: OnboardingEngine<TContext>;
 
-  constructor(engine: OnboardingEngine<TContext>) {
+  constructor(
+    engine: OnboardingEngine<TContext>,
+    private eventManager?: EventManager<TContext>,
+  ) {
     this.engine = engine;
+    this.eventManager = eventManager;
   }
 
   async install(plugin: OnboardingPlugin<TContext>): Promise<void> {
@@ -41,10 +46,23 @@ export class PluginManagerImpl<
       this.plugins.set(plugin.name, plugin);
       this.cleanupFunctions.set(plugin.name, cleanup);
 
+      // Notify listeners about the installation
+      this.eventManager?.notifyListeners("pluginInstalled", {
+        pluginName: plugin.name,
+        pluginVersion: plugin.version,
+      });
+
       console.debug(
         `[PluginManager] Installed plugin: ${plugin.name}@${plugin.version}`,
       );
     } catch (error) {
+      // Handle installation errors
+      this.eventManager?.notifyListeners("pluginError", {
+        pluginName: plugin.name,
+        error: error as Error,
+        context: this.engine.getContext(),
+      });
+
       console.error(
         `[PluginManager] Failed to install plugin "${plugin.name}":`,
         error,

@@ -9,6 +9,13 @@ import {
   LoadedData,
   DataLoadFn,
   DataPersistFn,
+  StepActiveEvent,
+  StepChangeEvent,
+  StepCompletedEvent,
+  FlowCompletedEvent,
+  ContextUpdateEvent,
+  ErrorEvent,
+  BeforeStepChangeEvent,
 } from "./types";
 import { OnboardingPlugin } from "../plugins/types";
 import { PluginManagerImpl } from "../plugins/PluginManager";
@@ -99,6 +106,7 @@ export class OnboardingEngine<
       config.persistData,
       config.clearPersistedData,
       this.errorHandler,
+      this.eventManager,
     );
     this.checklistManager = new ChecklistManager(
       this.eventManager,
@@ -115,7 +123,7 @@ export class OnboardingEngine<
       this.persistenceManager,
       this.errorHandler,
     );
-    this.pluginManager = new PluginManagerImpl(this);
+    this.pluginManager = new PluginManagerImpl(this, this.eventManager);
     this.eventRegistry = new EventHandlerRegistry(this.eventManager);
 
     // Store callbacks
@@ -170,6 +178,19 @@ export class OnboardingEngine<
           const { data: loadedData, error: dataLoadError } =
             await this.loadPersistedData();
 
+          const startMethod: "fresh" | "resumed" = loadedData?.currentStepId
+            ? "resumed"
+            : "fresh";
+
+          console.log(
+            `[OnboardingEngine] Onboarding Flow started: ${startMethod}`,
+          );
+
+          this.eventManager.notifyListeners("flowStarted", {
+            context: this.contextInternal,
+            startMethod,
+          });
+
           // 4. Build context
           this.buildContext(loadedData);
 
@@ -178,11 +199,10 @@ export class OnboardingEngine<
             this.stateManager.setError(dataLoadError);
             this.currentStepInternal = null;
             this.stateManager.setCompleted(false);
-            this.eventManager.notifyListeners(
-              "error",
-              dataLoadError,
-              this.contextInternal,
-            );
+            this.eventManager.notifyListeners("error", {
+              error: dataLoadError,
+              context: this.contextInternal,
+            });
             // Still resolve initialization - engine is ready but in error state
             this.resolveInitialization();
           } else {
@@ -563,11 +583,10 @@ export class OnboardingEngine<
           newContextJSON,
         );
 
-        this.eventManager.notifyListeners(
-          "contextUpdate",
+        this.eventManager.notifyListeners("contextUpdate", {
           oldContext,
-          this.contextInternal,
-        );
+          newContext: this.contextInternal,
+        });
         await this.persistenceManager.persistDataIfNeeded(
           this.contextInternal,
           this.currentStepInternal?.id || null,
@@ -635,6 +654,14 @@ export class OnboardingEngine<
     newConfigInput?: Partial<OnboardingEngineConfig<TContext>>,
   ): Promise<void> {
     console.log("[OnboardingEngine] Resetting engine...");
+
+    const resetReason = newConfigInput
+      ? "configuration_change"
+      : "manual_reset";
+    this.eventManager.notifyListeners("flowReset", {
+      context: this.contextInternal,
+      resetReason,
+    });
 
     // Capture current clear handler
     const activeClearHandler =
@@ -760,61 +787,43 @@ export class OnboardingEngine<
   }
 
   public addBeforeStepChangeListener(
-    listener: (
-      currentStep: OnboardingStep<TContext> | null,
-      nextStep: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addBeforeStepChangeListener(listener);
   }
 
   public addAfterStepChangeListener(
-    listener: (
-      previousStep: OnboardingStep<TContext> | null,
-      currentStep: OnboardingStep<TContext> | null,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepChangeEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addAfterStepChangeListener(listener);
   }
 
   public addStepActiveListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      context: TContext,
-    ) => void | Promise<void>,
+    listener: (event: StepActiveEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addStepActiveListener(listener);
   }
 
-  public addStepCompleteListener(
-    listener: (
-      step: OnboardingStep<TContext>,
-      stepData: unknown,
-      context: TContext,
-    ) => void | Promise<void>,
+  public addStepCompletedListener(
+    listener: (event: StepCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventRegistry.addStepCompleteListener(listener);
+    return this.eventRegistry.addStepCompletedListener(listener);
   }
 
-  public addFlowCompleteListener(
-    listener: (context: TContext) => void | Promise<void>,
+  public addFlowCompletedListener(
+    listener: (event: FlowCompletedEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
-    return this.eventRegistry.addFlowCompleteListener(listener);
+    return this.eventRegistry.addFlowCompletedListener(listener);
   }
 
   public addContextUpdateListener(
-    listener: (
-      oldContext: TContext,
-      newContext: TContext,
-    ) => void | Promise<void>,
+    listener: (event: ContextUpdateEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addContextUpdateListener(listener);
   }
 
   public addErrorListener(
-    listener: (error: Error, context: TContext) => void | Promise<void>,
+    listener: (event: ErrorEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addErrorListener(listener);
   }
@@ -839,8 +848,32 @@ export class OnboardingEngine<
     this.persistenceManager.setClearPersistedDataHandler(handler);
   }
 
+  /**
+   * Get all steps in the onboarding flow.
+   * This includes all steps defined in the initial configuration.
+   * @returns An array of all steps in the onboarding flow.
+   */
   public getSteps(): OnboardingStep<TContext>[] {
     return [...this.steps];
+  }
+
+  /**
+   * Get the index of a specific step in the onboarding flow based on relevant steps.
+   * @param stepId The ID of the step to find.
+   * @returns The index of the step, or -1 if not found.
+   */
+  public getStepIndex(stepId: string | number): number {
+    return this.stateManager
+      .getRelevantSteps(this.contextInternal)
+      .findIndex((step) => step.id === stepId);
+  }
+
+  /**
+   * Get relevant steps in the flow based on the current context.
+   * @returns An array of steps that are relevant to the current context.
+   */
+  public getRelevantSteps(): OnboardingStep<TContext>[] {
+    return this.stateManager.getRelevantSteps(this.contextInternal);
   }
 
   // =============================================================================
@@ -925,6 +958,33 @@ export class OnboardingEngine<
       },
       this.contextInternal,
     );
+  }
+
+  // For plugins to report step validation failures
+  public reportStepValidationFailure(
+    step: OnboardingStep<TContext>,
+    validationErrors: string[],
+  ): void {
+    this.eventManager.notifyListeners("stepValidationFailed", {
+      step,
+      context: this.contextInternal,
+      validationErrors,
+    });
+  }
+
+  // For plugins to report help requests
+  public reportHelpRequest(helpType: string): void {
+    if (this.currentStepInternal) {
+      this.eventManager.notifyListeners("stepHelpRequested", {
+        step: this.currentStepInternal,
+        context: this.contextInternal,
+        helpType,
+      });
+    }
+  }
+
+  public getContext(): TContext {
+    return { ...this.contextInternal };
   }
 
   /**

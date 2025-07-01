@@ -5,10 +5,10 @@ import {
   OnboardingContext,
   DataLoadFn,
   DataPersistFn,
-  BeforeStepChangeListener,
-  FlowCompleteListener,
   OnboardingPlugin,
   PluginManager,
+  BeforeStepChangeEvent,
+  FlowCompletedEvent,
 } from "@onboardjs/core";
 import { OnboardingActions } from "../context/OnboardingProvider";
 
@@ -19,7 +19,9 @@ export interface UseOnboardingOptions<
    * Callback executed when the entire onboarding flow is completed.
    * This callback is specific to this instance of the `useOnboarding` hook.
    */
-  onFlowComplete?: FlowCompleteListener<TContext>;
+  onFlowCompleted?: (
+    event: FlowCompletedEvent<TContext>,
+  ) => void | Promise<void>;
 
   /**
    * Callback executed when the current step changes.
@@ -35,7 +37,9 @@ export interface UseOnboardingOptions<
    * Callback executed before the current step changes.
    * This allows you to perform checks or actions before the step transition.
    */
-  onBeforeStepChange?: BeforeStepChangeListener<TContext>;
+  onBeforeStepChange?: (
+    event: BeforeStepChangeEvent<TContext>,
+  ) => void | Promise<void>;
 
   /**
    * Callback executed when data is loaded for the current step.

@@ -111,15 +111,11 @@ This repository is a [Turborepo](https://turborepo.org/) monorepo containing the
    ```bash
    pnpm build
    ```
-3. **Run Storybook:**
-   ```bash
-   pnpm storybook
-   ```
-4. **Run Tests:**
+3. **Run Tests:**
    ```bash
    pnpm test
    ```
-5. **Lint & Format**
+4. **Lint & Format**
    ```bash
     pnpm lint
     pnpm format

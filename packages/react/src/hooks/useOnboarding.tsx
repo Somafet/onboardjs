@@ -7,7 +7,10 @@ import {
   OnboardingContextValue,
 } from "../context/OnboardingProvider";
 import { UseOnboardingOptions } from "./useOnboarding.types";
-import { OnboardingContext as OnboardingContextType } from "@onboardjs/core";
+import {
+  FlowCompletedEvent,
+  OnboardingContext as OnboardingContextType,
+} from "@onboardjs/core";
 
 export function useOnboarding<
   TContext extends OnboardingContextType = OnboardingContextType, // Default generic
@@ -35,13 +38,13 @@ export function useOnboarding<
   } = contextValue;
 
   // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
-  const onFlowCompleteRef = useRef(options?.onFlowComplete);
+  const onFlowCompletedRef = useRef(options?.onFlowCompleted);
   const onStepChangeRef = useRef(options?.onStepChange);
 
   // Update refs when callback props change
   useEffect(() => {
-    onFlowCompleteRef.current = options?.onFlowComplete;
-  }, [options?.onFlowComplete]);
+    onFlowCompletedRef.current = options?.onFlowCompleted;
+  }, [options?.onFlowCompleted]);
 
   useEffect(() => {
     onStepChangeRef.current = options?.onStepChange;
@@ -49,17 +52,17 @@ export function useOnboarding<
 
   // Effect for onFlowComplete
   useEffect(() => {
-    if (!engine || !onFlowCompleteRef.current) {
+    if (!engine || !onFlowCompletedRef.current) {
       return;
     }
 
-    const listener = (context: TContext) => {
-      if (onFlowCompleteRef.current) {
-        onFlowCompleteRef.current(context);
+    const listener = (event: FlowCompletedEvent<TContext>) => {
+      if (onFlowCompletedRef.current) {
+        onFlowCompletedRef.current(event);
       }
     };
 
-    const unsubscribe = engine.addFlowCompleteListener(listener);
+    const unsubscribe = engine.addFlowCompletedListener(listener);
 
     return () => {
       if (unsubscribe) {
@@ -74,7 +77,7 @@ export function useOnboarding<
       return;
     }
     const unsubscribe = engine.addAfterStepChangeListener(
-      (oldStep, newStep, context) => {
+      ({ oldStep, newStep, context }) => {
         if (onStepChangeRef.current) {
           onStepChangeRef.current(newStep, oldStep, context);
         }
@@ -105,4 +108,4 @@ export function useOnboarding<
     currentStep,
     error,
   };
-};
+}

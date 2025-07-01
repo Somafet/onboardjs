@@ -45,50 +45,62 @@ export abstract class BasePlugin<
 
   protected setupHooks(): void {
     const hooks = this.getHooks();
+    // Map PluginHooks keys to engine listener methods
+    const hookToEngineMethod: Record<string, keyof OnboardingEngine<TContext>> =
+      {
+        beforeStepChange: "addBeforeStepChangeListener",
+        afterStepChange: "addAfterStepChangeListener",
+        onStepActive: "addStepActiveListener",
+        onStepCompleted: "addStepCompletedListener",
+        onFlowCompleted: "addFlowCompletedListener",
+        onContextUpdate: "addContextUpdateListener",
+        onError: "addErrorListener",
+        onFlowStarted: "addEventListener", // Special: use addEventListener for generic events
+        onFlowPaused: "addEventListener",
+        onFlowResumed: "addEventListener",
+        onFlowAbandoned: "addEventListener",
+        onFlowReset: "addEventListener",
+        onStepStarted: "addEventListener",
+        onStepSkipped: "addEventListener",
+        onStepRetried: "addEventListener",
+        onStepValidationFailed: "addEventListener",
+        onStepHelpRequested: "addEventListener",
+        onStepAbandoned: "addEventListener",
+        onNavigationBack: "addEventListener",
+        onNavigationForward: "addEventListener",
+        onNavigationJump: "addEventListener",
+        onUserIdle: "addEventListener",
+        onUserReturned: "addEventListener",
+        onDataChanged: "addEventListener",
+        onStepRenderTime: "addEventListener",
+        onPersistenceSuccess: "addEventListener",
+        onPersistenceFailure: "addEventListener",
+        onChecklistItemToggled: "addEventListener",
+        onChecklistProgressChanged: "addEventListener",
+        onPluginInstalled: "addEventListener",
+        onPluginError: "addEventListener",
+      };
 
-    if (hooks.beforeStepChange) {
-      const unsubscribe = this.engine.addBeforeStepChangeListener(
-        hooks.beforeStepChange,
-      );
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.afterStepChange) {
-      const unsubscribe = this.engine.addAfterStepChangeListener(
-        hooks.afterStepChange,
-      );
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.onStepActive) {
-      const unsubscribe = this.engine.addStepActiveListener(hooks.onStepActive);
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.onStepComplete) {
-      const unsubscribe = this.engine.addStepCompleteListener(
-        hooks.onStepComplete,
-      );
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.onFlowComplete) {
-      const unsubscribe = this.engine.addFlowCompleteListener(
-        hooks.onFlowComplete,
-      );
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.onContextUpdate) {
-      const unsubscribe = this.engine.addContextUpdateListener(
-        hooks.onContextUpdate,
-      );
-      this.unsubscribeFunctions.push(unsubscribe);
-    }
-
-    if (hooks.onError) {
-      const unsubscribe = this.engine.addErrorListener(hooks.onError);
-      this.unsubscribeFunctions.push(unsubscribe);
+    for (const [hookName, handler] of Object.entries(hooks)) {
+      if (typeof handler === "function" && hookToEngineMethod[hookName]) {
+        if (hookToEngineMethod[hookName] === "addEventListener") {
+          // The event name is the hook name with 'on' stripped and lowercased first letter
+          // e.g. onFlowStarted -> flowStarted
+          const eventName = hookName.replace(/^on/, "");
+          const eventKey =
+            eventName.charAt(0).toLowerCase() + eventName.slice(1);
+          // @ts-ignore
+          const unsubscribe = this.engine.addEventListener(eventKey, handler);
+          this.unsubscribeFunctions.push(unsubscribe);
+        } else {
+          // @ts-ignore
+          const engineMethod = this.engine[hookToEngineMethod[hookName]] as (
+            handler: any,
+          ) => () => void;
+          const unsubscribe = engineMethod.call(this.engine, handler);
+          this.unsubscribeFunctions.push(unsubscribe);
+        }
+      }
     }
   }
 
