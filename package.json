@@ -22,5 +22,9 @@
     "apps/examples/*",
     "packages/*",
     "packages/plugins/*"
-  ]
+  ],
+  "dependencies": {
+    "@onboardjs/core": "^0.3.0",
+    "@onboardjs/react": "^0.3.0"
+  }
 }
