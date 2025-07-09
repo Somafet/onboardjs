@@ -12,7 +12,7 @@ type SupabaseOperation = "load" | "persist" | "clear";
 // Define the configuration options for our plugin
 export interface SupabasePersistencePluginConfig extends PluginConfig {
   /** The Supabase client instance provided by the user. */
-  client: SupabaseClient;
+  client: SupabaseClient<any, any, any>;
   /** The name of the table to store onboarding state. Defaults to 'onboarding_state'. */
   tableName?: string;
   /** The name of the column to use as the user id for lookup. Defaults to 'user_id'. */
