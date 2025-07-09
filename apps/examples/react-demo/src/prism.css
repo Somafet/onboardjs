@@ -1,0 +1,69 @@
+/** * Prism.js syntax highlighting styles
+ * This file contains custom styles for code syntax highlighting using Prism.js
+ */
+
+pre[class*='language-'] {
+  color: var(--color-slate-50);
+}
+
+.token.plain {
+  color: var(--color-blue-300);
+}
+
+.token.class-name,
+.token.maybe-class-name {
+  color: var(--color-green-600);
+}
+
+.token.string {
+  color: #CE9178;
+}
+
+.token.keyword {
+  color: #C586C0;
+}
+
+.token.tag,
+.token.selector,
+.token.selector .class,
+.token.selector.class,
+.token.function {
+  color: var(--color-pink-400);
+}
+
+.token.attr-name,
+.token.rule,
+.token.pseudo-class,
+.token.important {
+  color: var(--color-slate-300);
+}
+
+.token.module {
+  color: var(--color-pink-400);
+}
+
+.token.attr-value,
+.token.class,
+.token.property {
+  color: var(--color-sky-300);
+}
+
+.token.punctuation,
+.token.attr-equals {
+  color: var(--color-slate-500);
+}
+
+.token.unit,
+.language-css .token.function {
+  color: var(--color-teal-200);
+}
+
+.token.comment,
+.token.operator,
+.token.combinator {
+  color: var(--color-slate-400);
+}
+
+.language-terminal .token.plain {
+  color: var(--color-slate-300);
+}
