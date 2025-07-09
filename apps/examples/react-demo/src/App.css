@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import './prism.css';
+@plugin "@tailwindcss/forms";
+
+#root {
+  overflow: hidden;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+}
