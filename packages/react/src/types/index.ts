@@ -35,6 +35,16 @@ export interface StepComponentProps<P = any, TContext = OnboardingContext> {
 }
 
 /**
+ * A React component for rendering a step. It can be a component that accepts
+ * `StepComponentProps` to interact with the onboarding engine, or a simple
+ * presentational component that takes no props.
+ * @template P The type of the step's payload.
+ */
+type StepComponent<P = any> =
+  | React.ComponentType<StepComponentProps<P>>
+  | React.ComponentType<{}>;
+
+/**
  * Defines the mapping from a step type (or a custom key)
  * to a React component for rendering that step.
  *
@@ -42,10 +52,7 @@ export interface StepComponentProps<P = any, TContext = OnboardingContext> {
  */
 export type StepComponentRegistry = {
   [Key in string]?: Key extends OnboardingStepType // Is it a standard type?
-    ? React.ComponentType<
-        // Yes: Infer the payload type from the OnboardingStep union
-        StepComponentProps<Extract<OnboardingStep, { type: Key }>["payload"]>
-      >
+    ? StepComponent<Extract<OnboardingStep, { type: Key }>["payload"]>
     : // No: It's a custom key, so the payload is `any`
-      React.ComponentType<StepComponentProps<any>>;
+      StepComponent<any>;
 };
