@@ -1,4 +1,7 @@
-import type { StepComponentProps } from "@onboardjs/react";
+import type {
+  StepComponentProps,
+  StepComponentRegistry,
+} from "@onboardjs/react";
 import { lazy, type ComponentType } from "react";
 
 // Preloading components for better video performance
@@ -19,7 +22,7 @@ const DevImpl: ComponentType<StepComponentProps> = lazy(
 );
 
 // Registering all the Step Components for the specified step IDs in `step.ts`
-export const stepRegistry = {
+export const stepRegistry: StepComponentRegistry = {
   initial: InitialStep,
   "dev-showcase": DevShowcase,
   "dev-impl": DevImpl,
