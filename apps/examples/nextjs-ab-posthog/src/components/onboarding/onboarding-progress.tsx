@@ -3,6 +3,7 @@
 import { useOnboarding } from "@onboardjs/react";
 import { useEffect, useState } from "react";
 import { Progress } from "../ui/progress";
+import posthog from "posthog-js";
 
 const motivationalCopy = [
   "Let’s get started! 🚀",
@@ -13,6 +14,9 @@ const motivationalCopy = [
 
 export default function OnboardingProgress() {
   const { state, currentStep } = useOnboarding();
+  const withProgress =
+    posthog.getFeatureFlag("motivational-progress-indicator") ===
+    "with-progress";
 
   const [progress, setProgress] = useState(0);
 
@@ -24,6 +28,10 @@ export default function OnboardingProgress() {
     const timer = setTimeout(() => setProgress(newProgress), 300);
     return () => clearTimeout(timer);
   }, [state]);
+
+  if (!withProgress) {
+    return null;
+  }
 
   return (
     <>
@@ -38,9 +46,7 @@ export default function OnboardingProgress() {
             <span className="text-sm text-gray-500">
               {
                 motivationalCopy[
-                  currentStep
-                    ? state.currentStepNumber - 1
-                    : state.totalSteps
+                  currentStep ? state.currentStepNumber - 1 : state.totalSteps
                 ]
               }
             </span>

@@ -1,3 +1,4 @@
+import ExperimentOverride from "@/components/experiment-override";
 import OnboardingProgress from "@/components/onboarding/onboarding-progress";
 import OnboardingUI from "@/components/onboarding/onboarding-ui";
 import OnboardingWrapper from "@/components/onboarding/onboarding-wrapper";
@@ -35,6 +36,7 @@ export default function Home() {
 
           <OnboardingProgress />
           <OnboardingUI />
+          <ExperimentOverride />
         </main>
         <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
           <a

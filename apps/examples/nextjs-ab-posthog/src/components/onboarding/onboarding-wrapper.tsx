@@ -6,6 +6,8 @@ import { PropsWithChildren } from "react";
 import FirstStep from "./first-step";
 import PersonaStep from "./persona-step";
 import { ProjectSetupStep } from "./project-setup-step";
+import { createPostHogPlugin } from "@onboardjs/posthog-plugin";
+import posthog from "posthog-js";
 
 const steps: OnboardingStep[] = [
   {
@@ -26,9 +28,17 @@ const componentRegistry = {
   "project-setup-step": ProjectSetupStep,
 };
 
+const posthogPlugin = createPostHogPlugin({
+  posthogInstance: posthog,
+});
+
 export default function OnboardingWrapper({ children }: PropsWithChildren) {
   return (
-    <OnboardingProvider steps={steps} componentRegistry={componentRegistry}>
+    <OnboardingProvider
+      steps={steps}
+      componentRegistry={componentRegistry}
+      plugins={[posthogPlugin]}
+    >
       {children}
     </OnboardingProvider>
   );
