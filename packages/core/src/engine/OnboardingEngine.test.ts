@@ -281,6 +281,44 @@ describe("OnboardingEngine", () => {
       const previousState = engine.getState();
       expect(previousState.currentStep?.id).toBe("step1");
     });
+
+    it("should handle loading completed flow state", async () => {
+      const loadedData: LoadedData = {
+        currentStepId: null, // No current step means flow is completed
+        flowData: { userRole: "developer" },
+      };
+
+      const loadData = vi.fn().mockResolvedValue(loadedData);
+      const config = { ...basicConfig, loadData };
+
+      engine = new OnboardingEngine(config);
+      await engine.ready();
+
+      const state = engine.getState();
+      expect(state.isCompleted).toBe(true);
+      expect(state.currentStep).toBeNull();
+      expect(state.context.flowData.userRole).toBe("developer");
+    });
+
+    it("Should handle loading state with no current step and no flowData", async () => {
+      const loadedData: LoadedData = {
+        currentStepId: undefined, // No current step means flow is completed
+        flowData: {}, // No flow data
+      };
+
+      const loadData = vi.fn().mockResolvedValue(loadedData);
+      const config = { ...basicConfig, loadData };
+
+      engine = new OnboardingEngine(config);
+      await engine.ready();
+
+      const state = engine.getState();
+      // State should not be completed
+      expect(state.isCompleted).toBe(false);
+      // currrentStep should be the first step
+      expect(state.currentStep?.id).toBe("step1");
+      expect(state.context.flowData).toEqual({}); // Should be empty
+    });
   });
 
   describe("Navigation", () => {
