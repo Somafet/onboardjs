@@ -1,3 +1,11 @@
+/**
+ * This file is used for demonstrating A/B testing with PostHog in an onboarding flow.
+ * It includes a button to override the experiment flag for testing purposes.
+ *
+ * Ensure you have the "motivational-progress-indicator" experiment flag set up in PostHog.
+ * The button will toggle the feature flag value between "with-progress" and "control".
+ */
+
 "use client";
 
 import { posthog } from "posthog-js";
@@ -6,8 +14,11 @@ import { useRouter } from "next/navigation";
 
 export default function ExperimentOverride() {
   const router = useRouter();
-  const currentValue = posthog.getFeatureFlag("motivational-progress-indicator");
-  const overrideValue = currentValue === "with-progress" ? "control" : "with-progress";
+  const currentValue = posthog.getFeatureFlag(
+    "motivational-progress-indicator",
+  );
+  const overrideValue =
+    currentValue === "with-progress" ? "control" : "with-progress";
 
   return (
     <div>

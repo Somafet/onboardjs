@@ -29,7 +29,13 @@ const componentRegistry = {
 };
 
 const posthogPlugin = createPostHogPlugin({
+  // Import the initialised PostHog instance
   posthogInstance: posthog,
+  // You can specify the feature flags you want to track
+  // This will automatically track the feature flags used in the onboarding process
+  experimentFlags: ["motivational-progress-indicator"],
+  // Enable experiment tracking to capture user interactions with the onboarding steps
+  enableExperimentTracking: true,
 });
 
 export default function OnboardingWrapper({ children }: PropsWithChildren) {

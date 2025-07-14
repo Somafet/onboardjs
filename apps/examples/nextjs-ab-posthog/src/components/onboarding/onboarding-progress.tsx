@@ -1,3 +1,11 @@
+/**
+ * This file is used for demonstrating A/B testing with PostHog in an onboarding flow.
+ * It includes a progress indicator that changes based on the feature flag.
+ *
+ * Ensure you have the "motivational-progress-indicator" experiment flag set up in PostHog.
+ * The progress indicator will show motivational messages and a progress bar based on the user's current step.
+ */
+
 "use client";
 
 import { useOnboarding } from "@onboardjs/react";
