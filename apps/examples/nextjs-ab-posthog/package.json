@@ -11,6 +11,8 @@
   "dependencies": {
     "@onboardjs/core": "^0.3.1",
     "@onboardjs/react": "^0.3.1",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
