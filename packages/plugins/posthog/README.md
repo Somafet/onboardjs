@@ -167,21 +167,6 @@ The plugin automatically captures the following events. You can use these to bui
 | `onboarding_error`          | An error occurs within the OnboardJS engine.                         | `error_message`, `error_stack`, `current_step_id`                           |
 | `onboarding_experiment_exposed` | A user is exposed to a variant of a configured feature flag.     | `experiment_flag`, `variant`                                                |
 
-## 📊 Shareable PostHog Dashboards
-
-To get you started with analysis immediately, we've included pre-built dashboard templates.
-
-1.  Go to your PostHog project's **Dashboards** page.
-2.  Click the **"New dashboard"** button and select **"Import dashboard"** from the dropdown.
-3.  Copy the JSON content from one of the files in the [`dashboards/`](https://github.com/Soma-ch/onboardjs/tree/main/packages/plugin-posthog/dashboards) directory of this plugin.
-4.  Paste the JSON into the import modal and click **"Import"**.
-
-**Available Dashboards:**
-
-*   **Onboarding Funnel Analysis:** A top-level view of your entire onboarding funnel, from start to completion, with step-by-step drop-off rates.
-*   **Churn & Abandonment Analysis:** Deep dive into where and why users are abandoning your flow.
-*   **Experiment Performance:** Compare the performance of different onboarding variants when running A/B tests.
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our [Contributing Guidelines](https://github.com/Soma-ch/onboardjs/blob/main/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
