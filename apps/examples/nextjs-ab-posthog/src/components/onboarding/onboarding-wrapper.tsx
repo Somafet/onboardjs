@@ -1,0 +1,45 @@
+"use client";
+
+import { OnboardingStep } from "@onboardjs/core";
+import { OnboardingProvider } from "@onboardjs/react";
+import { PropsWithChildren } from "react";
+import FirstStep from "./first-step";
+import PersonaStep from "./persona-step";
+import { ProjectSetupStep } from "./project-setup-step";
+import { createPostHogPlugin } from "@onboardjs/posthog-plugin";
+import posthog from "posthog-js";
+
+const steps: OnboardingStep[] = [
+  {
+    id: "first-step",
+  },
+  {
+    id: "persona-step",
+    nextStep: "project-setup-step",
+  },
+  {
+    id: "project-setup-step",
+  },
+];
+
+const componentRegistry = {
+  "first-step": FirstStep,
+  "persona-step": PersonaStep,
+  "project-setup-step": ProjectSetupStep,
+};
+
+const posthogPlugin = createPostHogPlugin({
+  posthogInstance: posthog,
+});
+
+export default function OnboardingWrapper({ children }: PropsWithChildren) {
+  return (
+    <OnboardingProvider
+      steps={steps}
+      componentRegistry={componentRegistry}
+      plugins={[posthogPlugin]}
+    >
+      {children}
+    </OnboardingProvider>
+  );
+}
