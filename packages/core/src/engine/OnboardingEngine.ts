@@ -277,6 +277,14 @@ export class OnboardingEngine<
       );
       this.currentStepInternal = null;
       this.stateManager.setCompleted(true);
+    }
+    // Add a case where if the loaded state's currentStepId is `null`, mark the flow as completed
+    else if (loadedData?.currentStepId === null) {
+      console.log(
+        "[OnboardingEngine] Loaded completed flow state. Marking as completed",
+      );
+      this.currentStepInternal = null;
+      this.stateManager.setCompleted(true);
     } else {
       console.warn(
         "[OnboardingEngine] No effective initial step ID determined",
@@ -594,7 +602,7 @@ export class OnboardingEngine<
         );
 
         console.log(
-          "[Engine] Notifying full state change after context update.",
+          "[OnboardingEngine] Notifying full state change after context update.",
         );
         this.stateManager.notifyStateChange(
           this.currentStepInternal,
