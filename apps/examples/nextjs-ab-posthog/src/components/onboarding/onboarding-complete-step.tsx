@@ -1,9 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@onboardjs/react";
 import { CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 
 export function OnboardingCompleteStep() {
+  const { reset } = useOnboarding();
   return (
     <>
       {/* Success Animation */}
@@ -50,7 +52,7 @@ export function OnboardingCompleteStep() {
 
       {/* Call to Action */}
       <div className="space-y-3">
-        <Button size="lg" className="w-full">
+        <Button size="lg" className="w-full" onClick={() => reset()}>
           Go to Dashboard
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>

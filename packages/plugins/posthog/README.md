@@ -16,7 +16,6 @@ This plugin automatically captures detailed events throughout your user onboardi
 *   **⚡ Performance Monitoring**: Captures step render times and other performance metrics to identify and fix slow or janky steps.
 *   **🛡️ Privacy-First**: Includes options to automatically redact PII and exclude sensitive data from your analytics events.
 *   **🔧 Deeply Customizable**: Tailor event names, enrich events with custom properties, and configure advanced features to match your exact needs.
-*   **📈 Shareable Dashboards**: Comes with pre-built JSON templates for PostHog dashboards to get you started with analysis instantly.
 
 ## 📦 Installation
 
