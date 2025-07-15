@@ -153,7 +153,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
               </CardDescription>
             )}
           </div>
-          <span className="text-xs uppercase font-semibold text-[#2D2D2D] bg-[#AFCBFF] px-2 py-1 rounded-full text-nowrap">
+          <span className="text-xs uppercase font-semibold bg-primary px-2 py-1 rounded-full text-nowrap">
             Step {state.currentStepNumber} / {state.totalSteps}
           </span>
         </div>
