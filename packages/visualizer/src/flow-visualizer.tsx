@@ -39,7 +39,7 @@ import {
   convertStepsToFlow,
   convertFlowToSteps,
   layoutNodes,
-} from "./utils/flowConverters.js";
+} from "./utils/flow-converters.js";
 import "./flow-visualizer.css";
 
 // Define custom node and edge types

@@ -10,7 +10,6 @@ export interface FlowData {
   edges: ConditionalFlowEdge[];
 }
 
-// Convert OnboardingSteps to React Flow format
 export function convertStepsToFlow<
   TContext extends OnboardingContext = OnboardingContext,
 >(steps: OnboardingStep<TContext>[]): FlowData {
@@ -83,24 +82,25 @@ export function convertStepsToFlow<
       }
     }
 
-    // Previous step edge (optional, for visualization)
+    // Previous step edge
     const prevStepId =
       typeof step.previousStep === "function"
         ? "[Function]"
         : step.previousStep;
 
     if (prevStepId && prevStepId !== "[Function]") {
+      // --- THIS IS THE FIX ---
+      // If end.previousStep = start, we want an edge FROM "end" TO "start".
       edges.push({
         id: `${sourceId}-prev-${prevStepId}`,
-        source: String(prevStepId),
-        target: sourceId,
-        sourceHandle: "previous",
+        source: sourceId, // The step that has the property is the source.
+        target: String(prevStepId), // The property's value is the target.
+        sourceHandle: "previous", // The edge comes from the gray "previous" handle.
         type: "conditional",
         data: {
           edgeType: "previous",
           label: "Back",
         },
-        style: { stroke: "#6b7280", strokeDasharray: "3,3" },
       });
     }
   });
@@ -114,7 +114,7 @@ export function convertStepsToFlow<
   };
 }
 
-// Convert React Flow format back to OnboardingSteps
+// This function correctly interprets the visual model created above.
 export function convertFlowToSteps<
   TContext extends OnboardingContext = OnboardingContext,
 >(
@@ -126,11 +126,7 @@ export function convertFlowToSteps<
 
   nodes.forEach((node) => {
     const { stepId, stepType } = node.data;
-
-    // Find the original step to preserve its data
     const originalStep = originalSteps?.find((s) => s.id === stepId);
-
-    // Start with original step or create new one
     const step: OnboardingStep<TContext> = originalStep
       ? { ...originalStep }
       : ({
@@ -139,7 +135,7 @@ export function convertFlowToSteps<
           payload: getDefaultPayload(stepType) as any,
         } as OnboardingStep<TContext>);
 
-    // Find connected edges
+    // Find edges where THIS node is the SOURCE
     const nextEdges = edges.filter(
       (e) =>
         e.source === node.id &&
@@ -149,39 +145,33 @@ export function convertFlowToSteps<
       (e) => e.source === node.id && e.data?.edgeType === "skip",
     );
     const prevEdges = edges.filter(
-      (e) => e.target === node.id && e.data?.edgeType === "previous",
+      (e) => e.source === node.id && e.data?.edgeType === "previous",
     );
 
-    // Reset navigation properties (they'll be set by edges)
+    // Reset navigation properties
     step.nextStep = undefined;
     step.previousStep = undefined;
     step.isSkippable = skipEdges.length > 0;
     (step as any).skipToStep = undefined;
 
-    // Set navigation properties based on edges
+    // Set navigation properties based on outgoing edges
     if (nextEdges.length > 0) {
-      const targetNodeId = nextEdges[0].target;
-      const targetNode = nodes.find((n) => n.id === targetNodeId);
-      if (targetNode) {
-        step.nextStep = targetNode.data.stepId as any;
-      }
+      const targetNode = nodes.find((n) => n.id === nextEdges[0].target);
+      if (targetNode) step.nextStep = targetNode.data.stepId as any;
     }
 
     if (skipEdges.length > 0) {
-      const targetNodeId = skipEdges[0].target;
-      const targetNode = nodes.find((n) => n.id === targetNodeId);
+      const targetNode = nodes.find((n) => n.id === skipEdges[0].target);
       if (targetNode) {
         step.isSkippable = true;
         (step as any).skipToStep = targetNode.data.stepId;
       }
     }
 
+    // If this node is the SOURCE of a "previous" edge, its previousStep is the TARGET.
     if (prevEdges.length > 0) {
-      const sourceNodeId = prevEdges[0].source;
-      const sourceNode = nodes.find((n) => n.id === sourceNodeId);
-      if (sourceNode) {
-        step.previousStep = sourceNode.data.stepId as any;
-      }
+      const targetNode = nodes.find((n) => n.id === prevEdges[0].target);
+      if (targetNode) step.previousStep = targetNode.data.stepId as any;
     }
 
     steps.push(step);
