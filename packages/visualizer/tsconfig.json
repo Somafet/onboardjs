@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "rootDir": ".",
+    "jsx": "react-jsx",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "target": "ESNext",
+    "esModuleInterop": true,
+    "skipLibCheck": false,
+    "strict": true,
+    "types": [
+      "node",
+      "vitest/globals",
+      "react",
+      "react-dom",
+      "jest"
+    ],
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "composite": true
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+    // This tells TypeScript that this project depends on the 'core' package.
+    // It will build/check 'core' first if needed.
+    // The path is relative to this tsconfig.json file.
+    {
+      "path": "../core"
+    }
+  ]
+}
