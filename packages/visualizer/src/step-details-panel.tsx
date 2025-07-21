@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
 import { XIcon } from "lucide-react";
+import { OptionsListEditor } from "./components/option-list-editor.js";
+import { ChecklistItemsEditor } from "./components/checklist-item-editor.js";
 
 interface StepDetailsPanelProps<
   TContext extends OnboardingContext = OnboardingContext,
@@ -288,7 +290,7 @@ function PayloadEditor({
     case "SINGLE_CHOICE":
     case "MULTIPLE_CHOICE":
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Data Key
@@ -301,21 +303,17 @@ function PayloadEditor({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Options ({payload.options?.length || 0})
-            </label>
-            <div className="text-sm text-gray-500">
-              Edit options in the step component editor
-            </div>
-          </div>
+          <OptionsListEditor
+            options={payload.options || []}
+            onChange={(newOptions) => onChange({ options: newOptions })}
+            readonly={readonly}
+          />
         </div>
       );
 
     case "CHECKLIST":
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Data Key
@@ -328,7 +326,6 @@ function PayloadEditor({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Min Items to Complete
@@ -347,15 +344,11 @@ function PayloadEditor({
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Items ({payload.items?.length || 0})
-            </label>
-            <div className="text-sm text-gray-500">
-              Edit items in the step component editor
-            </div>
-          </div>
+          <ChecklistItemsEditor
+            items={payload.items || []}
+            onChange={(newItems) => onChange({ items: newItems })}
+            readonly={readonly}
+          />
         </div>
       );
 

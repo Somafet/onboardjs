@@ -16,6 +16,9 @@ const sampleSteps: OnboardingStep[] = [
     type: "SINGLE_CHOICE",
     payload: { options: [{ id: "a", label: "A", value: "a" }] },
     nextStep: "end",
+    condition(context) {
+      return true === true; // Always true for testing
+    },
   },
   { id: "end", type: "CONFIRMATION", payload: { title: "Finished" } },
 ];
