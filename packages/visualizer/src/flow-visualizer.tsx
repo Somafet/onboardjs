@@ -148,48 +148,88 @@ function FlowVisualizerInner<
     setEdges(newEdges);
   }, [steps, setNodes, setEdges]);
 
-  // Callbacks (keeping existing ones)
+  const updateStepsFromFlow = useCallback(
+    (nodes?: StepNode[], edges?: ConditionalFlowEdge[]) => {
+      if (readonly) return;
+
+      const currentNodes = nodes || getNodes();
+      const currentEdges = edges || getEdges();
+
+      console.log("Updating steps from flow data", {
+        currentNodes,
+        currentEdges,
+      });
+
+      // Pass current steps to preserve payload data
+      const newSteps = convertFlowToSteps<TContext>(
+        currentNodes,
+        currentEdges,
+        steps,
+      );
+
+      setSteps(newSteps);
+      onStepsChange?.(newSteps);
+    },
+    [readonly, getNodes, getEdges, onStepsChange, steps],
+  );
+
+  // Fixed onConnect to detect edge type from source handle
   const onConnect = useCallback(
     (params: Connection) => {
       if (readonly) return;
 
+      // Determine edge type based on source handle
+      let edgeType: "next" | "skip" | "previous" = "next";
+      let label = "Next";
+      let markerEnd: { type: MarkerType } | undefined = {
+        type: MarkerType.ArrowClosed,
+      };
+      let markerStart: { type: MarkerType } | undefined = undefined;
+
+      if (params.sourceHandle === "skip") {
+        edgeType = "skip";
+        label = "Skip";
+      } else if (params.sourceHandle === "previous") {
+        edgeType = "previous";
+        label = "Back";
+        markerEnd = undefined; // No arrow for previous edges
+        markerStart = { type: MarkerType.ArrowClosed };
+      }
+
       const newEdge: ConditionalFlowEdge = {
-        id: `edge-${params.source}-${params.target}`,
+        id: `edge-${params.source}-${params.target}-${edgeType}`,
         ...params,
-        markerEnd: { type: MarkerType.ArrowClosed },
+        markerStart,
+        markerEnd,
+        type: "conditional",
+        data: {
+          edgeType,
+          label,
+        },
       };
 
       console.log("Adding new edge", newEdge);
 
-      setEdges((eds) => addEdge(newEdge, eds));
+      setEdges((currentEdges) => {
+        const updatedEdges = addEdge(newEdge, currentEdges);
 
-      // Update steps based on new connection
-      updateStepsFromFlow();
+        // Update steps with the new edges immediately
+        setTimeout(() => {
+          updateStepsFromFlow(getNodes(), updatedEdges);
+        }, 0);
+
+        return updatedEdges;
+      });
     },
-    [readonly, setEdges],
+    [readonly, setEdges, getNodes, updateStepsFromFlow],
   );
-
-  const updateStepsFromFlow = useCallback(() => {
-    if (readonly) return;
-
-    const currentNodes = getNodes();
-    const currentEdges = getEdges();
-
-    console.log("Updating steps from flow data", {
-      currentNodes,
-      currentEdges,
-    });
-
-    const newSteps = convertFlowToSteps<TContext>(currentNodes, currentEdges);
-
-    setSteps(newSteps);
-    onStepsChange?.(newSteps);
-  }, [readonly, getNodes, getEdges, onStepsChange]);
 
   const onNodeClick = useCallback(
     (event: React.MouseEvent, node: StepNode) => {
       const step = steps.find((s) => s.id === node.data.stepId);
       if (step) {
+        console.log("Node clicked", step);
+
         setSelectedStep(step);
         setDetailsPanelOpen(true);
       }
@@ -215,9 +255,19 @@ function FlowVisualizerInner<
   const onEdgesDelete = useCallback(
     (edgesToDelete: Edge[]) => {
       if (readonly) return;
-      updateStepsFromFlow();
+
+      const edgeIdsToDelete = new Set(edgesToDelete.map((edge) => edge.id));
+      const currentEdges = getEdges();
+      const remainingEdges = currentEdges.filter(
+        (edge) => !edgeIdsToDelete.has(edge.id),
+      );
+
+      console.log("Deleting edges", { edgesToDelete, remainingEdges });
+
+      // Update steps with the remaining edges
+      updateStepsFromFlow(getNodes(), remainingEdges);
     },
-    [readonly, updateStepsFromFlow],
+    [readonly, getNodes, getEdges, updateStepsFromFlow],
   );
 
   // Step management (keeping existing functions)
@@ -279,7 +329,6 @@ function FlowVisualizerInner<
     [readonly, steps, onStepsChange, selectedStep],
   );
 
-  // Layout management (keeping existing function)
   const layoutFlow = useCallback(
     (direction: "TB" | "LR" = "TB") => {
       const layoutedElements = layoutNodes<StepNode, ConditionalFlowEdge>(

@@ -117,15 +117,33 @@ export function convertStepsToFlow<
 // Convert React Flow format back to OnboardingSteps
 export function convertFlowToSteps<
   TContext extends OnboardingContext = OnboardingContext,
->(nodes: StepNode[], edges: ConditionalFlowEdge[]): OnboardingStep<TContext>[] {
+>(
+  nodes: StepNode[],
+  edges: ConditionalFlowEdge[],
+  originalSteps?: OnboardingStep<TContext>[],
+): OnboardingStep<TContext>[] {
   const steps: OnboardingStep<TContext>[] = [];
 
   nodes.forEach((node) => {
     const { stepId, stepType } = node.data;
 
+    // Find the original step to preserve its data
+    const originalStep = originalSteps?.find((s) => s.id === stepId);
+
+    // Start with original step or create new one
+    const step: OnboardingStep<TContext> = originalStep
+      ? { ...originalStep }
+      : ({
+          id: stepId,
+          type: stepType,
+          payload: getDefaultPayload(stepType) as any,
+        } as OnboardingStep<TContext>);
+
     // Find connected edges
     const nextEdges = edges.filter(
-      (e) => e.source === node.id && e.data?.edgeType === "next",
+      (e) =>
+        e.source === node.id &&
+        (e.data?.edgeType === "next" || !e.data?.edgeType),
     );
     const skipEdges = edges.filter(
       (e) => e.source === node.id && e.data?.edgeType === "skip",
@@ -134,11 +152,11 @@ export function convertFlowToSteps<
       (e) => e.target === node.id && e.data?.edgeType === "previous",
     );
 
-    // Create step
-    const step: Partial<OnboardingStep<TContext>> = {
-      id: stepId,
-      type: stepType,
-    };
+    // Reset navigation properties (they'll be set by edges)
+    step.nextStep = undefined;
+    step.previousStep = undefined;
+    step.isSkippable = skipEdges.length > 0;
+    (step as any).skipToStep = undefined;
 
     // Set navigation properties based on edges
     if (nextEdges.length > 0) {
@@ -153,7 +171,7 @@ export function convertFlowToSteps<
       const targetNodeId = skipEdges[0].target;
       const targetNode = nodes.find((n) => n.id === targetNodeId);
       if (targetNode) {
-        (step as any).isSkippable = true;
+        step.isSkippable = true;
         (step as any).skipToStep = targetNode.data.stepId;
       }
     }
@@ -166,12 +184,7 @@ export function convertFlowToSteps<
       }
     }
 
-    // Set default payload based on type
-    if (stepType && !step.payload) {
-      step.payload = getDefaultPayload(stepType) as any;
-    }
-
-    steps.push(step as OnboardingStep<TContext>);
+    steps.push(step);
   });
 
   return steps;
