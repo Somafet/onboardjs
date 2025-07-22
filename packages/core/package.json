@@ -1,11 +1,11 @@
 {
   "name": "@onboardjs/core",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Headless core logic for dynamic onboarding flows.",
   "private": false,
   "author": {
     "name": "Soma Somorjai",
-    "email": "somafet@gmail.com",
+    "email": "soma@onboardjs.com",
     "url": "https://somafet.com"
   },
   "keywords": [

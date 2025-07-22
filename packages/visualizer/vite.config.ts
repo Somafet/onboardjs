@@ -13,12 +13,22 @@ export default defineConfig({
       formats: ["es", "cjs"],
     },
     rollupOptions: {
-      external: ["react", "react-dom", "@onboardjs/core"],
+      external: [
+        "react",
+        "react-dom",
+        "@onboardjs/core", // This one is local!
+        "@xyflow/react", // Needs import map entry
+        "dagre", // Needs import map entry
+        "lucide-react", // Needs import map entry
+      ],
       output: {
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
           "@onboardjs/core": "OnboardJSCore",
+          "@xyflow/react": "XYFlowReact", // Keep consistency for CJS if needed
+          dagre: "Dagre",
+          "lucide-react": "LucideReact",
         },
       },
     },

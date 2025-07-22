@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/visualizer",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A React component library to visually build and edit OnboardJS flows.",
   "author": "Soma Somorjai <soma@onboardjs.com>",
   "license": "MIT",
@@ -10,10 +10,16 @@
   ],
   "main": "dist/index.cjs.js",
   "module": "dist/index.es.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/src/index.d.ts",
+  "homepage": "https://onboardjs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/visualizer"
+  },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/index.es.js",
       "require": "./dist/index.cjs.js"
     },
@@ -22,7 +28,7 @@
   "scripts": {
     "dev": "vite",
     "start": "cd dist && npx serve",
-    "build": "vite build"
+    "build": "vite build && tsc --emitDeclarationOnly true"
   },
   "peerDependencies": {
     "react": "^19.1.0",

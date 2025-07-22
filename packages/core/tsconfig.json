@@ -12,8 +12,7 @@
     "skipLibCheck": false,
     "types": [
       "node"
-    ],
-    "composite": true
+    ]
   },
   "include": [
     "src"

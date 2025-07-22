@@ -3,3 +3,5 @@ export * from "./nodes/step-node";
 export * from "./components/index";
 export * from "./utils/flow-converters";
 export * from "./flow-visualizer";
+
+import "../styles.css";
