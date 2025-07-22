@@ -1,6 +1,6 @@
 {
   "name": "onboardjs-visualizer",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "CLI tool to serve OnboardJS Visualizer in a web browser",
   "author": "Soma Somorjai <soma@onboardjs.com>",
   "license": "MIT",
@@ -12,6 +12,11 @@
     "dist",
     "bin"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/visualizer-cli"
+  },
   "main": "dist/cli.js",
   "scripts": {
     "dev": "vite",
