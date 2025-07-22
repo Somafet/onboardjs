@@ -2,8 +2,8 @@
 import { Node, Edge, Position } from "@xyflow/react";
 import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
 import dagre from "dagre";
-import { StepNode } from "../nodes/step-node.js";
-import { ConditionalFlowEdge } from "../edges/conditional-edge.js";
+import { StepNode } from "../nodes/step-node";
+import { ConditionalFlowEdge } from "../edges/conditional-edge";
 
 export interface FlowData {
   nodes: StepNode[];

@@ -26,20 +26,17 @@ import { StepJSONParser, StepJSONParserOptions } from "@onboardjs/core";
 import {
   TypeScriptExporter,
   TypeScriptExportOptions,
-} from "./utils/typescript-exporter.js";
-import { StepNode } from "./nodes/step-node.js";
-import {
-  ConditionalEdge,
-  ConditionalFlowEdge,
-} from "./edges/conditional-edge.js";
-import { FlowToolbar, ExportFormat } from "./flow-toolbar.js";
-import { FlowSidebar } from "./flow-sidebar.js";
-import { StepDetailsPanel } from "./step-details-panel.js";
+} from "./utils/typescript-exporter";
+import { StepNode } from "./nodes/step-node";
+import { ConditionalEdge, ConditionalFlowEdge } from "./edges/conditional-edge";
+import { FlowToolbar, ExportFormat } from "./components/flow-toolbar";
+import { FlowSidebar } from "./components/flow-sidebar";
+import { StepDetailsPanel } from "./components/step-details-panel";
 import {
   convertStepsToFlow,
   convertFlowToSteps,
   layoutNodes,
-} from "./utils/flow-converters.js";
+} from "./utils/flow-converters";
 import "./flow-visualizer.css";
 
 // Define custom node and edge types

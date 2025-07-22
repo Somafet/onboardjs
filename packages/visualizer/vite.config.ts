@@ -8,8 +8,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"), // Entry point for library build
-      name: "OnboardjsVisualizer",
-      fileName: (format) => `onboardjs-visualizer.${format}.js`,
+      name: "OnboardJSVisualizer",
+      fileName: (format) => `index.${format}.js`,
       formats: ["es", "cjs"],
     },
     rollupOptions: {
@@ -18,7 +18,7 @@ export default defineConfig({
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
-          "@onboardjs/core": "OnboardjsCore",
+          "@onboardjs/core": "OnboardJSCore",
         },
       },
     },

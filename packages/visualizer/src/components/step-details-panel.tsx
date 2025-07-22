@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
 import { XIcon } from "lucide-react";
-import { OptionsListEditor } from "./components/option-list-editor.js";
-import { ChecklistItemsEditor } from "./components/checklist-item-editor.js";
+import { OptionsListEditor } from "./option-list-editor";
+import { ChecklistItemsEditor } from "./checklist-item-editor";
 
 interface StepDetailsPanelProps<
   TContext extends OnboardingContext = OnboardingContext,

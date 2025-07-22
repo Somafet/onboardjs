@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { OnboardingStepType } from "@onboardjs/core";
 import { StepJSONParserOptions } from "@onboardjs/core";
-import { TypeScriptExportOptions } from "./utils/typescript-exporter.js";
+import { TypeScriptExportOptions } from "../utils/typescript-exporter";
 import {
   CodeIcon,
   CogIcon,

@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { FlowVisualizer } from "./flow-visualizer.js";
+import { FlowVisualizer } from "./flow-visualizer";
 import { OnboardingStep } from "@onboardjs/core";
 
 // Example initial steps for local dev
