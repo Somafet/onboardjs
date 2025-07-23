@@ -1,6 +1,7 @@
 // src/engine/utils/PerformanceUtils.ts
 
 import { OnboardingStep, OnboardingContext } from "../types";
+import { Logger } from "../services/Logger";
 
 export class PerformanceUtils {
   // Memoization cache
@@ -10,6 +11,10 @@ export class PerformanceUtils {
 
   // Performance monitoring
   private static performanceMetrics = new Map<string, number[]>();
+  private static logger = new Logger({
+    debugMode: false, // Default to false, could be made configurable
+    prefix: "PerformanceUtils",
+  });
 
   /**
    * Cached step lookup with LRU eviction
@@ -134,8 +139,8 @@ export class PerformanceUtils {
 
     // Log slow operations
     if (duration > 100) {
-      console.warn(
-        `[PerformanceUtils] Slow operation detected: ${operationName} took ${duration.toFixed(2)}ms`,
+      this.logger.warn(
+        `Slow operation detected: ${operationName} took ${duration.toFixed(2)}ms`,
       );
     }
 
@@ -169,8 +174,8 @@ export class PerformanceUtils {
 
     // Log slow operations
     if (duration > 200) {
-      console.warn(
-        `[PerformanceUtils] Slow async operation detected: ${operationName} took ${duration.toFixed(2)}ms`,
+      this.logger.warn(
+        `Slow async operation detected: ${operationName} took ${duration.toFixed(2)}ms`,
       );
     }
 
@@ -237,16 +242,16 @@ export class PerformanceUtils {
     for (const key of sortedFlowDataKeys) {
       stableFlowDataRepresentation[key] = flowData[key];
     }
-  
+
     // Define what parts of the context are relevant for the hash.
     // If other top-level context properties (besides flowData) can affect
     // the outcome of an evaluation that you're memoizing, include them here.
     const dataToHash = {
       // Example: if context.user?.id affects evaluation, include it:
-      // userId: context.user?.id, 
+      // userId: context.user?.id,
       flowData: stableFlowDataRepresentation,
     };
-  
+
     // JSON.stringify the stable representation as the hash
     const hash = JSON.stringify(dataToHash);
     return hash;

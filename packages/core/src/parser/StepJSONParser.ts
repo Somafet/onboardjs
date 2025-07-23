@@ -9,6 +9,7 @@ import {
   CustomComponentStepPayload,
   ChecklistStepPayload,
 } from "../types";
+import { Logger } from "../services/Logger";
 import {
   StepJSONParserOptions,
   ParseResult,
@@ -37,6 +38,10 @@ export class StepJSONParser {
     prettyPrint: false,
     includeValidationErrors: false,
   };
+  private static readonly logger = new Logger({
+    debugMode: false, // Default to false, could be made configurable
+    prefix: "StepJSONParser",
+  });
 
   /**
    * Serialize OnboardingStep[] to JSON string
@@ -567,7 +572,7 @@ export class StepJSONParser {
       // This is a security risk in production - consider alternatives
       return new Function(`return ${serializedFunction.__functionBody}`)();
     } catch (error) {
-      console.warn(
+      this.logger.warn(
         `Failed to deserialize function ${propertyName} for step ${stepId}:`,
         error,
       );

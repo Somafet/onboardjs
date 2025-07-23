@@ -2,6 +2,7 @@
 import { OnboardingStep, OnboardingContext } from "../types";
 import { findStepById } from "../utils/step-utils";
 import { EventManager } from "./EventManager";
+import { Logger } from "../services/Logger";
 import {
   OnboardingEngineConfig,
   UnsubscribeFunction,
@@ -39,6 +40,7 @@ export class OnboardingEngine<
   private currentStepInternal: OnboardingStep<TContext> | null = null;
   private contextInternal: TContext;
   private history: string[] = [];
+  private logger: Logger;
 
   // Core managers
   private eventManager: EventManager<TContext>;
@@ -55,7 +57,7 @@ export class OnboardingEngine<
   private initializationPromise: Promise<void> | undefined;
   private resolveInitialization!: () => void;
   private rejectInitialization!: (reason?: unknown) => void;
-  private initialConfig: OnboardingEngineConfig<TContext>;
+  private config: OnboardingEngineConfig<TContext>;
 
   // Callbacks from config
   private onFlowComplete?: (context: TContext) => Promise<void> | void;
@@ -67,7 +69,11 @@ export class OnboardingEngine<
 
   constructor(config: OnboardingEngineConfig<TContext>) {
     this.instanceId = ++engineInstanceCounter;
-    console.log(`[OnboardingEngine#${this.instanceId}] CONSTRUCTOR called`);
+    this.logger = new Logger({
+      debugMode: config.debug,
+      prefix: "OnboardingEngine",
+    });
+
     // Validate configuration
     const validation = ConfigurationBuilder.validateConfig(config);
     if (!validation.isValid) {
@@ -75,21 +81,14 @@ export class OnboardingEngine<
     }
 
     if (validation.warnings.length > 0) {
-      console.warn(
-        "[OnboardingEngine] Configuration warnings:",
-        validation.warnings,
-      );
+      this.logger.warn("Configuration warnings:", validation.warnings);
     }
 
-    this.initialConfig = config;
+    this.config = config;
     this.steps = config.steps;
     const effectiveInitialStepId =
-      this.initialConfig.initialStepId ||
+      this.config.initialStepId ||
       (this.steps.length > 0 ? this.steps[0].id : null);
-
-    console.log(
-      `[OnboardingEngine#${this.instanceId}] Effective initial step ID: ${effectiveInitialStepId}`,
-    );
 
     this.contextInternal = ConfigurationBuilder.buildInitialContext(config);
 
@@ -99,6 +98,7 @@ export class OnboardingEngine<
       this.eventManager,
       this.steps,
       effectiveInitialStepId,
+      config.debug,
     );
     this.errorHandler = new ErrorHandler(this.eventManager, this.stateManager);
     this.persistenceManager = new PersistenceManager(
@@ -107,6 +107,7 @@ export class OnboardingEngine<
       config.clearPersistedData,
       this.errorHandler,
       this.eventManager,
+      config.debug,
     );
     this.checklistManager = new ChecklistManager(
       this.eventManager,
@@ -123,7 +124,11 @@ export class OnboardingEngine<
       this.persistenceManager,
       this.errorHandler,
     );
-    this.pluginManager = new PluginManagerImpl(this, this.eventManager);
+    this.pluginManager = new PluginManagerImpl(
+      this,
+      this.eventManager,
+      config.debug,
+    );
     this.eventRegistry = new EventHandlerRegistry(this.eventManager);
 
     // Store callbacks
@@ -135,8 +140,8 @@ export class OnboardingEngine<
 
     // Start initialization
     this.initializeEngine().catch((error) => {
-      console.error(
-        "[OnboardingEngine] Unhandled error during constructor-initiated initialization:",
+      this.logger.error(
+        "Unhandled error during constructor-initiated initialization:",
         error,
       );
       if (!this.rejectInitialization) {
@@ -182,7 +187,7 @@ export class OnboardingEngine<
             ? "resumed"
             : "fresh";
 
-          console.log(
+          this.logger.debug(
             `[OnboardingEngine] Onboarding Flow started: ${startMethod}`,
           );
 
@@ -227,11 +232,11 @@ export class OnboardingEngine<
     const effectiveInitialStepId =
       loadedData?.currentStepId !== undefined
         ? loadedData.currentStepId
-        : this.initialConfig.initialStepId ||
+        : this.config.initialStepId ||
           (this.steps.length > 0 ? this.steps[0].id : null);
 
-    console.log(
-      "[OnboardingEngine] Effective initial step ID:",
+    this.logger.debug(
+      "Effective initial step ID:",
       effectiveInitialStepId,
       "Available steps:",
       this.steps.map((s) => s.id),
@@ -253,13 +258,10 @@ export class OnboardingEngine<
           this.onStepChangeCallback,
           this.onFlowComplete,
         );
-        console.log(
-          "[OnboardingEngine] Navigated to step:",
-          this.currentStepInternal?.id,
-        );
+        this.logger.debug("Navigated to step:", this.currentStepInternal?.id);
       } else {
-        console.warn(
-          `[OnboardingEngine] Initial step '${effectiveInitialStepId}' not found. Falling back to first step.`,
+        this.logger.warn(
+          `Initial step '${effectiveInitialStepId}' not found. Falling back to first step.`,
         );
         this.currentStepInternal = await this.navigationManager.navigateToStep(
           this.steps[0].id,
@@ -272,31 +274,27 @@ export class OnboardingEngine<
         );
       }
     } else if (this.steps.length === 0) {
-      console.log(
-        "[OnboardingEngine] No steps available, marking as completed",
-      );
+      this.logger.debug("No steps available, marking as completed");
+
       this.currentStepInternal = null;
       this.stateManager.setCompleted(true);
     }
     // Add a case where if the loaded state's currentStepId is `null`, mark the flow as completed
     else if (loadedData?.currentStepId === null) {
-      console.log(
-        "[OnboardingEngine] Loaded completed flow state. Marking as completed",
-      );
+      this.logger.debug("Loaded completed flow state. Marking as completed");
+
       this.currentStepInternal = null;
       this.stateManager.setCompleted(true);
     } else {
-      console.warn(
-        "[OnboardingEngine] No effective initial step ID determined",
-      );
+      this.logger.warn("No effective initial step ID determined");
       this.currentStepInternal = null;
       this.stateManager.setCompleted(false);
     }
   }
 
   private async installPlugins(): Promise<void> {
-    if (this.initialConfig.plugins && this.initialConfig.plugins.length > 0) {
-      for (const plugin of this.initialConfig.plugins) {
+    if (this.config.plugins && this.config.plugins.length > 0) {
+      for (const plugin of this.config.plugins) {
         try {
           await this.pluginManager.install(plugin);
         } catch (pluginInstallError) {
@@ -305,7 +303,7 @@ export class OnboardingEngine<
               ? pluginInstallError.message
               : String(pluginInstallError);
           const errorMessage = `Plugin installation failed for "${plugin.name}": ${error}`;
-          console.error(`[OnboardingEngine] ${errorMessage}`);
+          this.logger.error(errorMessage);
           throw new Error(errorMessage);
         }
       }
@@ -317,43 +315,35 @@ export class OnboardingEngine<
     // This allows plugins to override config handlers
 
     if (
-      this.initialConfig.loadData !== undefined &&
+      this.config.loadData !== undefined &&
       !this.persistenceManager.getDataLoadHandler()
     ) {
-      this.persistenceManager.setDataLoadHandler(this.initialConfig.loadData);
+      this.persistenceManager.setDataLoadHandler(this.config.loadData);
     }
 
     if (
-      this.initialConfig.persistData !== undefined &&
+      this.config.persistData !== undefined &&
       !this.persistenceManager.getDataPersistHandler()
     ) {
-      this.persistenceManager.setDataPersistHandler(
-        this.initialConfig.persistData,
-      );
+      this.persistenceManager.setDataPersistHandler(this.config.persistData);
     }
 
     if (
-      this.initialConfig.clearPersistedData !== undefined &&
+      this.config.clearPersistedData !== undefined &&
       !this.persistenceManager.getClearPersistedDataHandler()
     ) {
       this.persistenceManager.setClearPersistedDataHandler(
-        this.initialConfig.clearPersistedData,
+        this.config.clearPersistedData,
       );
     }
 
     // For callbacks, plugins should take precedence over config
-    if (
-      this.initialConfig.onFlowComplete !== undefined &&
-      !this.onFlowComplete
-    ) {
-      this.onFlowComplete = this.initialConfig.onFlowComplete;
+    if (this.config.onFlowComplete !== undefined && !this.onFlowComplete) {
+      this.onFlowComplete = this.config.onFlowComplete;
     }
 
-    if (
-      this.initialConfig.onStepChange !== undefined &&
-      !this.onStepChangeCallback
-    ) {
-      this.onStepChangeCallback = this.initialConfig.onStepChange;
+    if (this.config.onStepChange !== undefined && !this.onStepChangeCallback) {
+      this.onStepChangeCallback = this.config.onStepChange;
     }
   }
 
@@ -372,7 +362,7 @@ export class OnboardingEngine<
 
   private buildContext(loadedData: LoadedData<TContext> | null): void {
     const configInitialContext =
-      this.initialConfig.initialContext || ({} as Partial<TContext>);
+      this.config.initialContext || ({} as Partial<TContext>);
 
     let newContextBase = {
       ...(configInitialContext as TContext),
@@ -403,8 +393,8 @@ export class OnboardingEngine<
   private handleInitializationError(error: unknown): void {
     const processedError =
       error instanceof Error ? error : new Error(String(error));
-    console.error(
-      "[OnboardingEngine] Critical error during engine initialization:",
+    this.logger.error(
+      "Critical error during engine initialization:",
       processedError,
     );
 
@@ -441,8 +431,8 @@ export class OnboardingEngine<
     try {
       await this.pluginManager.install(plugin);
     } catch (error) {
-      console.error(
-        `[OnboardingEngine] Failed to install plugin "${plugin.name}" via use():`,
+      this.logger.error(
+        `Failed to install plugin "${plugin.name}" via use():`,
         error,
       );
       throw error;
@@ -489,9 +479,7 @@ export class OnboardingEngine<
    */
   public async previous(): Promise<void> {
     if (this.stateManager.isLoading) {
-      console.log(
-        "[OnboardingEngine] previous(): Ignoring - engine is loading",
-      );
+      this.logger.debug("previous(): Ignoring - engine is loading");
       return;
     }
 
@@ -584,8 +572,8 @@ export class OnboardingEngine<
       const newContextJSON = JSON.stringify(this.contextInternal);
 
       if (oldContextJSON !== newContextJSON) {
-        console.log(
-          "[OnboardingEngine] Context updated:",
+        this.logger.debug(
+          "Context updated:",
           oldContextJSON,
           "=>",
           newContextJSON,
@@ -601,9 +589,7 @@ export class OnboardingEngine<
           this.stateManager.isHydrating,
         );
 
-        console.log(
-          "[OnboardingEngine] Notifying full state change after context update.",
-        );
+        this.logger.debug("Notifying full state change after context update.");
         this.stateManager.notifyStateChange(
           this.currentStepInternal,
           this.contextInternal, // This context now includes the updates
@@ -630,8 +616,8 @@ export class OnboardingEngine<
         const error = new Error(
           "Target step for checklist item update is invalid.",
         );
-        console.error(
-          `[OnboardingEngine] Cannot update checklist item: Step '${
+        this.logger.error(
+          `Cannot update checklist item: Step '${
             stepId || this.currentStepInternal?.id
           }' not found or not a CHECKLIST step.`,
         );
@@ -661,7 +647,7 @@ export class OnboardingEngine<
   public async reset(
     newConfigInput?: Partial<OnboardingEngineConfig<TContext>>,
   ): Promise<void> {
-    console.log("[OnboardingEngine] Resetting engine...");
+    this.logger.debug("Resetting engine...");
 
     const resetReason = newConfigInput
       ? "configuration_change"
@@ -681,26 +667,23 @@ export class OnboardingEngine<
 
     // Update configuration
     if (newConfigInput) {
-      this.initialConfig = ConfigurationBuilder.mergeConfigs(
-        this.initialConfig,
+      this.config = ConfigurationBuilder.mergeConfigs(
+        this.config,
         newConfigInput,
       );
     }
 
-    this.steps = this.initialConfig.steps || [];
+    this.steps = this.config.steps || [];
 
     // Clear persisted data using the OLD handler (before reset)
     if (activeClearHandler) {
       try {
-        console.log(
-          "[OnboardingEngine] reset: Clearing persisted data using the handler active before reset...",
+        this.logger.debug(
+          "reset: Clearing persisted data using the handler active before reset...",
         );
         await activeClearHandler();
       } catch (error) {
-        console.error(
-          "[OnboardingEngine] reset: Error during clearPersistedData:",
-          error,
-        );
+        this.logger.error("reset: Error during clearPersistedData:", error);
         this.errorHandler.handleError(
           error,
           "clearPersistedData",
@@ -713,7 +696,7 @@ export class OnboardingEngine<
     this.currentStepInternal = null;
     this.history = [];
     this.contextInternal = ConfigurationBuilder.buildInitialContext(
-      this.initialConfig,
+      this.config,
     );
 
     // Reset managers
@@ -749,7 +732,7 @@ export class OnboardingEngine<
       // Re-initialize: This will set isLoading, navigate to initial step, and then set isLoading to false.
       // initializeEngine SHOULD ideally emit the final stateChange event itself upon successful completion.
       await this.initializeEngine();
-      console.log("[OnboardingEngine] Reset: Re-initialization complete.");
+      this.logger.debug("Reset: Re-initialization complete.");
 
       // *** CRITICAL: Ensure a stateChange event is emitted with the final reset state ***
       // If initializeEngine doesn't guarantee this, do it here.
@@ -764,10 +747,7 @@ export class OnboardingEngine<
       );
       // This will ensure the provider's listener picks up the state where currentStep is "step1".
     } catch (error) {
-      console.error(
-        "[OnboardingEngine] Error during reset's re-initialization:",
-        error,
-      );
+      this.logger.error("Error during reset's re-initialization:", error);
       const processedError =
         error instanceof Error ? error : new Error(String(error));
       this.stateManager.setError(processedError);
@@ -780,7 +760,8 @@ export class OnboardingEngine<
       // No need to throw here if reset is meant to recover gracefully,
       // but the engine will be in an error state.
     }
-    console.log("[OnboardingEngine] Engine reset process finished.");
+
+    this.logger.debug("Engine reset process finished.");
   }
 
   // =============================================================================
@@ -1022,7 +1003,7 @@ export class OnboardingEngine<
       state: this.getState(),
       performance: this.getPerformanceStats(),
       errors: this.errorHandler.getRecentErrors(5),
-      config: this.initialConfig,
+      config: this.config,
     };
   }
 }

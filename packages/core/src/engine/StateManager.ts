@@ -3,6 +3,7 @@
 import { OnboardingContext, OnboardingStep } from "../types";
 import { evaluateStepId, findStepById } from "../utils/step-utils";
 import { EventManager } from "./EventManager";
+import { Logger } from "../services/Logger";
 import { EngineState } from "./types";
 
 export class StateManager<TContext extends OnboardingContext> {
@@ -10,12 +11,19 @@ export class StateManager<TContext extends OnboardingContext> {
   private isHydratingInternal = true;
   private errorInternal: Error | null = null;
   private isCompletedInternal = false;
+  private logger: Logger;
 
   constructor(
     private eventManager: EventManager<TContext>,
     private steps: OnboardingStep<TContext>[],
     private initialStepId: string | number | null,
-  ) {}
+    debugMode?: boolean,
+  ) {
+    this.logger = new Logger({
+      debugMode: debugMode ?? false,
+      prefix: "StateManager",
+    });
+  }
 
   setState(
     updater: (
@@ -319,7 +327,7 @@ export class StateManager<TContext extends OnboardingContext> {
   setError(error: Error | null): void {
     this.errorInternal = error;
     if (error) {
-      console.error("[StateManager] Error set:", error);
+      this.logger.error("Error set:", error);
     }
   }
 

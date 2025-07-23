@@ -142,7 +142,8 @@ describe("OnboardingEngine", () => {
 
       // Check that the error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Error during loadData"),
+        expect.stringContaining("StateManager [ERROR]"),
+        expect.stringContaining("Error set"),
         expect.any(Error),
       );
 
@@ -187,7 +188,8 @@ describe("OnboardingEngine", () => {
       await engine.updateContext({ flowData: { test: "data" } });
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Error during persistData"),
+        expect.stringContaining("StateManager [ERROR]"),
+        expect.stringContaining("Error set"),
         expect.any(Error),
       );
     });
@@ -1392,6 +1394,7 @@ describe("OnboardingEngine", () => {
       await engine.reset();
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("OnboardingEngine [ERROR]"),
         expect.stringContaining("Error during clearPersistedData"),
         expect.any(Error),
       );
@@ -1609,6 +1612,7 @@ describe("OnboardingEngine", () => {
       await engine.updateChecklistItem("item1", true, "step1"); // step1 is INFORMATION type
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("OnboardingEngine [ERROR]"),
         expect.stringContaining("Cannot update checklist item"),
       );
     });
@@ -2260,6 +2264,7 @@ describe("OnboardingEngine", () => {
 
       // Verify error was logged
       expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("OnboardingEngine [ERROR]"),
         expect.stringContaining("Plugin installation failed"),
       );
     });

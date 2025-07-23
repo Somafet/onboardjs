@@ -111,6 +111,7 @@ export function OnboardingProvider<
   customOnClearPersistedData,
   plugins,
   componentRegistry,
+  ...props
   // enablePluginManager is not directly used in engineConfig in this version
 }: OnboardingProviderProps<TContext>) {
   const [engine, setEngine] = useState<OnboardingEngine<TContext> | null>(null);
@@ -317,6 +318,7 @@ export function OnboardingProvider<
       loadData: onDataLoadHandler,
       persistData: onDataPersistHandler,
       clearPersistedData: onClearPersistedDataHandler,
+      ...props, // Spread the rest of the props
     };
 
     const validation = ConfigurationBuilder.validateConfig(engineConfig);
