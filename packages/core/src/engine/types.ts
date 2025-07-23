@@ -375,8 +375,22 @@ export type DataPersistFn<
 export interface OnboardingEngineConfig<
   TContext extends OnboardingContext = OnboardingContext,
 > {
+  /**
+   * The list of steps in the onboarding flow.
+   * Each step should implement the OnboardingStep interface.
+   */
   steps: OnboardingStep<TContext>[];
+
+  /**
+   * The initial step ID to start the onboarding flow.
+   * If not provided, the first step in the steps array will be used.
+   */
   initialStepId?: string | number;
+
+  /**
+   * The initial context for the onboarding flow.
+   * This can be used to pre-populate the context with data.
+   */
   initialContext?: Partial<TContext>;
   onFlowComplete?: (context: TContext) => void | Promise<void>;
   onStepChange?: (
@@ -387,5 +401,16 @@ export interface OnboardingEngineConfig<
   loadData?: DataLoadFn<TContext>;
   persistData?: DataPersistFn<TContext>;
   clearPersistedData?: () => Promise<void> | void;
+
+  /**
+   * Optional plugins to extend the functionality of the onboarding engine.
+   * Each plugin should implement the OnboardingPlugin interface.
+   */
   plugins?: OnboardingPlugin<TContext>[];
+
+  /**
+   * Optional configuration for debugging the onboarding engine.
+   * If set to true, additional debug information will be logged.
+   */
+  debug?: boolean;
 }

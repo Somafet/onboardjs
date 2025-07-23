@@ -62,9 +62,6 @@ describe("PluginManagerImpl", () => {
       expect(pluginManager.isInstalled("test-plugin")).toBe(true);
       expect(pluginManager.getInstalledPlugins()).toHaveLength(1);
       expect(pluginManager.getPlugin("test-plugin")).toBe(plugin);
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
-        "[PluginManager] Installed plugin: test-plugin@1.0.0",
-      );
     });
 
     it("should store the cleanup function returned by plugin's install and call it on uninstall", async () => {
@@ -88,7 +85,6 @@ describe("PluginManagerImpl", () => {
       await expect(pluginManager.install(plugin)).rejects.toThrowError(
         'Plugin "duplicate-plugin" is already installed',
       );
-      expect(consoleDebugSpy).toHaveBeenCalledTimes(1); // Only for the first successful install
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
@@ -113,7 +109,6 @@ describe("PluginManagerImpl", () => {
 
       expect(pluginManager.isInstalled("dep-main")).toBe(true);
       expect(pluginManager.getInstalledPlugins()).toHaveLength(2);
-      expect(consoleDebugSpy).toHaveBeenCalledTimes(2); // For dep-base and dep-main
     });
 
     it("should handle errors thrown by a plugin's install method and log to console.error", async () => {
@@ -132,10 +127,10 @@ describe("PluginManagerImpl", () => {
       );
       expect(pluginManager.isInstalled("error-plugin")).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[PluginManager] Failed to install plugin "error-plugin":',
+        expect.stringContaining("PluginManager [ERROR]"),
+        'Failed to install plugin "error-plugin":',
         expect.any(Error),
       );
-      expect(consoleDebugSpy).not.toHaveBeenCalled(); // Install failed, so no success debug log
     });
 
     it("should correctly install a plugin with an async install method returning an async cleanup", async () => {
@@ -201,9 +196,6 @@ describe("PluginManagerImpl", () => {
       expect(mockCleanupFn).toHaveBeenCalled();
       expect(pluginManager.isInstalled("uninstall-test")).toBe(false);
       expect(pluginManager.getInstalledPlugins()).toHaveLength(0);
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
-        "[PluginManager] Uninstalled plugin: uninstall-test",
-      );
     });
 
     it("should handle async cleanup functions correctly during uninstall", async () => {
@@ -304,7 +296,8 @@ describe("PluginManagerImpl", () => {
       // Plugin should still be removed from the manager's internal list
       expect(pluginManager.isInstalled("error-cleanup-plugin")).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[PluginManager] Failed to uninstall plugin "error-cleanup-plugin":',
+        expect.stringContaining("PluginManager [ERROR]"),
+        'Failed to uninstall plugin "error-cleanup-plugin":',
         expect.any(Error),
       );
     });

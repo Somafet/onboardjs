@@ -585,6 +585,7 @@ describe("StepJSONParser", () => {
 
         expect(consoleWarnSpy).toHaveBeenCalled();
         expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining("StepJSONParser [WARN]"),
           "Failed to deserialize function testProp for step testId:",
           expect.any(SyntaxError),
         );

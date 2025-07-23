@@ -3,12 +3,14 @@
 import { OnboardingContext } from "../types";
 import { ErrorHandler } from "./ErrorHandler";
 import { EventManager } from "./EventManager";
+import { Logger } from "../services/Logger";
 import { DataLoadFn, DataPersistFn, LoadedData } from "./types";
 
 export class PersistenceManager<TContext extends OnboardingContext> {
   private loadData?: DataLoadFn<TContext>;
   private persistData?: DataPersistFn<TContext>;
   private clearPersistedData?: () => Promise<void> | void;
+  private logger: Logger;
 
   constructor(
     loadData?: DataLoadFn<TContext>,
@@ -16,10 +18,15 @@ export class PersistenceManager<TContext extends OnboardingContext> {
     clearPersistedData?: () => Promise<void> | void,
     private errorHandler?: ErrorHandler<TContext>,
     private eventManager?: EventManager<TContext>,
+    debugMode?: boolean,
   ) {
     this.loadData = loadData;
     this.persistData = persistData;
     this.clearPersistedData = clearPersistedData;
+    this.logger = new Logger({
+      debugMode: debugMode ?? false,
+      prefix: "PersistenceManager",
+    });
   }
 
   async loadPersistedData(): Promise<{
@@ -31,9 +38,9 @@ export class PersistenceManager<TContext extends OnboardingContext> {
     }
 
     try {
-      console.log("[PersistenceManager] Attempting to load persisted data...");
+      this.logger.debug("Attempting to load persisted data...");
       const loadedData = await this.loadData();
-      console.log("[PersistenceManager] Data loaded successfully:", {
+      this.logger.debug("Data loaded successfully:", {
         hasFlowData: !!loadedData?.flowData,
         currentStepId: loadedData?.currentStepId,
         otherKeys: loadedData
@@ -44,7 +51,7 @@ export class PersistenceManager<TContext extends OnboardingContext> {
       });
       return { data: loadedData ?? null, error: null };
     } catch (error) {
-      console.error("[PersistenceManager] Error during loadData:", error);
+      this.logger.error("Error during loadData:", error);
       const processedError =
         error instanceof Error ? error : new Error(String(error));
       const finalError = new Error(
@@ -66,10 +73,7 @@ export class PersistenceManager<TContext extends OnboardingContext> {
     const startTime = Date.now();
 
     try {
-      console.log(
-        "[PersistenceManager] Persisting data for step:",
-        currentStepId,
-      );
+      this.logger.debug("Persisting data for step:", currentStepId);
       await this.persistData(context, currentStepId);
 
       const persistenceTime = Date.now() - startTime;
@@ -79,13 +83,13 @@ export class PersistenceManager<TContext extends OnboardingContext> {
         persistenceTime,
       });
 
-      console.log("[PersistenceManager] Data persisted successfully");
+      this.logger.debug("Data persisted successfully");
     } catch (error) {
       this.eventManager?.notifyListeners("persistenceFailure", {
         context,
         error: error as Error,
       });
-      console.error("[PersistenceManager] Error during persistData:", error);
+      this.logger.error("Error during persistData:", error);
       if (this.errorHandler) {
         this.errorHandler.handleError(error, "persistData", context);
       }
@@ -95,21 +99,16 @@ export class PersistenceManager<TContext extends OnboardingContext> {
 
   async clearData(): Promise<void> {
     if (!this.clearPersistedData) {
-      console.log(
-        "[PersistenceManager] No clearPersistedData handler configured",
-      );
+      this.logger.debug("No clearPersistedData handler configured");
       return;
     }
 
     try {
-      console.log("[PersistenceManager] Clearing persisted data...");
+      this.logger.debug("Clearing persisted data...");
       await this.clearPersistedData();
-      console.log("[PersistenceManager] Persisted data cleared successfully");
+      this.logger.debug("Persisted data cleared successfully");
     } catch (error) {
-      console.error(
-        "[PersistenceManager] Error during clearPersistedData:",
-        error,
-      );
+      this.logger.error("Error during clearPersistedData:", error);
       throw error;
     }
   }

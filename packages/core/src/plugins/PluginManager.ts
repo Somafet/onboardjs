@@ -3,6 +3,7 @@
 import { EventManager } from "../engine/EventManager";
 import { OnboardingEngine } from "../engine/OnboardingEngine";
 import { OnboardingContext } from "../types";
+import { Logger } from "../services/Logger";
 import { OnboardingPlugin, PluginManager, PluginCleanup } from "./types";
 
 export class PluginManagerImpl<
@@ -12,13 +13,19 @@ export class PluginManagerImpl<
   private plugins = new Map<string, OnboardingPlugin<TContext>>();
   private cleanupFunctions = new Map<string, PluginCleanup>();
   private engine: OnboardingEngine<TContext>;
+  private logger: Logger;
 
   constructor(
     engine: OnboardingEngine<TContext>,
     private eventManager?: EventManager<TContext>,
+    debugMode?: boolean,
   ) {
     this.engine = engine;
     this.eventManager = eventManager;
+    this.logger = new Logger({
+      debugMode: debugMode ?? false,
+      prefix: "PluginManager",
+    });
   }
 
   async install(plugin: OnboardingPlugin<TContext>): Promise<void> {
@@ -52,9 +59,7 @@ export class PluginManagerImpl<
         pluginVersion: plugin.version,
       });
 
-      console.debug(
-        `[PluginManager] Installed plugin: ${plugin.name}@${plugin.version}`,
-      );
+      this.logger.debug(`Installed plugin: ${plugin.name}@${plugin.version}`);
     } catch (error) {
       // Handle installation errors
       this.eventManager?.notifyListeners("pluginError", {
@@ -63,10 +68,7 @@ export class PluginManagerImpl<
         context: this.engine.getContext(),
       });
 
-      console.error(
-        `[PluginManager] Failed to install plugin "${plugin.name}":`,
-        error,
-      );
+      this.logger.error(`Failed to install plugin "${plugin.name}":`, error);
       throw error;
     }
   }
@@ -96,12 +98,9 @@ export class PluginManagerImpl<
         await cleanup();
       }
 
-      console.debug(`[PluginManager] Uninstalled plugin: ${pluginName}`);
+      this.logger.debug(`Uninstalled plugin: ${pluginName}`);
     } catch (error) {
-      console.error(
-        `[PluginManager] Failed to uninstall plugin "${pluginName}":`,
-        error,
-      );
+      this.logger.error(`Failed to uninstall plugin "${pluginName}":`, error);
       throw error;
     } finally {
       // Ensure cleanup function is removed even if it fails
