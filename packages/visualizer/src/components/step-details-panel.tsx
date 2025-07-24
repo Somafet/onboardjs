@@ -5,6 +5,7 @@ import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
 import { XIcon } from "lucide-react";
 import { OptionsListEditor } from "./option-list-editor";
 import { ChecklistItemsEditor } from "./checklist-item-editor";
+import { getStepLabel } from "../utils/helpers";
 
 interface StepDetailsPanelProps<
   TContext extends OnboardingContext = OnboardingContext,
@@ -76,8 +77,20 @@ export function StepDetailsPanel<
               </label>
               <input
                 type="text"
-                value={String(editedStep.id)}
+                value={editedStep.id}
                 onChange={(e) => handleChange({ id: e.target.value })}
+                disabled={readonly}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Step Name
+              </label>
+              <input
+                type="text"
+                value={getStepLabel(editedStep)}
+                onChange={(e) => handlePayloadChange({ title: e.target.value })}
                 disabled={readonly}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
               />

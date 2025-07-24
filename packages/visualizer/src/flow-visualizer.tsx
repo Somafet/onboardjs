@@ -299,6 +299,9 @@ function FlowVisualizerInner<
     (updatedStep: OnboardingStep<TContext>) => {
       if (readonly) return;
 
+      console.log("Updating step", updatedStep);
+      
+
       const newSteps = steps.map((step) =>
         step.id === updatedStep.id ? updatedStep : step,
       );
