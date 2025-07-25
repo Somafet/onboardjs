@@ -1,5 +1,3 @@
-// @onboardjs/core/src/plugins/BasePlugin.ts
-
 import { OnboardingEngine } from "../engine/OnboardingEngine";
 import { OnboardingContext } from "../types";
 import {
@@ -105,7 +103,11 @@ export abstract class BasePlugin<
   }
 
   private cleanup(): void {
-    this.unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+    this.unsubscribeFunctions.forEach((unsubscribe) => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    });
     this.unsubscribeFunctions = [];
   }
 
