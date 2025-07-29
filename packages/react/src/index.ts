@@ -1,4 +1,3 @@
-// @onboardjs/react/src/index.ts
 export { OnboardingProvider } from "./context/OnboardingProvider";
 export { useOnboarding } from "./hooks/useOnboarding";
 

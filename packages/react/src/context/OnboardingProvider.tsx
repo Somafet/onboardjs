@@ -99,7 +99,6 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
   /**
    * A registry mapping step types and ids to their React components.
    * This allows users to provide their own custom step components.
-   * @deprecated Define the step component on the React specific `OnboardingStep` step definition instead.
    * This prop is now optional and will be overridden by the `OnboardingStep.component` property
    * if defined.
    */
@@ -273,18 +272,15 @@ export function OnboardingProvider<
 
   const renderStep = useCallback((): React.ReactNode => {
     if (!engineState?.currentStep) {
-      return null; // Or a loading/empty state component
+      return null;
     }
 
     const { currentStep, context } = engineState;
 
-    const foundStep = steps.find(
-      (step) => step.id === currentStep.id || step.type === currentStep.type,
-    );
-
     // Look for a component by step ID first, then by type/componentKey.
     let StepComponent =
-      foundStep?.component ?? componentRegistry?.[currentStep.id];
+      (currentStep as OnboardingStep).component ??
+      componentRegistry?.[currentStep.id];
 
     const typeKey =
       currentStep.type === "CUSTOM_COMPONENT"
