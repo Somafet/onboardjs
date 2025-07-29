@@ -1,6 +1,5 @@
 import { OnboardingProvider } from "@onboardjs/react";
 import OnboardingUI from "./onboarding-ui";
-import { stepRegistry } from "./step-registry";
 import { steps } from "./steps";
 import { createPostHogPlugin } from "@onboardjs/posthog-plugin";
 import posthog from "posthog-js";
@@ -17,7 +16,6 @@ export default function OnboardingLayout() {
     <OnboardingProvider
       plugins={[posthogPlugin]}
       steps={steps}
-      componentRegistry={stepRegistry}
       // Uncomment the following lines to enable localStorage persistence
       // localStoragePersistence={{
       //   key: 'onboarding-flow',

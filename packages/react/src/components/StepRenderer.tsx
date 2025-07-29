@@ -137,6 +137,7 @@ const StepRenderer: React.FC<StepRendererProps> = ({
           <SpecificStepComponent
             payload={currentStep.payload}
             coreContext={coreContext}
+            context={coreContext}
             onDataChange={handleStepDataChange}
             initialData={coreContext.flowData} // Pass all flowData for potential rehydration
             setStepValid={setIsCurrentActiveStepValid}

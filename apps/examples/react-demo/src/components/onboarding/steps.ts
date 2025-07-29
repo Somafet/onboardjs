@@ -1,4 +1,22 @@
-import { type OnboardingStep } from "@onboardjs/core";
+import { type OnboardingStep, type StepComponentProps } from "@onboardjs/react";
+import InitialStep from "./steps/initial-step";
+// Preloading components for better video performance
+import DevShowcase from "./steps/dev-path/dev-showcase";
+// import InitialStep from "./steps/initial-step";
+import BusinessWelcome from "./steps/business-path/business-welcome";
+import BusinessWithOnboardJS from "./steps/business-path/business-onboardjs";
+import DevTypeSelector from "./steps/dev-path/dev-type";
+import BusinessStep3 from "./steps/business-path/business-3";
+import { lazy, type ComponentType } from "react";
+
+// Lazy loading components to reduce initial bundle size
+const EndStep: ComponentType<StepComponentProps> = lazy(
+  async () => import("./steps/end-step"),
+);
+
+const DevImpl: ComponentType<StepComponentProps> = lazy(
+  async () => import("./steps/dev-path/dev-impl"),
+);
 
 const initialStep: OnboardingStep = {
   id: "initial",
@@ -6,12 +24,16 @@ const initialStep: OnboardingStep = {
     title: "Unlock your tailored OnboardJS experience!",
     subtitle: "Which best describes your goal?",
   },
+
+  // Using the React specific OnboardingStep type to define the step component right in the step definition
+  component: InitialStep,
 };
 
 const devFlow: OnboardingStep[] = [
   {
     id: "dev-showcase",
     condition: (context) => context.flowData.onboardingType === "developer",
+    component: DevShowcase,
   },
   {
     id: "dev-impl",
@@ -21,6 +43,7 @@ const devFlow: OnboardingStep[] = [
       subtitle:
         "OnboardJS handles your flow’s logic, state, and steps. You build your unique UI, powered by our intuitive React hooks.",
     },
+    component: DevImpl,
   },
   {
     id: "dev-type",
@@ -50,6 +73,7 @@ const devFlow: OnboardingStep[] = [
         },
       ],
     },
+    component: DevTypeSelector,
   },
   {
     id: "dev-end",
@@ -60,6 +84,7 @@ const devFlow: OnboardingStep[] = [
         "Ready to build your custom onboarding experience? Let’s get started with a free, no-obligation onboarding React example.",
       cta: "Submit",
     },
+    component: EndStep,
     nextStep: null,
   },
 ];
@@ -73,6 +98,7 @@ const businessFlow: OnboardingStep[] = [
       subtitle:
         "Every day without an optimized onboarding flow means missed opportunities and user churn. OnboardJS helps you turn those losses into rapid activation and sustained engagement. Let’s see how.",
     },
+    component: BusinessWelcome,
   },
   {
     id: "business-onboardjs",
@@ -82,6 +108,7 @@ const businessFlow: OnboardingStep[] = [
       subtitle:
         "Here’s a typical example of how OnboardJS can dramatically improve your user activation and retention over time.",
     },
+    component: BusinessWithOnboardJS,
   },
   {
     id: "business-step-3",
@@ -111,6 +138,7 @@ const businessFlow: OnboardingStep[] = [
         },
       ],
     },
+    component: BusinessStep3,
   },
   {
     id: "business-end",
@@ -120,6 +148,7 @@ const businessFlow: OnboardingStep[] = [
       subtitle: "Start with a free, no-obligation onboarding React example.",
       cta: "Submit",
     },
+    component: EndStep,
     nextStep: null,
   },
 ];

@@ -1,4 +1,3 @@
-// @onboardjs/react/src/index.ts
 export { OnboardingProvider } from "./context/OnboardingProvider";
 export { useOnboarding } from "./hooks/useOnboarding";
 
@@ -21,7 +20,12 @@ export type {
 } from "./plugins/ReactPlugin";
 
 // Export types
-export type { StepComponentProps, StepComponentRegistry } from "./types";
+export type {
+  StepComponentProps,
+  StepComponentRegistry,
+  OnboardingStep,
+  StepComponent,
+} from "./types";
 export type {
   UseOnboardingOptions,
   UseOnboardingReturn,
