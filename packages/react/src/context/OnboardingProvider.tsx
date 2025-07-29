@@ -16,12 +16,15 @@ import {
   DataLoadFn,
   DataPersistFn,
   LoadedData,
-  OnboardingStep,
   UnsubscribeFunction,
   OnboardingContext as OnboardingContextType,
   ConfigurationBuilder,
 } from "@onboardjs/core";
-import { StepComponentProps, StepComponentRegistry } from "../types";
+import {
+  OnboardingStep,
+  StepComponentProps,
+  StepComponentRegistry,
+} from "../types";
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<
@@ -73,7 +76,11 @@ export interface LocalStoragePersistenceOptions {
 export interface OnboardingProviderProps<TContext extends OnboardingContextType>
   extends Omit<
     OnboardingEngineConfig<TContext>,
-    "loadData" | "persistData" | "clearPersistedData" | "onFlowComplete" // onFlowComplete is handled separately
+    | "loadData"
+    | "persistData"
+    | "clearPersistedData"
+    | "onFlowComplete"
+    | "steps"
   > {
   children: ReactNode;
   localStoragePersistence?: LocalStoragePersistenceOptions;
@@ -92,8 +99,16 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
   /**
    * A registry mapping step types and ids to their React components.
    * This allows users to provide their own custom step components.
+   * @deprecated Define the step component on the React specific `OnboardingStep` step definition instead.
+   * This prop is now optional and will be overridden by the `OnboardingStep.component` property
+   * if defined.
    */
-  componentRegistry: StepComponentRegistry;
+  componentRegistry?: StepComponentRegistry;
+
+  /**
+   * The array of steps to initialize the onboarding flow.
+   */
+  steps: OnboardingStep<TContext>[];
 }
 
 export function OnboardingProvider<
@@ -103,7 +118,7 @@ export function OnboardingProvider<
   steps,
   initialStepId,
   initialContext,
-  onFlowComplete: passedOnFlowComplete, // Renamed prop
+  onFlowComplete: passedOnFlowComplete,
   onStepChange,
   localStoragePersistence,
   customOnDataLoad,
@@ -263,8 +278,13 @@ export function OnboardingProvider<
 
     const { currentStep, context } = engineState;
 
+    const foundStep = steps.find(
+      (step) => step.id === currentStep.id || step.type === currentStep.type,
+    );
+
     // Look for a component by step ID first, then by type/componentKey.
-    let StepComponent = componentRegistry[currentStep.id];
+    let StepComponent =
+      foundStep?.component ?? componentRegistry?.[currentStep.id];
 
     const typeKey =
       currentStep.type === "CUSTOM_COMPONENT"
@@ -273,7 +293,7 @@ export function OnboardingProvider<
 
     if (!StepComponent) {
       if (typeKey) {
-        StepComponent = componentRegistry[typeKey];
+        StepComponent = componentRegistry?.[typeKey];
       }
     }
 
@@ -291,6 +311,7 @@ export function OnboardingProvider<
     const props: StepComponentProps = {
       payload: currentStep.payload,
       coreContext: context,
+      context,
       onDataChange: (data, isValid) => {
         setStepSpecificData({ data, isValid });
       },
@@ -459,18 +480,13 @@ export function OnboardingProvider<
     stablePlugins,
   ]);
 
+  // isLoading should reflect loading between steps
   const isLoading = useMemo(
     () =>
       componentLoading ||
-      !isEngineReadyAndInitialized || // Key: loading if engine not fully ready and initialized
       (engineState?.isLoading ?? false) ||
       (engineState?.isHydrating ?? false),
-    [
-      componentLoading,
-      isEngineReadyAndInitialized,
-      engineState?.isLoading,
-      engineState?.isHydrating,
-    ],
+    [componentLoading, engineState?.isLoading, engineState?.isHydrating],
   );
 
   const actions = useMemo(
@@ -560,8 +576,8 @@ export function OnboardingProvider<
       state: isEngineReadyAndInitialized ? engineState : null,
       isLoading,
       setComponentLoading,
-      currentStep: engineState?.currentStep, // Derived for convenience
-      isCompleted: engineState?.isCompleted, // Derived
+      currentStep: engineState?.currentStep as OnboardingStep<TContext> | null,
+      isCompleted: engineState?.isCompleted,
       error: engineState?.error ?? null,
       renderStep,
       ...actions,

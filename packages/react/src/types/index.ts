@@ -1,7 +1,7 @@
 // @onboardjs/react/src/types/index.ts
 import React from "react";
 import {
-  OnboardingStep,
+  OnboardingStep as CoreOnboardingStep,
   OnboardingStepType, // Ensure this is imported from @onboardjs/core
   OnboardingContext,
   // Import specific payload types if needed for prop definitions
@@ -16,8 +16,15 @@ import {
 export interface StepComponentProps<P = any, TContext = OnboardingContext> {
   /** The payload object from the current step's definition. */
   payload: P;
-  /** The full, current context from the OnboardingEngine. */
+  /**
+   * The full, current context from the OnboardingEngine.
+   * @deprecated Use `context` instead.
+   */
   coreContext: TContext;
+
+  /** The full, current context from the OnboardingEngine. */
+  context: TContext;
+
   /**
    * A callback to pass data from your component back to the engine.
    * This data will be automatically passed to the `next()` method.
@@ -35,12 +42,27 @@ export interface StepComponentProps<P = any, TContext = OnboardingContext> {
 }
 
 /**
+ * A type representing the React specific definition of an onboarding step.
+ * It expands the core onboarding step type to include React-specific properties.
+ */
+export type OnboardingStep<
+  TContext extends OnboardingContext = OnboardingContext,
+> = CoreOnboardingStep<TContext> & {
+  /**
+   * The React component that will render this step.
+   * It can be a component that accepts `StepComponentProps` to interact with the onboarding engine,
+   * or a simple presentational component that takes no props.
+   */
+  component?: StepComponent;
+};
+
+/**
  * A React component for rendering a step. It can be a component that accepts
  * `StepComponentProps` to interact with the onboarding engine, or a simple
  * presentational component that takes no props.
  * @template P The type of the step's payload.
  */
-type StepComponent<P = any> =
+export type StepComponent<P = any> =
   | React.ComponentType<StepComponentProps<P>>
   | React.ComponentType<{}>;
 
@@ -52,7 +74,7 @@ type StepComponent<P = any> =
  */
 export type StepComponentRegistry = {
   [Key in string]?: Key extends OnboardingStepType // Is it a standard type?
-    ? StepComponent<Extract<OnboardingStep, { type: Key }>["payload"]>
+    ? StepComponent<Extract<CoreOnboardingStep, { type: Key }>["payload"]>
     : // No: It's a custom key, so the payload is `any`
       StepComponent<any>;
 };

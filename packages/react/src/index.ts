@@ -21,7 +21,12 @@ export type {
 } from "./plugins/ReactPlugin";
 
 // Export types
-export type { StepComponentProps, StepComponentRegistry } from "./types";
+export type {
+  StepComponentProps,
+  StepComponentRegistry,
+  OnboardingStep,
+  StepComponent,
+} from "./types";
 export type {
   UseOnboardingOptions,
   UseOnboardingReturn,

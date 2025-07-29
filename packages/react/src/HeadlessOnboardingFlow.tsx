@@ -95,6 +95,7 @@ const HeadlessFlowRendererInternal: React.FC<{
       <ComponentToRender
         payload={step.payload}
         coreContext={state.context}
+        context={state.context}
         initialData={activeStepData} // Or derive from state.context.flowData
         onDataChange={(data, isValid) => {
           setActiveStepData(data);
