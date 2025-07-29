@@ -1,0 +1,52 @@
+{
+  "name": "onboardjs-visualizer",
+  "version": "1.0.0",
+  "description": "CLI tool to serve OnboardJS Visualizer in a web browser",
+  "author": "Soma Somorjai <soma@onboardjs.com>",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "onboardjs-visualizer": "./bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/visualizer-cli"
+  },
+  "main": "dist/cli.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build --mode client",
+    "build:server": "tsc",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@onboardjs/core": "*",
+    "@onboardjs/visualizer": "*",
+    "commander": "^11.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "open": "^10.2.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
+    "@types/node": "^20.10.6",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}

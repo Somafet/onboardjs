@@ -1,0 +1,47 @@
+{
+  "name": "@onboardjs/visualizer",
+  "version": "0.1.2",
+  "description": "A React component library to visually build and edit OnboardJS flows.",
+  "author": "Soma Somorjai <soma@onboardjs.com>",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/src/index.d.ts",
+  "homepage": "https://onboardjs.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/visualizer"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./index.css": "./dist/index.css"
+  },
+  "scripts": {
+    "dev": "vite",
+    "start": "cd dist && npx serve",
+    "build": "vite build && tsc --emitDeclarationOnly true"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "dependencies": {
+    "@onboardjs/core": "*",
+    "@tailwindcss/vite": "^4.1.11",
+    "@xyflow/react": "^12.8.2",
+    "dagre": "^0.8.5",
+    "install": "^0.13.0",
+    "lucide-react": "^0.525.0",
+    "npm": "^11.4.2",
+    "tailwindcss": "^4.1.11"
+  }
+}

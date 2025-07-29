@@ -1,0 +1,102 @@
+.flow-visualizer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.flow-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.flow-toolbar {
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.flow-sidebar {
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.step-details-panel {
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.step-node {
+  font-family: inherit;
+}
+
+.step-node:hover {
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.react-flow__edge-path {
+  stroke-width: 2px;
+}
+
+.react-flow__edge.react-flow__edge-selected .react-flow__edge-path {
+  stroke: #3b82f6;
+  stroke-width: 3px;
+}
+
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #374151;
+  background: white;
+}
+
+.react-flow__handle-top {
+  background: #10b981;
+  border-color: #059669;
+}
+
+.react-flow__handle-bottom {
+  background: #3b82f6;
+  border-color: #2563eb;
+}
+
+.react-flow__handle-left {
+  background: #6b7280;
+  border-color: #4b5563;
+}
+
+.react-flow__handle-right {
+  background: #f59e0b;
+  border-color: #d97706;
+}
+
+/* Line clamp utility for descriptions */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar styles */
+.flow-sidebar::-webkit-scrollbar,
+.step-details-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.flow-sidebar::-webkit-scrollbar-track,
+.step-details-panel::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.flow-sidebar::-webkit-scrollbar-thumb,
+.step-details-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.flow-sidebar::-webkit-scrollbar-thumb:hover,
+.step-details-panel::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
