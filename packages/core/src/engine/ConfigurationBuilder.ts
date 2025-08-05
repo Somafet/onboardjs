@@ -11,17 +11,27 @@ export class ConfigurationBuilder {
       ...(config.initialContext || {}),
     } as T;
 
-    // Ensure flowData exists and is properly structured
+    // Ensure flowData exists
     if (!baseContext.flowData) {
       baseContext.flowData = {};
     }
 
-    // Initialize internal tracking if not present
+    // Initialize internal tracking if not present, including stepStartTimes
     if (!baseContext.flowData._internal) {
       baseContext.flowData._internal = {
         completedSteps: {},
-        startedAt: Date.now(),
+        startedAt: Date.now(), // Sets the flow start time
+        stepStartTimes: {}, // Initialize step start times map
       };
+    } else {
+      // If _internal already exists (e.g., from initialContext), ensure stepStartTimes is present
+      if (!baseContext.flowData._internal.stepStartTimes) {
+        baseContext.flowData._internal.stepStartTimes = {};
+      }
+      // Ensure startedAt is set if _internal was provided but missed it
+      if (!baseContext.flowData._internal.startedAt) {
+        baseContext.flowData._internal.startedAt = Date.now();
+      }
     }
 
     return baseContext;

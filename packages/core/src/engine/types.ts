@@ -1,5 +1,6 @@
 // @onboardjs/core/src/engine/types.ts (Corrected and Refactored)
 
+import { AnalyticsConfig } from "../analytics/types";
 import { OnboardingPlugin } from "../plugins";
 import { OnboardingStep, OnboardingContext } from "../types";
 
@@ -61,6 +62,7 @@ export interface FlowCompletedEvent<
   TContext extends OnboardingContext = OnboardingContext,
 > {
   context: TContext;
+  duration: number; // Duration in milliseconds
 }
 
 export interface StepActiveEvent<
@@ -413,4 +415,35 @@ export interface OnboardingEngineConfig<
    * If set to true, additional debug information will be logged.
    */
   debug?: boolean;
+
+  /**
+   * Analytics configuration for tracking onboarding events
+   */
+  analytics?: AnalyticsConfig | boolean; // boolean for simple enable/disable
+
+  /**
+   * Optional configuration for OnboardJS Cloud Analytics.
+   * If provided, analytics events will be sent to the specified cloud endpoint.
+   */
+  cloud?: {
+    /**
+     * API key for authentication with OnboardJS Cloud
+     */
+    apiKey?: string;
+
+    /**
+     * Host URL for the OnboardJS Cloud API
+     */
+    apiHost?: string;
+
+    /**
+     * Enable or disable analytics tracking (defaults to true if apiKey and apiHost are provided)
+     */
+    enabled?: boolean;
+
+    /**
+     * Control what percentage of events to track (0.0-1.0, defaults to 1.0)
+     */
+    samplingRate?: number;
+  };
 }

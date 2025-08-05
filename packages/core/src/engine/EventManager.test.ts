@@ -185,7 +185,7 @@ describe("EventManager", () => {
         throw new Error("Async reject");
       });
       eventManager.addEventListener("flowCompleted", rejectingListener);
-      const eventPayload = { context: {} as TestContext };
+      const eventPayload = { context: {} as TestContext, duration: 1000 };
       eventManager.notifyListeners("flowCompleted", eventPayload);
 
       expect(rejectingListener).toHaveBeenCalledWith(eventPayload);

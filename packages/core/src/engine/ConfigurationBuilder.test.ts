@@ -60,7 +60,11 @@ describe("ConfigurationBuilder", () => {
       const config: OnboardingEngineConfig<TestContext> = { steps: [] };
       const context = ConfigurationBuilder.buildInitialContext(config);
       expect(context.flowData).toEqual({
-        _internal: { completedSteps: {}, startedAt: fixedTimestamp },
+        _internal: {
+          completedSteps: {},
+          startedAt: fixedTimestamp,
+          stepStartTimes: {},
+        },
       });
     });
 
@@ -75,7 +79,11 @@ describe("ConfigurationBuilder", () => {
       const context = ConfigurationBuilder.buildInitialContext(config);
       expect(context.user).toEqual({ id: "user1", name: "Test User" });
       expect(context.flowData).toEqual({
-        _internal: { completedSteps: {}, startedAt: fixedTimestamp },
+        _internal: {
+          completedSteps: {},
+          startedAt: fixedTimestamp,
+          stepStartTimes: {},
+        },
       });
     });
 
@@ -92,6 +100,7 @@ describe("ConfigurationBuilder", () => {
       expect(context.flowData._internal).toEqual({
         completedSteps: {},
         startedAt: fixedTimestamp,
+        stepStartTimes: {},
       });
     });
 
@@ -127,7 +136,11 @@ describe("ConfigurationBuilder", () => {
       };
       const context = ConfigurationBuilder.buildInitialContext(config);
       expect(context.flowData).toEqual({
-        _internal: { completedSteps: {}, startedAt: fixedTimestamp },
+        _internal: {
+          completedSteps: {},
+          startedAt: fixedTimestamp,
+          stepStartTimes: {},
+        },
       });
     });
 
@@ -138,7 +151,11 @@ describe("ConfigurationBuilder", () => {
       };
       const context = ConfigurationBuilder.buildInitialContext(config);
       expect(context.flowData).toEqual({
-        _internal: { completedSteps: {}, startedAt: fixedTimestamp },
+        _internal: {
+          completedSteps: {},
+          startedAt: fixedTimestamp,
+          stepStartTimes: {},
+        },
       });
     });
   });

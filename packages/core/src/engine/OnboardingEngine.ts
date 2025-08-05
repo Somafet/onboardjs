@@ -29,6 +29,9 @@ import { OperationQueue } from "./OperationQueue";
 import { PerformanceUtils } from "../utils/PerformanceUtils";
 import { PersistenceManager } from "./PersistenceManager";
 import { StateManager } from "./StateManager";
+import { AnalyticsManager } from "../analytics/analytics-manager";
+import { AnalyticsConfig, AnalyticsProvider } from "../analytics/types";
+import { HttpProvider } from "../analytics/providers/http-provider";
 
 let engineInstanceCounter = 0; // Module-level counter
 
@@ -43,6 +46,7 @@ export class OnboardingEngine<
   private logger: Logger;
 
   // Core managers
+  private analyticsManager: AnalyticsManager<TContext>;
   private eventManager: EventManager<TContext>;
   private pluginManager: PluginManagerImpl<TContext>;
   private stateManager: StateManager<TContext>;
@@ -123,6 +127,7 @@ export class OnboardingEngine<
       this.checklistManager,
       this.persistenceManager,
       this.errorHandler,
+      this.logger,
     );
     this.pluginManager = new PluginManagerImpl(
       this,
@@ -152,6 +157,9 @@ export class OnboardingEngine<
         );
       }
     });
+
+    // Initialize analytics
+    this.analyticsManager = this.initializeAnalytics(config);
   }
 
   private setupInitializationPromise(): void {
@@ -361,33 +369,60 @@ export class OnboardingEngine<
   }
 
   private buildContext(loadedData: LoadedData<TContext> | null): void {
-    const configInitialContext =
-      this.config.initialContext || ({} as Partial<TContext>);
+    // 1. Start with a fresh, fully initialized context.
+    // This guarantees that `flowData._internal` and its sub-properties (`stepStartTimes`, etc.)
+    // are always present and correctly structured from the start.
+    let newContext: TContext = ConfigurationBuilder.buildInitialContext(
+      this.config,
+    );
 
-    let newContextBase = {
-      ...(configInitialContext as TContext),
-      flowData: { ...(configInitialContext.flowData || {}) },
-    };
-
+    // 2. If persisted data was loaded, merge it into the new context.
     if (loadedData) {
       const {
         flowData: loadedFlowData,
+        // Exclude currentStepId as it's handled separately for navigation
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         currentStepId: _loadedStepId,
         ...otherLoadedProps
       } = loadedData;
 
-      newContextBase = {
-        ...newContextBase,
-        ...otherLoadedProps,
-        flowData: {
-          ...(newContextBase.flowData || {}),
-          ...(loadedFlowData || {}),
-        },
-      } as TContext;
+      // Merge top-level properties from loaded data.
+      // This will overwrite properties like `currentUser` if they are in `loadedData`.
+      newContext = {
+        ...newContext, // Preserve the _internal structure from buildInitialContext
+        ...otherLoadedProps, // Overlay with loaded data's top-level properties
+      };
+
+      // Merge `flowData` specifically.
+      // The `newContext.flowData` already contains the guaranteed `_internal` structure.
+      // We overlay it with `loadedFlowData`, allowing loaded custom data to prevail,
+      // but ensuring `_internal` (from `newContext.flowData`) is not lost or overwritten
+      // if `loadedFlowData` itself doesn't contain `_internal` or is an empty object.
+      newContext.flowData = {
+        ...newContext.flowData, // This ensures `_internal` is carried over
+        ...(loadedFlowData || {}), // Add/overwrite with custom data from loadedFlowData
+      };
+
+      // Additional safety check: Ensure critical _internal properties are not undefined
+      // after merging, in case loadedData's _internal was malformed or missing parts.
+      if (!newContext.flowData._internal) {
+        newContext.flowData._internal = {
+          completedSteps: {},
+          startedAt: Date.now(),
+          stepStartTimes: {},
+        };
+      } else {
+        if (!newContext.flowData._internal.completedSteps)
+          newContext.flowData._internal.completedSteps = {};
+        if (!newContext.flowData._internal.startedAt)
+          newContext.flowData._internal.startedAt = Date.now();
+        if (!newContext.flowData._internal.stepStartTimes)
+          newContext.flowData._internal.stepStartTimes = {};
+      }
     }
 
-    this.contextInternal = newContextBase;
+    // 3. Set the engine's internal context to the newly built one.
+    this.contextInternal = newContext;
   }
 
   private handleInitializationError(error: unknown): void {
@@ -720,6 +755,7 @@ export class OnboardingEngine<
       this.checklistManager,
       this.persistenceManager,
       this.errorHandler,
+      this.logger,
     );
 
     // Clear performance caches
@@ -982,6 +1018,125 @@ export class OnboardingEngine<
   public clearCaches(): void {
     PerformanceUtils.clearCaches();
     this.errorHandler.clearErrorHistory();
+  }
+
+  private initializeAnalytics(
+    config: OnboardingEngineConfig<TContext>,
+  ): AnalyticsManager<TContext> {
+    // Create default analytics config
+    let analyticsConfig: AnalyticsConfig = { enabled: false };
+
+    // Handle boolean shorthand
+    if (typeof config.analytics === "boolean") {
+      analyticsConfig.enabled = config.analytics;
+    }
+    // Handle full config object
+    else if (config.analytics) {
+      analyticsConfig = config.analytics;
+    }
+
+    // Initialize cloud provider if credentials provided
+    if (config.cloud?.apiKey && config.cloud?.apiHost) {
+      if (!analyticsConfig.providers) {
+        analyticsConfig.providers = [];
+      }
+
+      analyticsConfig.providers.push(
+        new HttpProvider({
+          apiKey: config.cloud.apiKey,
+          apiHost: config.cloud.apiHost,
+          debug: config.debug,
+        }),
+      );
+    }
+
+    const manager = new AnalyticsManager<TContext>(
+      analyticsConfig,
+      this.logger,
+    );
+
+    if (analyticsConfig.enabled && manager.providerCount === 0) {
+      this.logger.warn(
+        "[Analytics] Analytics tracking is enabled, but no external analytics " +
+          "providers were configured. Events will be tracked internally (e.g., " +
+          "logged to console in debug mode) but will NOT be sent to any external " +
+          "service. To enable sending, please either: \n" +
+          "1. Provide `config.cloud.apiKey` and `config.cloud.apiHost` for OnboardJS Cloud integration. \n" +
+          "2. Add custom providers to `config.analytics.providers`",
+      );
+    }
+
+    // Set up event listeners for auto-tracking by default unless explicitly false
+    const autoTrackSetting = analyticsConfig.autoTrack ?? true;
+    const shouldSetupListeners =
+      analyticsConfig.enabled &&
+      (autoTrackSetting === true ||
+        (typeof autoTrackSetting === "object" &&
+          autoTrackSetting.steps !== false));
+
+    console.log("Should setup listeners:", shouldSetupListeners);
+
+    // Set up event listeners for auto-tracking
+    if (shouldSetupListeners) {
+      this.setupAnalyticsEventListeners(manager);
+    } else {
+      this.logger.debug(
+        "Auto-tracking analytics events is disabled or analytics is not enabled.",
+      );
+    }
+
+    return manager;
+  }
+
+  private setupAnalyticsEventListeners(
+    manager: AnalyticsManager<TContext>,
+  ): void {
+    // Track step viewed
+    this.addEventListener("stepActive", (event) => {
+      manager.trackStepViewed(event.step, event.context);
+    });
+
+    // Track step completed
+    this.addEventListener("stepCompleted", (event) => {
+      const startTime =
+        event.context.flowData?._internal?.stepStartTimes?.[event.step.id] || 0;
+      const duration = startTime ? Date.now() - startTime : 0;
+      manager.trackStepCompleted(event.step, event.context, duration);
+    });
+
+    // Track flow started
+    this.addEventListener("flowStarted", (event) => {
+      manager.trackFlowStarted(event.context, event.startMethod === "resumed");
+    });
+
+    // Track flow completed
+    this.addEventListener("flowCompleted", (event) => {
+      manager.trackFlowCompleted(event.context);
+      manager.flush();
+    });
+  }
+
+  // Public method to track custom events
+  public trackEvent(
+    eventName: string,
+    properties: Record<string, any> = {},
+  ): void {
+    this.analyticsManager.trackEvent(eventName, properties);
+  }
+
+  // Public method to register additional analytics providers
+  public registerAnalyticsProvider(provider: AnalyticsProvider): void {
+    this.analyticsManager.registerProvider(provider);
+  }
+
+  // Method to flush analytics events
+  public flushAnalytics(): Promise<void> {
+    return this.analyticsManager.flush();
+  }
+
+  // Method to set user ID for analytics
+  public setAnalyticsUserId(userId: string): void {
+    this.analyticsManager.setUserId(userId);
   }
 
   /**
