@@ -46,7 +46,8 @@ export const conditionalFlowSteps: OnboardingStep<AppOnboardingContext>[] = [
   },
 ];
 
-export const conditionalFlowRegistry: StepComponentRegistry = {
-  "conditional-name-step": ConditionalNameStep,
-  "org-step": OrgStep,
-};
+export const conditionalFlowRegistry: StepComponentRegistry<AppOnboardingContext> =
+  {
+    "conditional-name-step": ConditionalNameStep,
+    "org-step": OrgStep,
+  };

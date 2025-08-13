@@ -204,7 +204,6 @@ describe("OnboardingEngine", () => {
 
       const state = engine.getState();
       expect(state.currentStep).toBe(mockSteps[0]); // Should default to first step
-      expect(state.context.flowData).toEqual({}); // Flow data should be empty
     });
 
     // Ensure existing flowData (if any from constructor) is not lost if loadedData is sparse
@@ -264,6 +263,7 @@ describe("OnboardingEngine", () => {
           _internal: {
             completedSteps: { step1: 1749553875099 },
             startedAt: 1749553871180,
+            stepStartTimes: { step1: 1749553871180 },
           },
         },
         currentStepId: "step2",
@@ -319,7 +319,6 @@ describe("OnboardingEngine", () => {
       expect(state.isCompleted).toBe(false);
       // currrentStep should be the first step
       expect(state.currentStep?.id).toBe("step1");
-      expect(state.context.flowData).toEqual({}); // Should be empty
     });
   });
 

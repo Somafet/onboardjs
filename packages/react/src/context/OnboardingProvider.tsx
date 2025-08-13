@@ -102,7 +102,7 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
    * This prop is now optional and will be overridden by the `OnboardingStep.component` property
    * if defined.
    */
-  componentRegistry?: StepComponentRegistry;
+  componentRegistry?: StepComponentRegistry<TContext>;
 
   /**
    * The array of steps to initialize the onboarding flow.
@@ -304,7 +304,7 @@ export function OnboardingProvider<
     const dataKey = (currentStep.payload as any)?.dataKey;
     const initialData = dataKey ? context.flowData[dataKey] : undefined;
 
-    const props: StepComponentProps = {
+    const props: StepComponentProps<typeof currentStep.payload, TContext> = {
       payload: currentStep.payload,
       coreContext: context,
       context,

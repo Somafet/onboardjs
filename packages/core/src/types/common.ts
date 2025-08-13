@@ -7,7 +7,15 @@ import { type ChecklistItemState } from "./payloads";
  */
 export interface OnboardingContext<TUser = any> {
   /** Data collected from all completed steps so far. */
-  flowData: Record<string, any>;
+  flowData: {
+    _internal?: {
+      completedSteps: Record<string | number, number>; // stepId -> completionTimestamp
+      startedAt: number; // timestamp when the overall flow started
+      stepStartTimes: Record<string | number, number>; // stepId -> timestamp when step became active
+    };
+
+    [key: string]: any; // Additional data can be added by steps
+  };
   /** Information about the current user, if available. */
   currentUser?: TUser;
   /** Any other global state or services relevant to the onboarding flow. */

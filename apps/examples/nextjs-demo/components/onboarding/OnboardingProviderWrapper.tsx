@@ -21,7 +21,7 @@ export default function OnboardingProviderWrapper({
 }>) {
   const client = createClient();
 
-  const supabasePlugin = createSupabasePlugin({
+  const supabasePlugin = createSupabasePlugin<AppOnboardingContext>({
     client,
     tableName: "onboarding_progress",
     contextKeyForId: "currentUser.id",
@@ -35,7 +35,7 @@ export default function OnboardingProviderWrapper({
     userIdColumn: "user_id",
   });
 
-  const basicPostHogPlugin = createPostHogPlugin({
+  const basicPostHogPlugin = createPostHogPlugin<AppOnboardingContext>({
     ...saasConfig,
     apiKey: process.env.NEXT_PUBLIC_POSTHOG_KEY!,
     host: process.env.NEXT_PUBLIC_POSTHOG_HOST!,

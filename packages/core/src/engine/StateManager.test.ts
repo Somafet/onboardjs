@@ -384,10 +384,12 @@ describe("StateManager", () => {
         flowData: {
           ...mockContext.flowData,
           _internal: {
+            startedAt: Date.now(),
             completedSteps: {
               step1: Date.now(),
               conditionalStep: Date.now(),
             },
+            stepStartTimes: {},
           },
         },
       };
@@ -451,6 +453,8 @@ describe("StateManager", () => {
               step1: Date.now(),
               conditionalStep: Date.now(), // This step was completed, but is now irrelevant
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };
@@ -723,6 +727,8 @@ describe("StateManager", () => {
               conditionalStep: Date.now(),
               step3: Date.now(),
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };
@@ -747,6 +753,8 @@ describe("StateManager", () => {
               nonExistentStep: Date.now(),
               anotherInvalidStep: Date.now(),
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };
@@ -774,6 +782,8 @@ describe("StateManager", () => {
               "1": Date.now(),
               "3": Date.now(),
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };
@@ -799,6 +809,8 @@ describe("StateManager", () => {
               step2: Date.now(),
               conditionalStep2: Date.now(),
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };
@@ -829,6 +841,8 @@ describe("StateManager", () => {
               conditionalStep: Date.now(), // But it was completed when condition was true
               step1: Date.now(),
             },
+            startedAt: Date.now(),
+            stepStartTimes: {},
           },
         },
       };

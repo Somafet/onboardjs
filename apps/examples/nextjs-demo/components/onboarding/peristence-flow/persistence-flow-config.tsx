@@ -22,6 +22,7 @@ export const persistenceFlowSteps: OnboardingStep<AppOnboardingContext>[] = [
   },
 ];
 
-export const persistenceRegistry: StepComponentRegistry = {
-  "persistence-with-supabase-step": PersistenceWithSupabaseStep,
-};
+export const persistenceRegistry: StepComponentRegistry<AppOnboardingContext> =
+  {
+    "persistence-with-supabase-step": PersistenceWithSupabaseStep,
+  };
