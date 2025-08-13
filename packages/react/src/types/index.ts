@@ -62,10 +62,9 @@ export type OnboardingStep<
  * presentational component that takes no props.
  * @template P The type of the step's payload.
  */
-export type StepComponent<
-  P = any,
-  TContext = OnboardingContext,
-> = React.ComponentType<StepComponentProps<P, TContext>>;
+export type StepComponent<P = any, TContext = OnboardingContext> =
+  | React.ComponentType<StepComponentProps<P, TContext>>
+  | React.ComponentType<{}>;
 
 /**
  * Defines the mapping from a step type (or a custom key)

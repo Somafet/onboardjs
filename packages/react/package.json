@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Official React bindings for OnboardJS.",
   "keywords": [
     "onboarding",
