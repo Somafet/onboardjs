@@ -16,9 +16,10 @@ import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Loader2, PartyPopperIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { OnboardingStep } from "@onboardjs/core";
+import { AppOnboardingContext } from "./common-flow-config";
 
 interface OnboardingUIManagerProps {
-  stepsConfig: OnboardingStep[];
+  stepsConfig: OnboardingStep<AppOnboardingContext>[];
   LoadingScreen?: React.ReactNode;
   ErrorScreen?: React.ComponentType<{ error: Error; onRetry?: () => void }>;
   CompletedScreen?: React.ReactNode;
@@ -64,7 +65,7 @@ const OnboardingUIManager: React.FC<OnboardingUIManagerProps> = ({
     reset,
     previous,
     renderStep,
-  } = useOnboarding();
+  } = useOnboarding<AppOnboardingContext>();
   const [currentActiveStepData, setCurrentActiveStepData] = useState<
     Record<string, unknown>
   >({});
