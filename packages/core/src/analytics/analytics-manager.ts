@@ -1,9 +1,16 @@
 // src/engine/analytics/AnalyticsManager.ts
 import { Logger } from "../services/Logger";
 import { OnboardingContext, OnboardingStep } from "../types";
-import { AnalyticsEvent, AnalyticsProvider, AnalyticsConfig } from "./types";
+import {
+  AnalyticsEvent,
+  AnalyticsProvider,
+  AnalyticsConfig,
+  AnalyticsEventPayload,
+} from "./types";
 
-export class AnalyticsManager<TContext extends OnboardingContext = OnboardingContext> {
+export class AnalyticsManager<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
   private providers: AnalyticsProvider[] = [];
   private config: AnalyticsConfig;
   private sessionId: string;
@@ -38,11 +45,24 @@ export class AnalyticsManager<TContext extends OnboardingContext = OnboardingCon
   }
 
   trackEvent(eventType: string, properties: Record<string, any> = {}): void {
+    // Create a mutable copy of the properties object to add new data
+    const augmentedProperties: AnalyticsEventPayload = { ...properties };
+
+    // Capture the URL if in a browser environment (client-side)
+    // and add it to the event's properties.
+    if (
+      typeof window !== "undefined" &&
+      window.location &&
+      window.location.href
+    ) {
+      augmentedProperties.pageUrl = window.location.href;
+    }
+
     // 1. Construct the full event object
     const event: AnalyticsEvent = {
       type: eventType,
       timestamp: Date.now(),
-      properties,
+      properties: augmentedProperties,
       sessionId: this.sessionId,
       userId: this.config.userId, // Use userId from config
       flowId: this.config.flowId, // Use flowId from config

@@ -2,10 +2,21 @@
 export interface AnalyticsEvent {
   type: string;
   timestamp: number;
-  properties: Record<string, any>;
+  properties: AnalyticsEventPayload;
   sessionId?: string;
   userId?: string;
   flowId?: string;
+}
+
+export interface AnalyticsEventPayload {
+  [key: string]: unknown;
+  pageUrl?: string;
+  // Add these?
+  // stepId?: string;
+  // isResumed?: boolean;
+  // flowData?: any;
+  // duration?: number;
+  // totalSteps?: number;
 }
 
 export interface AnalyticsProvider {

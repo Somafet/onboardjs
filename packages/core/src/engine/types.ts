@@ -422,22 +422,22 @@ export interface OnboardingEngineConfig<
   analytics?: AnalyticsConfig | boolean; // boolean for simple enable/disable
 
   /**
+   * Project public key for authentication with OnboardJS Cloud. It is safe to expose this key in your frontend code.
+   */
+  publicKey?: string;
+
+  /**
+   * Host URL for the OnboardJS Cloud API
+   */
+  apiHost?: string;
+
+  /**
    * Optional configuration for OnboardJS Cloud Analytics.
    * If provided, analytics events will be sent to the specified cloud endpoint.
    */
-  cloud?: {
+  cloudOptions?: {
     /**
-     * API key for authentication with OnboardJS Cloud
-     */
-    apiKey?: string;
-
-    /**
-     * Host URL for the OnboardJS Cloud API
-     */
-    apiHost?: string;
-
-    /**
-     * Enable or disable analytics tracking (defaults to true if apiKey and apiHost are provided)
+     * Enable or disable analytics tracking (defaults to true if publicKey and apiHost are provided)
      */
     enabled?: boolean;
 

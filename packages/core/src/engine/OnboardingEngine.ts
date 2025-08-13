@@ -1036,15 +1036,17 @@ export class OnboardingEngine<
     }
 
     // Initialize cloud provider if credentials provided
-    if (config.cloud?.apiKey && config.cloud?.apiHost) {
+    if (config.publicKey && config.apiHost) {
       if (!analyticsConfig.providers) {
         analyticsConfig.providers = [];
       }
 
+      analyticsConfig.enabled = true; // Enable analytics if cloud config is provided
+
       analyticsConfig.providers.push(
         new HttpProvider({
-          apiKey: config.cloud.apiKey,
-          apiHost: config.cloud.apiHost,
+          publicKey: config.publicKey,
+          apiHost: config.apiHost,
           debug: config.debug,
         }),
       );
@@ -1061,7 +1063,7 @@ export class OnboardingEngine<
           "providers were configured. Events will be tracked internally (e.g., " +
           "logged to console in debug mode) but will NOT be sent to any external " +
           "service. To enable sending, please either: \n" +
-          "1. Provide `config.cloud.apiKey` and `config.cloud.apiHost` for OnboardJS Cloud integration. \n" +
+          "1. Provide `config.apiKey` and `config.apiHost` for OnboardJS Cloud integration. \n" +
           "2. Add custom providers to `config.analytics.providers`",
       );
     }
@@ -1073,8 +1075,6 @@ export class OnboardingEngine<
       (autoTrackSetting === true ||
         (typeof autoTrackSetting === "object" &&
           autoTrackSetting.steps !== false));
-
-    console.log("Should setup listeners:", shouldSetupListeners);
 
     // Set up event listeners for auto-tracking
     if (shouldSetupListeners) {

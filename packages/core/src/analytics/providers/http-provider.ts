@@ -1,7 +1,7 @@
 import { AnalyticsEvent, AnalyticsProvider } from "../types";
 
 export interface HttpProviderConfig {
-  apiKey: string;
+  publicKey: string;
   apiHost: string;
   batchSize?: number;
   batchInterval?: number;
@@ -56,7 +56,7 @@ export class HttpProvider implements AnalyticsProvider {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-Key": this.config.apiKey,
+          "X-OnboardJS-Key": this.config.publicKey,
           ...this.config.headers,
         },
         body: JSON.stringify({ events: eventsToSend }),
