@@ -62,9 +62,10 @@ export type OnboardingStep<
  * presentational component that takes no props.
  * @template P The type of the step's payload.
  */
-export type StepComponent<P = any> =
-  | React.ComponentType<StepComponentProps<P>>
-  | React.ComponentType<{}>;
+export type StepComponent<
+  P = any,
+  TContext = OnboardingContext,
+> = React.ComponentType<StepComponentProps<P, TContext>>;
 
 /**
  * Defines the mapping from a step type (or a custom key)
@@ -72,9 +73,13 @@ export type StepComponent<P = any> =
  *
  * This advanced type provides payload type inference for standard step types.
  */
-export type StepComponentRegistry = {
-  [Key in string]?: Key extends OnboardingStepType // Is it a standard type?
-    ? StepComponent<Extract<CoreOnboardingStep, { type: Key }>["payload"]>
-    : // No: It's a custom key, so the payload is `any`
-      StepComponent<any>;
+export type StepComponentRegistry<
+  TContext extends OnboardingContext = OnboardingContext,
+> = {
+  [Key in string]?: Key extends OnboardingStepType
+    ? StepComponent<
+        Extract<CoreOnboardingStep<TContext>, { type: Key }>["payload"],
+        TContext
+      >
+    : StepComponent<any, TContext>;
 };

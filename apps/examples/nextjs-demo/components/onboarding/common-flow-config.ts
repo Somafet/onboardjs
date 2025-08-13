@@ -30,7 +30,7 @@ export type AppOnboardingContext = {
   currentUser?: User;
 };
 
-export const commonFlowSteps: OnboardingStep[] = [
+export const commonFlowSteps: OnboardingStep<AppOnboardingContext>[] = [
   {
     id: "welcome",
     type: "CUSTOM_COMPONENT", // All steps will be custom for this demo
@@ -74,7 +74,7 @@ export const commonFlowSteps: OnboardingStep[] = [
   ...persistenceFlowSteps,
 ];
 
-export const commonRegistry: StepComponentRegistry = {
+export const commonRegistry: StepComponentRegistry<AppOnboardingContext> = {
   welcome: DemoWelcomeStep,
   ...simpleFlowRegistry,
   ...conditionalFlowRegistry,
