@@ -1,4 +1,4 @@
-import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
+import { OnboardingStep, OnboardingContext, FlowInfo } from "@onboardjs/core";
 import { PostHogPluginConfig, PerformanceMetrics } from "../types";
 
 export class EventDataBuilder<TContext extends OnboardingContext> {
@@ -10,6 +10,7 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
     step?: OnboardingStep<TContext>,
     context?: TContext,
     performanceMetrics?: PerformanceMetrics,
+    flowInfo?: FlowInfo,
   ): Record<string, any> {
     let eventData = { ...baseData };
 
@@ -20,6 +21,11 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
     // Add global properties
     if (this.config.globalProperties) {
       eventData = { ...eventData, ...this.config.globalProperties };
+    }
+
+    // Add flow information
+    if (this.config.includeFlowInfo && flowInfo) {
+      eventData.flow_info = this.buildFlowInfo(flowInfo);
     }
 
     // Add user properties
@@ -49,7 +55,8 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
 
     // Apply step-specific enrichment
     if (step && this.config.stepPropertyEnrichers) {
-      const enricher = this.config.stepPropertyEnrichers[step.type ?? "INFORMATION"];
+      const enricher =
+        this.config.stepPropertyEnrichers[step.type ?? "INFORMATION"];
       if (enricher) {
         const enrichedData = enricher(step, context);
         eventData = { ...eventData, ...enrichedData };
@@ -101,7 +108,20 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
     return sanitized;
   }
 
-  private buildStepMetadata(step: OnboardingStep<TContext>): Record<string, any> {
+  private buildFlowInfo(flowInfo: FlowInfo): Record<string, any> {
+    return {
+      flow_id: flowInfo.flowId,
+      flow_name: flowInfo.flowName,
+      flow_version: flowInfo.flowVersion,
+      flow_metadata: flowInfo.flowMetadata,
+      instance_id: flowInfo.instanceId,
+      flow_created_at: new Date(flowInfo.createdAt).toISOString(),
+    };
+  }
+
+  private buildStepMetadata(
+    step: OnboardingStep<TContext>,
+  ): Record<string, any> {
     return {
       step_id: step.id,
       step_type: step.type,

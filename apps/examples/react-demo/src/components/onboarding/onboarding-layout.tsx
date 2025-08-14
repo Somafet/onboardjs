@@ -16,6 +16,9 @@ export default function OnboardingLayout() {
     <OnboardingProvider
       plugins={[posthogPlugin]}
       steps={steps}
+      flowId="onboarding-flow"
+      flowName="Onboarding Flow"
+      flowVersion="1.0.0"
       // Uncomment the following lines to enable localStorage persistence
       // localStoragePersistence={{
       //   key: 'onboarding-flow',

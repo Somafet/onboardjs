@@ -6,6 +6,9 @@ export interface AnalyticsEvent {
   sessionId?: string;
   userId?: string;
   flowId?: string;
+  flowName?: string;
+  flowVersion?: string;
+  instanceId?: number;
 }
 
 export interface AnalyticsEventPayload {

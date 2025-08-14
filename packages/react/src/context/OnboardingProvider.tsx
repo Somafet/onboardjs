@@ -344,26 +344,6 @@ export function OnboardingProvider<
         `Invalid Onboarding Configuration: ${validation.errors.join(", ")}`,
       );
       console.error(`[OnboardingProvider] ${error.message}`);
-      // Set the error state immediately and stop.
-      setEngineState({
-        currentStep: null,
-        context: (initialContext || {}) as TContext,
-        isFirstStep: false,
-        isLastStep: false,
-        canGoNext: false,
-        canGoPrevious: false,
-        isSkippable: false,
-        isLoading: false,
-        isHydrating: false,
-        error: error,
-        isCompleted: false,
-        nextStepCandidate: null,
-        previousStepCandidate: null,
-        currentStepNumber: 0,
-        totalSteps: 0,
-        completedSteps: 0,
-        progressPercentage: 0,
-      });
       // Do not mark as "ready"
       setIsEngineReadyAndInitialized(false);
       return; // Abort initialization
@@ -403,29 +383,6 @@ export function OnboardingProvider<
             "[OnboardingProvider] Engine initialization failed:",
             engineInitError,
           );
-          setEngineState({
-            // Provide a default error state
-            currentStep: null,
-            context: (initialContext || {}) as TContext,
-            isFirstStep: false,
-            isLastStep: false,
-            canGoNext: false,
-            canGoPrevious: false,
-            isSkippable: false,
-            isLoading: false,
-            isHydrating: false,
-            error:
-              engineInitError instanceof Error
-                ? engineInitError
-                : new Error(String(engineInitError)),
-            isCompleted: false,
-            nextStepCandidate: null,
-            previousStepCandidate: null,
-            currentStepNumber: 0,
-            totalSteps: 0,
-            completedSteps: 0,
-            progressPercentage: 0,
-          });
           setIsEngineReadyAndInitialized(false); // Explicitly false on error
         });
     } catch (configError) {
@@ -433,28 +390,6 @@ export function OnboardingProvider<
         "[OnboardingProvider] Error creating OnboardingEngine (invalid config):",
         configError,
       );
-      setEngineState({
-        currentStep: null,
-        context: (initialContext || {}) as TContext,
-        isFirstStep: false,
-        isLastStep: false,
-        canGoNext: false,
-        canGoPrevious: false,
-        isSkippable: false,
-        isLoading: false,
-        isHydrating: false,
-        error:
-          configError instanceof Error
-            ? configError
-            : new Error(String(configError)),
-        isCompleted: false,
-        nextStepCandidate: null,
-        previousStepCandidate: null,
-        currentStepNumber: 0,
-        totalSteps: 0,
-        completedSteps: 0,
-        progressPercentage: 0,
-      });
       setIsEngineReadyAndInitialized(false);
     }
 

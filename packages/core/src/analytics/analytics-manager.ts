@@ -8,13 +8,18 @@ import {
   AnalyticsEventPayload,
 } from "./types";
 
-export class AnalyticsManager<
-  TContext extends OnboardingContext = OnboardingContext,
-> {
+export class AnalyticsManager<TContext extends OnboardingContext = OnboardingContext> {
   private providers: AnalyticsProvider[] = [];
   private config: AnalyticsConfig;
   private sessionId: string;
   private logger: Logger;
+  private flowInfo: {
+    flowId?: string;
+    flowName?: string;
+    flowVersion?: string;
+    flowMetadata?: Record<string, unknown>;
+    instanceId?: number;
+  } = {};
 
   constructor(config: AnalyticsConfig = {}, logger?: Logger) {
     this.config = {
@@ -46,7 +51,11 @@ export class AnalyticsManager<
 
   trackEvent(eventType: string, properties: Record<string, any> = {}): void {
     // Create a mutable copy of the properties object to add new data
-    const augmentedProperties: AnalyticsEventPayload = { ...properties };
+    const augmentedProperties: AnalyticsEventPayload = {
+      ...properties,
+      // Add flow identification to all events
+      ...this.flowInfo,
+    };
 
     // Capture the URL if in a browser environment (client-side)
     // and add it to the event's properties.
@@ -65,7 +74,10 @@ export class AnalyticsManager<
       properties: augmentedProperties,
       sessionId: this.sessionId,
       userId: this.config.userId, // Use userId from config
-      flowId: this.config.flowId, // Use flowId from config
+      flowId: this.config.flowId || this.flowInfo.flowId, // Use flowId from config or flowInfo
+      flowName: this.flowInfo.flowName,
+      flowVersion: this.flowInfo.flowVersion,
+      instanceId: this.flowInfo.instanceId,
     };
 
     // 2. Log the event if debug mode is enabled
@@ -155,6 +167,20 @@ export class AnalyticsManager<
 
   setFlowId(flowId: string): void {
     this.config.flowId = flowId;
+    this.flowInfo.flowId = flowId;
+  }
+
+  setFlowInfo(flowInfo: {
+    flowId?: string;
+    flowName?: string;
+    flowVersion?: string;
+    flowMetadata?: Record<string, unknown>;
+    instanceId?: number;
+  }): void {
+    this.flowInfo = { ...this.flowInfo, ...flowInfo };
+    if (flowInfo.flowId) {
+      this.config.flowId = flowInfo.flowId;
+    }
   }
 
   // Utility to prevent sensitive data from being sent to analytics
