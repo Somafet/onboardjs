@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, Mocked } from "vitest";
 import { StateManager } from "./StateManager";
 import { EventManager } from "./EventManager";
 import { OnboardingContext, OnboardingStep } from "../types";
-import { EngineState } from "./types";
+import { EngineState, FlowContext } from "./types";
 
 // Mock the EventManager to isolate the StateManager during tests.
 // vi.mock is hoisted, so it's correctly applied before imports are evaluated.
@@ -21,6 +21,19 @@ describe("StateManager", () => {
   let stateManager: StateManager<OnboardingContext>;
   let mockContext: OnboardingContext;
   let mockSteps: OnboardingStep<OnboardingContext>[];
+
+  // Helper function to create a mock FlowContext
+  const createMockFlowContext = (
+    overrides: Partial<FlowContext> = {},
+  ): FlowContext => ({
+    flowId: "test-flow-id",
+    flowName: "Test Flow",
+    flowVersion: "1.0.0",
+    flowMetadata: { testMeta: "test-value" },
+    instanceId: 123456,
+    createdAt: Date.now(),
+    ...overrides,
+  });
 
   beforeEach(() => {
     // Reset mocks and instances before each test
@@ -56,7 +69,12 @@ describe("StateManager", () => {
       { id: "step3", type: "INFORMATION", payload: {}, nextStep: null }, // Explicit end
     ];
 
-    stateManager = new StateManager(mockEventManager, mockSteps, "step1");
+    stateManager = new StateManager(
+      mockEventManager,
+      mockSteps,
+      "step1",
+      createMockFlowContext(),
+    );
   });
 
   describe("getState", () => {
@@ -146,7 +164,12 @@ describe("StateManager", () => {
         { id: "A", type: "INFORMATION", payload: {} },
         { id: "B", type: "INFORMATION", payload: {}, previousStep: "A" },
       ];
-      const manager = new StateManager(mockEventManager, steps, "A");
+      const manager = new StateManager(
+        mockEventManager,
+        steps,
+        "A",
+        createMockFlowContext(),
+      );
       const state = manager.getState(steps[1], mockContext, ["A"]);
 
       expect(state.canGoPrevious).toBe(true);
@@ -159,7 +182,12 @@ describe("StateManager", () => {
         { id: "A", type: "INFORMATION", payload: {} },
         { id: "B", type: "INFORMATION", payload: {} }, // No previousStep property
       ];
-      const manager = new StateManager(mockEventManager, steps, "A");
+      const manager = new StateManager(
+        mockEventManager,
+        steps,
+        "A",
+        createMockFlowContext(),
+      );
       // History indicates we came from 'A'
       const state = manager.getState(steps[1], mockContext, ["A"]);
 
@@ -184,7 +212,12 @@ describe("StateManager", () => {
           previousStep: "B_CONDITIONAL",
         },
       ];
-      const manager = new StateManager(mockEventManager, steps, "A");
+      const manager = new StateManager(
+        mockEventManager,
+        steps,
+        "A",
+        createMockFlowContext(),
+      );
       const state = manager.getState(steps[2], mockContext, []);
 
       expect(state.canGoPrevious).toBe(true);
@@ -204,7 +237,12 @@ describe("StateManager", () => {
         { id: "A", type: "INFORMATION", payload: {} },
         { id: "B", type: "INFORMATION", payload: {} }, // No previousStep or history
       ];
-      const manager = new StateManager(mockEventManager, steps, "A");
+      const manager = new StateManager(
+        mockEventManager,
+        steps,
+        "A",
+        createMockFlowContext(),
+      );
       // We are on step 'B', but the history is empty, simulating a cold start.
       const state = manager.getState(steps[1], mockContext, []);
 
@@ -487,6 +525,7 @@ describe("StateManager", () => {
         mockEventManager,
         conditionalOnlySteps,
         "step1", // Starting step
+        createMockFlowContext(),
       );
       const state = specificManager.getState(
         null,
@@ -521,6 +560,7 @@ describe("StateManager", () => {
         mockEventManager,
         stepsWithoutConditions,
         "step1",
+        createMockFlowContext(),
       );
 
       const relevantSteps = manager.getRelevantSteps(mockContext);
@@ -597,6 +637,7 @@ describe("StateManager", () => {
         mockEventManager,
         stepsAllConditional,
         "conditional1",
+        createMockFlowContext(),
       );
 
       const relevantSteps = manager.getRelevantSteps(mockContext);
@@ -620,7 +661,12 @@ describe("StateManager", () => {
           condition: (context) => context.flowData.userType === "user",
         },
       ];
-      const manager = new StateManager(mockEventManager, dynamicSteps, "base");
+      const manager = new StateManager(
+        mockEventManager,
+        dynamicSteps,
+        "base",
+        createMockFlowContext(),
+      );
 
       const adminContext = { flowData: { userType: "admin" } };
       const userContext = { flowData: { userType: "user" } };
@@ -654,7 +700,12 @@ describe("StateManager", () => {
         { id: 2, type: "INFORMATION", payload: {} },
         { id: 3, type: "INFORMATION", payload: {} },
       ];
-      const manager = new StateManager(mockEventManager, numericSteps, 1);
+      const manager = new StateManager(
+        mockEventManager,
+        numericSteps,
+        1,
+        createMockFlowContext(),
+      );
 
       const step = manager.getStepById(2);
 
@@ -684,6 +735,7 @@ describe("StateManager", () => {
         mockEventManager,
         mixedSteps,
         "stringId",
+        createMockFlowContext(),
       );
 
       expect(manager.getStepById("stringId")).toBeDefined();
@@ -773,7 +825,12 @@ describe("StateManager", () => {
         { id: 2, type: "INFORMATION", payload: {} },
         { id: 3, type: "INFORMATION", payload: {} },
       ];
-      const manager = new StateManager(mockEventManager, numericSteps, 1);
+      const manager = new StateManager(
+        mockEventManager,
+        numericSteps,
+        1,
+        createMockFlowContext(),
+      );
 
       const contextWithNumericCompletions = {
         flowData: {

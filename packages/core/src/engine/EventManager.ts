@@ -28,6 +28,8 @@ export class EventManager<
       "flowResumed",
       "flowAbandoned",
       "flowReset",
+      "flowRegistered",
+      "flowUnregistered",
 
       // Step-level
       "stepSkipped",

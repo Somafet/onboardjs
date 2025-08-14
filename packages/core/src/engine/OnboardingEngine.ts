@@ -17,6 +17,10 @@ import {
   ContextUpdateEvent,
   ErrorEvent,
   BeforeStepChangeEvent,
+  FlowInfo,
+  FlowContext,
+  FlowRegisteredEvent,
+  FlowUnregisteredEvent,
 } from "./types";
 import { OnboardingPlugin } from "../plugins/types";
 import { PluginManagerImpl } from "../plugins/PluginManager";
@@ -34,18 +38,86 @@ import { AnalyticsConfig, AnalyticsProvider } from "../analytics/types";
 import { HttpProvider } from "../analytics/providers/http-provider";
 
 let engineInstanceCounter = 0; // Module-level counter
+const engineRegistry = new Map<string, OnboardingEngine<any>>(); // Registry for flow-based lookups
 
 export class OnboardingEngine<
   TContext extends OnboardingContext = OnboardingContext,
 > {
+  // =============================================================================
+  // STATIC REGISTRY METHODS
+  // =============================================================================
+
+  /**
+   * Get an engine instance by its flow ID
+   */
+  static getByFlowId<TContext extends OnboardingContext = OnboardingContext>(
+    flowId: string,
+  ): OnboardingEngine<TContext> | undefined {
+    return engineRegistry.get(flowId) as OnboardingEngine<TContext> | undefined;
+  }
+
+  /**
+   * Get all registered engine instances
+   */
+  static getAllEngines(): OnboardingEngine<any>[] {
+    return Array.from(engineRegistry.values());
+  }
+
+  /**
+   * Get engines by version pattern
+   */
+  static getEnginesByVersion(versionPattern: string): OnboardingEngine<any>[] {
+    return Array.from(engineRegistry.values()).filter((engine) =>
+      engine.isVersionCompatible(versionPattern),
+    );
+  }
+
+  /**
+   * Clear the engine registry (useful for testing)
+   */
+  static clearRegistry(): void {
+    engineRegistry.clear();
+  }
+
+  /**
+   * Get registry statistics
+   */
+  static getRegistryStats(): {
+    totalEngines: number;
+    enginesByFlow: Record<string, number>;
+    enginesByVersion: Record<string, number>;
+  } {
+    const engines = Array.from(engineRegistry.values());
+    const enginesByFlow: Record<string, number> = {};
+    const enginesByVersion: Record<string, number> = {};
+
+    engines.forEach((engine) => {
+      const flowName = engine.getFlowName() || "unnamed";
+      const version = engine.getFlowVersion() || "unversioned";
+
+      enginesByFlow[flowName] = (enginesByFlow[flowName] || 0) + 1;
+      enginesByVersion[version] = (enginesByVersion[version] || 0) + 1;
+    });
+
+    return {
+      totalEngines: engines.length,
+      enginesByFlow,
+      enginesByVersion,
+    };
+  }
+
+  // =============================================================================
+  // INSTANCE PROPERTIES
+  // =============================================================================
+
   public readonly instanceId: number; // Public for easy access in tests
+  public readonly flowContext: FlowContext;
+
   private steps: OnboardingStep<TContext>[];
   private currentStepInternal: OnboardingStep<TContext> | null = null;
   private contextInternal: TContext;
   private history: string[] = [];
-  private logger: Logger;
-
-  // Core managers
+  private logger: Logger; // Core managers
   private analyticsManager: AnalyticsManager<TContext>;
   private eventManager: EventManager<TContext>;
   private pluginManager: PluginManagerImpl<TContext>;
@@ -73,12 +145,21 @@ export class OnboardingEngine<
 
   constructor(config: OnboardingEngineConfig<TContext>) {
     this.instanceId = ++engineInstanceCounter;
+
+    // Initialize flow context
+    this.flowContext = {
+      flowId: config.flowId || null,
+      flowName: config.flowName || null,
+      flowVersion: config.flowVersion || null,
+      flowMetadata: config.flowMetadata || null,
+      instanceId: this.instanceId,
+      createdAt: Date.now(),
+    };
+
     this.logger = new Logger({
       debugMode: config.debug,
-      prefix: "OnboardingEngine",
-    });
-
-    // Validate configuration
+      prefix: `OnboardingEngine[${this.flowContext.flowId || this.instanceId}]`,
+    }); // Validate configuration
     const validation = ConfigurationBuilder.validateConfig(config);
     if (!validation.isValid) {
       throw new Error(`Invalid configuration: ${validation.errors.join(", ")}`);
@@ -102,6 +183,7 @@ export class OnboardingEngine<
       this.eventManager,
       this.steps,
       effectiveInitialStepId,
+      this.flowContext,
       config.debug,
     );
     this.errorHandler = new ErrorHandler(this.eventManager, this.stateManager);
@@ -160,6 +242,20 @@ export class OnboardingEngine<
 
     // Initialize analytics
     this.analyticsManager = this.initializeAnalytics(config);
+
+    // Register engine if it has a flowId
+    if (this.flowContext.flowId) {
+      engineRegistry.set(this.flowContext.flowId, this);
+      this.logger.debug(
+        `Engine registered with flowId: ${this.flowContext.flowId}`,
+      );
+
+      // Emit flow registered event
+      this.eventManager.notifyListeners("flowRegistered", {
+        flowInfo: this.getFlowInfo(),
+        context: this.contextInternal,
+      });
+    }
   }
 
   private setupInitializationPromise(): void {
@@ -702,10 +798,33 @@ export class OnboardingEngine<
 
     // Update configuration
     if (newConfigInput) {
+      // Unregister old flowId if it's changing
+      if (
+        this.flowContext.flowId &&
+        newConfigInput.flowId &&
+        this.flowContext.flowId !== newConfigInput.flowId
+      ) {
+        engineRegistry.delete(this.flowContext.flowId);
+      }
+
       this.config = ConfigurationBuilder.mergeConfigs(
         this.config,
         newConfigInput,
       );
+
+      // Update flow identification properties
+      if (newConfigInput.flowId !== undefined) {
+        (this as any).flowId = newConfigInput.flowId;
+      }
+      if (newConfigInput.flowName !== undefined) {
+        (this as any).flowName = newConfigInput.flowName;
+      }
+      if (newConfigInput.flowVersion !== undefined) {
+        (this as any).flowVersion = newConfigInput.flowVersion;
+      }
+      if (newConfigInput.flowMetadata !== undefined) {
+        (this as any).flowMetadata = newConfigInput.flowMetadata;
+      }
     }
 
     this.steps = this.config.steps || [];
@@ -735,6 +854,14 @@ export class OnboardingEngine<
     );
 
     // Reset managers
+    this.stateManager = new StateManager(
+      this.eventManager,
+      this.steps,
+      this.config.initialStepId ||
+        (this.steps.length > 0 ? this.steps[0].id : null),
+      this.flowContext,
+      this.config.debug,
+    );
     this.stateManager.setLoading(false);
     this.stateManager.setHydrating(false);
     this.stateManager.setError(null);
@@ -757,6 +884,14 @@ export class OnboardingEngine<
       this.errorHandler,
       this.logger,
     );
+
+    // Re-register engine if it has a flowId
+    if (this.flowContext.flowId) {
+      engineRegistry.set(this.flowContext.flowId, this);
+      this.logger.debug(
+        `Engine re-registered with flowId: ${this.flowContext.flowId}`,
+      );
+    }
 
     // Clear performance caches
     PerformanceUtils.clearCaches();
@@ -851,6 +986,101 @@ export class OnboardingEngine<
     listener: (event: ErrorEvent<TContext>) => void | Promise<void>,
   ): UnsubscribeFunction {
     return this.eventRegistry.addErrorListener(listener);
+  }
+
+  public addFlowRegisteredListener(
+    listener: (event: FlowRegisteredEvent<TContext>) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.addEventListener("flowRegistered", listener);
+  }
+
+  public addFlowUnregisteredListener(
+    listener: (event: FlowUnregisteredEvent<TContext>) => void | Promise<void>,
+  ): UnsubscribeFunction {
+    return this.addEventListener("flowUnregistered", listener);
+  }
+
+  /**
+   * Get flow identification information
+   */
+  public getFlowInfo(): FlowInfo {
+    return { ...this.flowContext };
+  }
+
+  /**
+   * Get the unique identifier for this flow
+   */
+  public getFlowId(): string | null {
+    return this.flowContext.flowId;
+  }
+
+  /**
+   * Get the version of this flow
+   */
+  public getFlowVersion(): string | null {
+    return this.flowContext.flowVersion;
+  }
+
+  /**
+   * Get the name of this flow
+   */
+  public getFlowName(): string | null {
+    return this.flowContext.flowName;
+  }
+
+  /**
+   * Get metadata associated with this flow
+   */
+  public getFlowMetadata(): Record<string, unknown> | null {
+    return this.flowContext.flowMetadata;
+  }
+
+  /**
+   * Get the instance ID for this flow
+   */
+  public getInstanceId(): number {
+    return this.instanceId;
+  }
+
+  /**
+   * Generate a namespaced key for persistence based on flow identification
+   */
+  public generatePersistenceKey(baseKey: string = "onboarding"): string {
+    const parts = [baseKey];
+
+    if (this.flowContext.flowId) {
+      parts.push(this.flowContext.flowId);
+    } else if (this.flowContext.flowName) {
+      parts.push(this.flowContext.flowName.replace(/\s+/g, "_").toLowerCase());
+    }
+
+    if (this.flowContext.flowVersion) {
+      parts.push(`v${this.flowContext.flowVersion}`);
+    }
+
+    return parts.join("_");
+  }
+
+  /**
+   * Check if this engine instance matches the given flow identifier
+   */
+  public matchesFlow(flowId: string): boolean {
+    return this.flowContext.flowId === flowId;
+  }
+
+  /**
+   * Check if this engine instance is compatible with a given version
+   * Uses semantic versioning comparison
+   */
+  public isVersionCompatible(requiredVersion: string): boolean {
+    if (!this.flowContext.flowVersion) return false;
+
+    // Simple major version compatibility check
+    // In a real implementation, you might want to use a proper semver library
+    const currentMajor = this.flowContext.flowVersion.split(".")[0];
+    const requiredMajor = requiredVersion.split(".")[0];
+
+    return currentMajor === requiredMajor;
   }
 
   // =============================================================================
@@ -1057,6 +1287,15 @@ export class OnboardingEngine<
       this.logger,
     );
 
+    // Set flow information in analytics manager
+    manager.setFlowInfo({
+      flowId: this.flowContext.flowId || undefined,
+      flowName: this.flowContext.flowName || undefined,
+      flowVersion: this.flowContext.flowVersion || undefined,
+      flowMetadata: this.flowContext.flowMetadata || undefined,
+      instanceId: this.instanceId,
+    });
+
     if (analyticsConfig.enabled && manager.providerCount === 0) {
       this.logger.warn(
         "[Analytics] Analytics tracking is enabled, but no external analytics " +
@@ -1114,6 +1353,29 @@ export class OnboardingEngine<
       manager.trackFlowCompleted(event.context);
       manager.flush();
     });
+
+    // Track flow registration events
+    this.addEventListener("flowRegistered", (event) => {
+      manager.trackEvent("flow_registered", {
+        flowInfo: event.flowInfo,
+        timestamp: Date.now(),
+      });
+    });
+
+    this.addEventListener("flowUnregistered", (event) => {
+      manager.trackEvent("flow_unregistered", {
+        flowInfo: event.flowInfo,
+        timestamp: Date.now(),
+      });
+    });
+
+    // Track flow reset events with version info
+    this.addEventListener("flowReset", (event) => {
+      manager.trackEvent("flow_reset", {
+        resetReason: event.resetReason,
+        flowInfo: this.getFlowInfo(),
+      });
+    });
   }
 
   // Public method to track custom events
@@ -1140,9 +1402,48 @@ export class OnboardingEngine<
   }
 
   /**
+   * Cleanup and destroy the engine instance
+   */
+  public async destroy(): Promise<void> {
+    this.logger.debug("Destroying engine...");
+
+    // Emit flow unregistered event before cleanup
+    if (
+      this.flowContext.flowId &&
+      engineRegistry.get(this.flowContext.flowId) === this
+    ) {
+      this.eventManager.notifyListeners("flowUnregistered", {
+        flowInfo: this.getFlowInfo(),
+        context: this.contextInternal,
+      });
+    }
+
+    // Unregister from global registry
+    if (
+      this.flowContext.flowId &&
+      engineRegistry.get(this.flowContext.flowId) === this
+    ) {
+      engineRegistry.delete(this.flowContext.flowId);
+      this.logger.debug(
+        `Engine unregistered from flowId: ${this.flowContext.flowId}`,
+      );
+    }
+
+    // Cleanup managers
+    await this.pluginManager.cleanup();
+    this.operationQueue.clear();
+
+    // Clear performance caches
+    PerformanceUtils.clearCaches();
+
+    this.logger.debug("Engine destroyed.");
+  }
+
+  /**
    * Get detailed engine information for debugging
    */
   public getDebugInfo(): {
+    flowInfo: FlowInfo;
     currentStep: OnboardingStep<TContext> | null;
     context: TContext;
     history: string[];
@@ -1152,6 +1453,7 @@ export class OnboardingEngine<
     config: OnboardingEngineConfig<TContext>;
   } {
     return {
+      flowInfo: this.getFlowInfo(),
       currentStep: this.currentStepInternal,
       context: this.contextInternal,
       history: [...this.history],

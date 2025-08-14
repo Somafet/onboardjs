@@ -8,9 +8,35 @@ import { OnboardingStep, OnboardingContext } from "../types";
 // Engine State & Base Types
 // =============================================================================
 
+export interface FlowContext {
+  flowId: string | null;
+  flowName: string | null;
+  flowVersion: string | null;
+  flowMetadata: Record<string, unknown> | null;
+  instanceId: number;
+  createdAt: number;
+}
+
+export interface FlowInfo {
+  flowId: string | null;
+  flowName: string | null;
+  flowVersion: string | null;
+  flowMetadata: Record<string, unknown> | null;
+  instanceId: number;
+  createdAt: number;
+}
+
 export interface EngineState<
   TContext extends OnboardingContext = OnboardingContext,
 > {
+  // Flow identification
+  flowId: string | null;
+  flowName: string | null;
+  flowVersion: string | null;
+  flowMetadata: Record<string, unknown> | null;
+  instanceId: number;
+
+  // Current state
   currentStep: OnboardingStep<TContext> | null;
   context: TContext;
   isFirstStep: boolean;
@@ -262,6 +288,20 @@ export interface ChecklistProgressChangedEvent<
   };
 }
 
+export interface FlowRegisteredEvent<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  flowInfo: FlowInfo;
+  context: TContext;
+}
+
+export interface FlowUnregisteredEvent<
+  TContext extends OnboardingContext = OnboardingContext,
+> {
+  flowInfo: FlowInfo;
+  context: TContext;
+}
+
 export interface PluginInstalledEvent {
   pluginName: string;
   pluginVersion: string;
@@ -349,6 +389,14 @@ export interface EventListenerMap<
   // Plugin events
   pluginInstalled: (event: PluginInstalledEvent) => void | Promise<void>;
   pluginError: (event: PluginErrorEvent<TContext>) => void | Promise<void>;
+
+  // Flow management events
+  flowRegistered: (
+    event: FlowRegisteredEvent<TContext>,
+  ) => void | Promise<void>;
+  flowUnregistered: (
+    event: FlowUnregisteredEvent<TContext>,
+  ) => void | Promise<void>;
 }
 
 // =============================================================================
@@ -377,6 +425,28 @@ export type DataPersistFn<
 export interface OnboardingEngineConfig<
   TContext extends OnboardingContext = OnboardingContext,
 > {
+  /**
+   * Unique identifier for this onboarding flow.
+   * Useful when running multiple flows on the same page.
+   */
+  flowId?: string;
+
+  /**
+   * Human-readable name for this onboarding flow.
+   */
+  flowName?: string;
+
+  /**
+   * Version of this onboarding flow.
+   * Follows semantic versioning (e.g., "1.0.0", "2.1.0").
+   */
+  flowVersion?: string;
+
+  /**
+   * Optional metadata for the flow (e.g., target audience, feature flags).
+   */
+  flowMetadata?: Record<string, unknown>;
+
   /**
    * The list of steps in the onboarding flow.
    * Each step should implement the OnboardingStep interface.

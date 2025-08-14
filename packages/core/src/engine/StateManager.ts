@@ -4,7 +4,7 @@ import { OnboardingContext, OnboardingStep } from "../types";
 import { evaluateStepId, findStepById } from "../utils/step-utils";
 import { EventManager } from "./EventManager";
 import { Logger } from "../services/Logger";
-import { EngineState } from "./types";
+import { EngineState, FlowContext } from "./types";
 
 export class StateManager<TContext extends OnboardingContext> {
   private isLoadingInternal = false;
@@ -17,6 +17,7 @@ export class StateManager<TContext extends OnboardingContext> {
     private eventManager: EventManager<TContext>,
     private steps: OnboardingStep<TContext>[],
     private initialStepId: string | number | null,
+    private flowContext: FlowContext,
     debugMode?: boolean,
   ) {
     this.logger = new Logger({
@@ -146,6 +147,14 @@ export class StateManager<TContext extends OnboardingContext> {
       currentStepIndex !== -1 ? currentStepIndex + 1 : 0;
 
     return {
+      // Flow identification
+      flowId: this.flowContext.flowId,
+      flowName: this.flowContext.flowName,
+      flowVersion: this.flowContext.flowVersion,
+      flowMetadata: this.flowContext.flowMetadata,
+      instanceId: this.flowContext.instanceId,
+
+      // Current state
       currentStep,
       context,
       isFirstStep,
