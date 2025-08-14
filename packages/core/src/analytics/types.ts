@@ -14,12 +14,19 @@ export interface AnalyticsEvent {
 export interface AnalyticsEventPayload {
   [key: string]: unknown;
   pageUrl?: string;
-  // Add these?
-  // stepId?: string;
-  // isResumed?: boolean;
-  // flowData?: any;
-  // duration?: number;
-  // totalSteps?: number;
+  sessionData?: {
+    userAgent?: string;
+    screenResolution?: string;
+    viewportSize?: string;
+    timezone?: string;
+    language?: string;
+    platform?: string;
+  };
+  performanceMetrics?: {
+    memoryUsage?: number;
+    connectionType?: string;
+    renderTimeHistory?: number[];
+  };
 }
 
 export interface AnalyticsProvider {
@@ -44,4 +51,30 @@ export interface AnalyticsConfig {
         navigation?: boolean;
         interactions?: boolean;
       };
+
+  // Enhanced configuration options
+  enableProgressMilestones?: boolean;
+  enablePerformanceTracking?: boolean;
+  enableChurnDetection?: boolean;
+  milestonePercentages?: number[];
+  performanceThresholds?: {
+    slowStepMs?: number;
+    slowRenderMs?: number;
+  };
+
+  // Privacy and data control
+  excludePersonalData?: boolean;
+  sanitizeData?: (data: Record<string, any>) => Record<string, any>;
+  excludeFlowDataKeys?: string[];
+
+  // Event filtering
+  includeUserProperties?: boolean;
+  includeFlowData?: boolean;
+  includeFlowInfo?: boolean;
+  includeStepMetadata?: boolean;
+  includePerformanceMetrics?: boolean;
+  includeSessionData?: boolean;
+
+  // Global properties
+  globalProperties?: Record<string, any>;
 }
