@@ -1345,7 +1345,7 @@ export class OnboardingEngine<
 
     // Track flow started
     this.addEventListener("flowStarted", (event) => {
-      manager.trackFlowStarted(event.context, event.startMethod === "resumed");
+      manager.trackFlowStarted(event.context, event.startMethod);
     });
 
     // Track flow completed
