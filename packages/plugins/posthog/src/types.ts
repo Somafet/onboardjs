@@ -14,6 +14,7 @@ export interface PostHogPluginConfig extends PluginConfig {
   // Data inclusion options
   includeUserProperties?: boolean;
   includeFlowData?: boolean;
+  includeFlowInfo?: boolean;
   includeStepMetadata?: boolean;
   includePerformanceMetrics?: boolean;
   includeSessionData?: boolean;

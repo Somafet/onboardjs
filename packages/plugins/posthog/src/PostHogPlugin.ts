@@ -26,6 +26,7 @@ import {
   ChecklistProgressChangedEvent,
   PluginInstalledEvent,
   PluginErrorEvent,
+  FlowInfo,
 } from "@onboardjs/core";
 import { PostHog } from "posthog-js";
 import {
@@ -196,6 +197,23 @@ export class PostHogPlugin<
     }
   }
 
+  private getFlowInfo(): FlowInfo | undefined {
+    return this.engine && typeof this.engine.getFlowInfo === "function"
+      ? this.engine.getFlowInfo()
+      : undefined;
+  }
+
+  private debugLog(message: string, data?: any): void {
+    if (this.config.debug) {
+      const flowInfo = this.getFlowInfo();
+      const prefix = flowInfo?.flowId ? `[${flowInfo.flowId}]` : "";
+      console.log(
+        `[PostHogPlugin]${prefix} ${message}`,
+        data ? { ...data, flowInfo } : flowInfo ? { flowInfo } : undefined,
+      );
+    }
+  }
+
   private async handleStepActive(
     event: StepActiveEvent<TContext>,
   ): Promise<void> {
@@ -232,6 +250,7 @@ export class PostHogPlugin<
       step,
       context,
       this.performanceTracker.getCurrentMetrics(),
+      this.getFlowInfo(),
     );
 
     this.captureEvent("stepActive", eventData);
@@ -281,6 +300,7 @@ export class PostHogPlugin<
         stepRenderTime: renderTime,
         ...this.performanceTracker.getCurrentMetrics(),
       },
+      this.getFlowInfo(),
     );
 
     this.captureEvent("stepCompleted", eventData);
@@ -312,6 +332,7 @@ export class PostHogPlugin<
       undefined,
       context,
       this.performanceTracker.getCurrentMetrics(),
+      this.getFlowInfo(),
     );
 
     this.captureEvent("flowStarted", eventData);
@@ -325,6 +346,8 @@ export class PostHogPlugin<
       { reason },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("flowPaused", eventData);
   }
@@ -337,6 +360,8 @@ export class PostHogPlugin<
       { resume_point: resumePoint },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("flowResumed", eventData);
   }
@@ -349,6 +374,8 @@ export class PostHogPlugin<
       { abandonment_reason: abandonmentReason },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("flowAbandoned", eventData);
   }
@@ -361,6 +388,8 @@ export class PostHogPlugin<
       { reset_reason: resetReason },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("flowReset", eventData);
   }
@@ -375,6 +404,8 @@ export class PostHogPlugin<
       { step_id: step.id, skip_reason: skipReason },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("stepSkipped", eventData);
   }
@@ -389,6 +420,8 @@ export class PostHogPlugin<
       { step_id: step.id, retry_count: retryCount },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("stepRetried", eventData);
   }
@@ -403,6 +436,8 @@ export class PostHogPlugin<
       { step_id: step.id, validation_errors: validationErrors },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("stepValidationFailed", eventData);
   }
@@ -417,6 +452,8 @@ export class PostHogPlugin<
       { step_id: step.id, help_type: helpType },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("stepHelpRequested", eventData);
   }
@@ -431,6 +468,8 @@ export class PostHogPlugin<
       { step_id: step.id, time_on_step: timeOnStep },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("stepAbandoned", eventData);
   }
@@ -445,6 +484,8 @@ export class PostHogPlugin<
       { from_step_id: fromStep.id, to_step_id: toStep.id },
       toStep,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("navigationBack", eventData);
   }
@@ -459,6 +500,8 @@ export class PostHogPlugin<
       { from_step_id: fromStep.id, to_step_id: toStep.id },
       toStep,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("navigationForward", eventData);
   }
@@ -473,6 +516,8 @@ export class PostHogPlugin<
       { from_step_id: fromStep.id, to_step_id: toStep.id },
       toStep,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("navigationJump", eventData);
   }
@@ -503,6 +548,8 @@ export class PostHogPlugin<
       { persistence_time: persistenceTime },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("persistenceSuccess", eventData);
   }
@@ -517,6 +564,8 @@ export class PostHogPlugin<
       { error_message: error.message },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("persistenceFailure", eventData);
   }
@@ -531,6 +580,8 @@ export class PostHogPlugin<
       { item_id: itemId, is_completed: isCompleted },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("checklistItemToggled", eventData);
   }
@@ -545,6 +596,8 @@ export class PostHogPlugin<
       { ...progress },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("checklistProgress", eventData);
   }
@@ -568,6 +621,8 @@ export class PostHogPlugin<
       { plugin_name: pluginName, error_message: error.message },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
     this.captureEvent("pluginError", eventData);
   }
@@ -590,6 +645,7 @@ export class PostHogPlugin<
       undefined,
       context,
       this.performanceTracker.getCurrentMetrics(),
+      this.getFlowInfo(),
     );
 
     this.captureEvent("flowCompleted", eventData);
@@ -680,6 +736,8 @@ export class PostHogPlugin<
       },
       undefined,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
 
     this.captureEvent("errorEncountered", eventData);
@@ -711,6 +769,8 @@ export class PostHogPlugin<
       },
       step,
       context,
+      undefined,
+      this.getFlowInfo(),
     );
 
     this.captureEvent("stepAbandoned", eventData);
@@ -726,6 +786,8 @@ export class PostHogPlugin<
         },
         step,
         context,
+        undefined,
+        this.getFlowInfo(),
       );
 
       // You might want to add 'highChurnRisk' to EventNameMapping if you use this
@@ -770,6 +832,8 @@ export class PostHogPlugin<
           },
           undefined,
           context,
+          undefined,
+          this.getFlowInfo(),
         );
 
         this.captureEvent("progressMilestone", eventData);

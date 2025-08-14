@@ -22,6 +22,7 @@ export const defaultPostHogConfig: Partial<PostHogPluginConfig> = {
   includeUserProperties: true,
   includeFlowData: true,
   includeStepMetadata: true,
+  includeFlowInfo: true,
   enableChurnDetection: true,
   churnTimeoutMs: 300000, // 5 minutes
   enableProgressMilestones: true,
