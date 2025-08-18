@@ -41,7 +41,7 @@
     "directory": "packages/plugins/mixpanel"
   },
   "peerDependencies": {
-    "@onboardjs/core": ">=0.3.0-alpha.1",
+    "@onboardjs/core": ">=0.3.7",
     "mixpanel-browser": ">=2.55.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
