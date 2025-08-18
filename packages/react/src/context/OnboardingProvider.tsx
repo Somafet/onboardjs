@@ -61,6 +61,46 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType>
    * This can be used by consumers to render the step UI.
    */
   renderStep: () => React.ReactNode;
+
+  /**
+   * Analytics methods for tracking custom events
+   */
+  analytics: {
+    /**
+     * Track a simple custom event
+     * @param eventName The name of the event
+     * @param properties Additional properties to include
+     */
+    trackEvent: (eventName: string, properties?: Record<string, any>) => void;
+
+    /**
+     * Track a custom business event with enhanced context information
+     * @param eventName The name of the custom event
+     * @param properties Additional properties to include with the event
+     * @param options Optional configuration for the event
+     */
+    trackCustomEvent: (
+      eventName: string,
+      properties?: Record<string, any>,
+      options?: {
+        includeStepContext?: boolean;
+        includeFlowProgress?: boolean;
+        includeContextData?: boolean;
+        category?: string;
+        priority?: "low" | "normal" | "high" | "critical";
+      },
+    ) => void;
+
+    /**
+     * Flush all pending analytics events
+     */
+    flush: () => Promise<void>;
+
+    /**
+     * Set the user ID for analytics tracking
+     */
+    setUserId: (userId: string) => void;
+  };
 }
 
 // Default context for backward compatibility
@@ -498,6 +538,42 @@ export function OnboardingProvider<
     [engine, isEngineReadyAndInitialized, stepSpecificData],
   );
 
+  const analytics = useMemo(
+    () => ({
+      trackEvent: (eventName: string, properties: Record<string, any> = {}) => {
+        if (engine && isEngineReadyAndInitialized) {
+          engine.trackEvent(eventName, properties);
+        }
+      },
+      trackCustomEvent: (
+        eventName: string,
+        properties: Record<string, any> = {},
+        options: {
+          includeStepContext?: boolean;
+          includeFlowProgress?: boolean;
+          includeContextData?: boolean;
+          category?: string;
+          priority?: "low" | "normal" | "high" | "critical";
+        } = {},
+      ) => {
+        if (engine && isEngineReadyAndInitialized) {
+          engine.trackCustomEvent(eventName, properties, options);
+        }
+      },
+      flush: async () => {
+        if (engine && isEngineReadyAndInitialized) {
+          await engine.flushAnalytics();
+        }
+      },
+      setUserId: (userId: string) => {
+        if (engine && isEngineReadyAndInitialized) {
+          engine.setAnalyticsUserId(userId);
+        }
+      },
+    }),
+    [engine, isEngineReadyAndInitialized],
+  );
+
   const value = useMemo(
     (): OnboardingContextValue<TContext> => ({
       engine: isEngineReadyAndInitialized ? engine : null,
@@ -511,6 +587,7 @@ export function OnboardingProvider<
       isCompleted: engineState?.isCompleted,
       error: engineState?.error ?? null,
       renderStep,
+      analytics,
       ...actions,
     }),
     [
@@ -520,6 +597,7 @@ export function OnboardingProvider<
       isEngineReadyAndInitialized,
       actions,
       renderStep,
+      analytics,
     ],
   );
 
