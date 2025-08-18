@@ -1,0 +1,57 @@
+{
+  "name": "@onboardjs/mixpanel-plugin",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Official Mixpanel analytics plugin for OnboardJS.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly true",
+    "test": "vitest --coverage"
+  },
+  "keywords": [
+    "onboardjs",
+    "mixpanel",
+    "analytics",
+    "onboarding",
+    "tracking",
+    "plugin"
+  ],
+  "author": {
+    "name": "Soma Somorjai",
+    "email": "soma@onboardjs.com",
+    "url": "https://somafet.com"
+  },
+  "license": "MIT",
+  "homepage": "https://onboardjs.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Somafet/onboardjs.git",
+    "directory": "packages/plugins/mixpanel"
+  },
+  "peerDependencies": {
+    "@onboardjs/core": ">=0.3.0-alpha.1",
+    "mixpanel-browser": ">=2.55.0",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@onboardjs/core": "*",
+    "@vitest/coverage-v8": "^3.1.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4",
+    "mixpanel-browser": "^2.55.0"
+  },
+  "dependencies": {}
+}
