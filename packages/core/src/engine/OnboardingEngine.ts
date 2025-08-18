@@ -1386,6 +1386,110 @@ export class OnboardingEngine<
     this.analyticsManager.trackEvent(eventName, properties);
   }
 
+  /**
+   * Track a custom business event with enhanced context information.
+   * This method automatically enriches the event with current flow context.
+   *
+   * @param eventName The name of the custom event
+   * @param properties Additional properties to include with the event
+   * @param options Optional configuration for the event
+   */
+  public trackCustomEvent(
+    eventName: string,
+    properties: Record<string, any> = {},
+    options: {
+      /** Include current step information in the event */
+      includeStepContext?: boolean;
+      /** Include current flow progress in the event */
+      includeFlowProgress?: boolean;
+      /** Include current context data (sanitized) */
+      includeContextData?: boolean;
+      /** Custom event category for organization */
+      category?: string;
+      /** Event priority level */
+      priority?: "low" | "normal" | "high" | "critical";
+    } = {},
+  ): void {
+    const {
+      includeStepContext = true,
+      includeFlowProgress = true,
+      includeContextData = false,
+      category = "custom",
+      priority = "normal",
+    } = options;
+
+    // Build enhanced properties
+    const enhancedProperties: Record<string, any> = {
+      ...properties,
+      category,
+      priority,
+      timestamp: Date.now(),
+    };
+
+    // Add step context if requested
+    if (includeStepContext && this.currentStepInternal) {
+      enhancedProperties.stepContext = {
+        currentStepId: this.currentStepInternal.id,
+        currentStepType: this.currentStepInternal.type,
+        stepIndex: this.getStepIndex(this.currentStepInternal.id),
+        isFirstStep: this.getStepIndex(this.currentStepInternal.id) === 0,
+        isLastStep:
+          this.getStepIndex(this.currentStepInternal.id) ===
+          this.getRelevantSteps().length - 1,
+      };
+    }
+
+    // Add flow progress if requested
+    if (includeFlowProgress) {
+      const relevantSteps = this.getRelevantSteps();
+      const currentStepIndex = this.currentStepInternal
+        ? this.getStepIndex(this.currentStepInternal.id)
+        : -1;
+
+      enhancedProperties.flowProgress = {
+        totalSteps: relevantSteps.length,
+        currentStepNumber: currentStepIndex + 1,
+        progressPercentage:
+          relevantSteps.length > 0
+            ? Math.round(((currentStepIndex + 1) / relevantSteps.length) * 100)
+            : 0,
+        isCompleted: this.stateManager.isCompleted,
+      };
+    }
+
+    // Add context data if requested (sanitized)
+    if (includeContextData) {
+      enhancedProperties.contextData = this.sanitizeContextForAnalytics(
+        this.contextInternal,
+      );
+    }
+
+    // Track the event
+    this.analyticsManager.trackEvent(`custom.${eventName}`, enhancedProperties);
+  }
+
+  /**
+   * Sanitize context data for analytics tracking by removing sensitive information
+   */
+  private sanitizeContextForAnalytics(context: TContext): Record<string, any> {
+    const sanitized = { ...context };
+
+    // Remove potentially sensitive fields
+    delete sanitized.apiKeys;
+    delete sanitized.tokens;
+    delete sanitized.password;
+    delete sanitized.secret;
+
+    // Remove internal tracking data that's not useful for custom events
+    if (sanitized.flowData && sanitized.flowData._internal) {
+      const flowDataCopy = { ...sanitized.flowData };
+      delete flowDataCopy._internal;
+      sanitized.flowData = flowDataCopy;
+    }
+
+    return sanitized;
+  }
+
   // Public method to register additional analytics providers
   public registerAnalyticsProvider(provider: AnalyticsProvider): void {
     this.analyticsManager.registerProvider(provider);
