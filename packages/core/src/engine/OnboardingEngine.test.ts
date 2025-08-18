@@ -2348,4 +2348,378 @@ describe("OnboardingEngine", () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
   });
+
+  describe("Analytics and Custom Event Tracking", () => {
+    let mockAnalyticsManager: any;
+    let trackEventSpy: any;
+
+    beforeEach(() => {
+      // Mock the analytics manager to capture calls
+      trackEventSpy = vi.fn();
+      mockAnalyticsManager = {
+        trackEvent: trackEventSpy,
+        registerProvider: vi.fn(),
+        flush: vi.fn(),
+        setUserId: vi.fn(),
+        setFlowInfo: vi.fn(),
+        providerCount: 0,
+      };
+    });
+
+    describe("trackEvent", () => {
+      it("should delegate simple event tracking to analytics manager", async () => {
+        engine = new OnboardingEngine(basicConfig);
+        await engine.ready();
+
+        // Replace the analytics manager with our mock
+        (engine as any).analyticsManager = mockAnalyticsManager;
+
+        engine.trackEvent("custom_button_click", {
+          buttonId: "cta",
+          page: "welcome",
+        });
+
+        expect(trackEventSpy).toHaveBeenCalledWith("custom_button_click", {
+          buttonId: "cta",
+          page: "welcome",
+        });
+      });
+
+      it("should handle empty properties", async () => {
+        engine = new OnboardingEngine(basicConfig);
+        await engine.ready();
+        (engine as any).analyticsManager = mockAnalyticsManager;
+
+        engine.trackEvent("simple_event");
+
+        expect(trackEventSpy).toHaveBeenCalledWith("simple_event", {});
+      });
+    });
+
+    describe("trackCustomEvent", () => {
+      beforeEach(async () => {
+        engine = new OnboardingEngine(basicConfig);
+        await engine.ready();
+        (engine as any).analyticsManager = mockAnalyticsManager;
+      });
+
+      it("should track custom event with default options and step context", async () => {
+        engine.trackCustomEvent("user_interaction", {
+          action: "click",
+          element: "button",
+        });
+
+        expect(trackEventSpy).toHaveBeenCalledWith("custom.user_interaction", {
+          action: "click",
+          element: "button",
+          category: "custom",
+          priority: "normal",
+          timestamp: expect.any(Number),
+          stepContext: {
+            currentStepId: "step1",
+            currentStepType: undefined,
+            stepIndex: 0,
+            isFirstStep: true,
+            isLastStep: false,
+          },
+          flowProgress: {
+            totalSteps: 3,
+            currentStepNumber: 1,
+            progressPercentage: 33,
+            isCompleted: false,
+          },
+        });
+      });
+
+      it("should track custom event with custom category and priority", async () => {
+        engine.trackCustomEvent(
+          "payment_completed",
+          { amount: 99.99, currency: "USD" },
+          { category: "business", priority: "critical" },
+        );
+
+        expect(trackEventSpy).toHaveBeenCalledWith("custom.payment_completed", {
+          amount: 99.99,
+          currency: "USD",
+          category: "business",
+          priority: "critical",
+          timestamp: expect.any(Number),
+          stepContext: expect.any(Object),
+          flowProgress: expect.any(Object),
+        });
+      });
+
+      it("should include sanitized context data when requested", async () => {
+        // Update context with some test data including sensitive info
+        await engine.updateContext({
+          flowData: { userName: "John", preferences: { theme: "dark" } },
+          currentUser: { id: "123", email: "john@example.com" },
+          apiKeys: { provider: "fake_key_12345" }, // Should be sanitized
+          password: "secret123", // Should be sanitized
+        });
+
+        engine.trackCustomEvent(
+          "profile_updated",
+          { field: "email" },
+          { includeContextData: true },
+        );
+
+        const call = trackEventSpy.mock.calls[0];
+        const eventProperties = call[1];
+
+        expect(eventProperties.contextData).toBeDefined();
+        expect(eventProperties.contextData.flowData).toEqual({
+          userName: "John",
+          preferences: { theme: "dark" },
+        });
+        expect(eventProperties.contextData.currentUser).toEqual({
+          id: "123",
+          email: "john@example.com",
+        });
+        // Sensitive data should be removed
+        expect(eventProperties.contextData.apiKeys).toBeUndefined();
+        expect(eventProperties.contextData.password).toBeUndefined();
+        expect(eventProperties.contextData.secret).toBeUndefined();
+        expect(eventProperties.contextData.tokens).toBeUndefined();
+      });
+
+      it("should handle options to exclude step context", async () => {
+        engine.trackCustomEvent(
+          "background_sync",
+          { status: "completed" },
+          { includeStepContext: false },
+        );
+
+        const call = trackEventSpy.mock.calls[0];
+        const eventProperties = call[1];
+
+        expect(eventProperties.stepContext).toBeUndefined();
+        expect(eventProperties.flowProgress).toBeDefined(); // Should still include by default
+      });
+
+      it("should handle options to exclude flow progress", async () => {
+        engine.trackCustomEvent(
+          "ui_component_rendered",
+          { component: "modal" },
+          { includeFlowProgress: false },
+        );
+
+        const call = trackEventSpy.mock.calls[0];
+        const eventProperties = call[1];
+
+        expect(eventProperties.stepContext).toBeDefined(); // Should still include by default
+        expect(eventProperties.flowProgress).toBeUndefined();
+      });
+
+      it("should handle event when no current step is set", async () => {
+        // Navigate to completion to have no current step
+        await engine.next(); // step2
+        await engine.next(); // step3 (final)
+        await engine.next(); // completed
+
+        engine.trackCustomEvent("post_completion_event", { type: "feedback" });
+
+        const call = trackEventSpy.mock.calls[0];
+        const eventProperties = call[1];
+
+        expect(eventProperties.stepContext).toBeUndefined();
+        expect(eventProperties.flowProgress).toEqual({
+          totalSteps: 3,
+          currentStepNumber: 0, // -1 + 1
+          progressPercentage: 0,
+          isCompleted: true,
+        });
+      });
+
+      it("should track event with all options disabled", async () => {
+        engine.trackCustomEvent(
+          "minimal_event",
+          { data: "test" },
+          {
+            includeStepContext: false,
+            includeFlowProgress: false,
+            includeContextData: false,
+            category: "debug",
+            priority: "low",
+          },
+        );
+
+        expect(trackEventSpy).toHaveBeenCalledWith("custom.minimal_event", {
+          data: "test",
+          category: "debug",
+          priority: "low",
+          timestamp: expect.any(Number),
+        });
+      });
+
+      it("should correctly calculate step position for last step", async () => {
+        // Navigate to the last step
+        await engine.next(); // step2
+        await engine.next(); // step3 (last step)
+
+        engine.trackCustomEvent("last_step_event", {});
+
+        const call = trackEventSpy.mock.calls[0];
+        const eventProperties = call[1];
+
+        expect(eventProperties.stepContext.isLastStep).toBe(true);
+        expect(eventProperties.stepContext.isFirstStep).toBe(false);
+        expect(eventProperties.stepContext.stepIndex).toBe(2);
+        expect(eventProperties.flowProgress.progressPercentage).toBe(100);
+      });
+    });
+
+    describe("sanitizeContextForAnalytics", () => {
+      it("should remove sensitive fields from context", () => {
+        const contextWithSensitiveData = {
+          flowData: {
+            userName: "John",
+            preferences: { theme: "dark" },
+            _internal: {
+              completedSteps: {},
+              startedAt: Date.now(),
+              stepStartTimes: {},
+            },
+          },
+          currentUser: { id: "123", email: "john@example.com" },
+          apiKeys: { provider: "fake_key_12345", aws: "fake_aws_key" },
+          tokens: { jwt: "eyJ0eXAi..." },
+          password: "secret123",
+          secret: "my-secret-key",
+          normalData: "should-remain",
+        };
+
+        // Access the private method using type assertion
+        const sanitized = (engine as any).sanitizeContextForAnalytics(
+          contextWithSensitiveData,
+        );
+
+        // Should keep normal data and currentUser
+        expect(sanitized.normalData).toBe("should-remain");
+        expect(sanitized.currentUser).toEqual({
+          id: "123",
+          email: "john@example.com",
+        });
+
+        // Should remove sensitive fields
+        expect(sanitized.apiKeys).toBeUndefined();
+        expect(sanitized.tokens).toBeUndefined();
+        expect(sanitized.password).toBeUndefined();
+        expect(sanitized.secret).toBeUndefined();
+
+        // Should remove _internal from flowData but keep other flowData
+        expect(sanitized.flowData.userName).toBe("John");
+        expect(sanitized.flowData.preferences).toEqual({ theme: "dark" });
+        expect(sanitized.flowData._internal).toBeUndefined();
+      });
+
+      it("should handle context without flowData", () => {
+        const contextWithoutFlowData = {
+          currentUser: { id: "123" },
+          apiKeys: { provider: "fake_key_12345" },
+          normalData: "test",
+        };
+
+        const sanitized = (engine as any).sanitizeContextForAnalytics(
+          contextWithoutFlowData,
+        );
+
+        expect(sanitized.normalData).toBe("test");
+        expect(sanitized.currentUser).toEqual({ id: "123" });
+        expect(sanitized.apiKeys).toBeUndefined();
+      });
+
+      it("should handle context with flowData but no _internal", () => {
+        const contextWithFlowData = {
+          flowData: {
+            userName: "John",
+            userPrefs: { theme: "dark" },
+          },
+          secret: "should-be-removed",
+        };
+
+        const sanitized = (engine as any).sanitizeContextForAnalytics(
+          contextWithFlowData,
+        );
+
+        expect(sanitized.flowData).toEqual({
+          userName: "John",
+          userPrefs: { theme: "dark" },
+        });
+        expect(sanitized.secret).toBeUndefined();
+      });
+
+      it("should not mutate the original context", () => {
+        const originalContext = {
+          flowData: {
+            userName: "John",
+            _internal: { completedSteps: {} },
+          },
+          apiKeys: { provider: "fake_key_12345" },
+        };
+
+        const originalContextCopy = JSON.parse(JSON.stringify(originalContext));
+        (engine as any).sanitizeContextForAnalytics(originalContext);
+
+        // Original context should remain unchanged
+        expect(originalContext).toEqual(originalContextCopy);
+      });
+    });
+
+    describe("analytics integration methods", () => {
+      beforeEach(async () => {
+        engine = new OnboardingEngine(basicConfig);
+        await engine.ready();
+        (engine as any).analyticsManager = mockAnalyticsManager;
+      });
+
+      it("should register analytics provider", () => {
+        const mockProvider = { name: "test-provider", trackEvent: vi.fn() };
+        engine.registerAnalyticsProvider(mockProvider);
+
+        expect(mockAnalyticsManager.registerProvider).toHaveBeenCalledWith(
+          mockProvider,
+        );
+      });
+
+      it("should flush analytics", async () => {
+        await engine.flushAnalytics();
+
+        expect(mockAnalyticsManager.flush).toHaveBeenCalled();
+      });
+
+      it("should set analytics user ID", () => {
+        engine.setAnalyticsUserId("user123");
+
+        expect(mockAnalyticsManager.setUserId).toHaveBeenCalledWith("user123");
+      });
+    });
+
+    describe("cloud analytics configuration", () => {
+      it("should enable analytics when publicKey and apiHost are provided", () => {
+        const configWithCloud = {
+          ...basicConfig,
+          publicKey: "pk_test_123",
+          apiHost: "https://api.onboardjs.com",
+        };
+
+        engine = new OnboardingEngine(configWithCloud);
+
+        // Analytics should be automatically enabled when cloud config is provided
+        const analyticsManager = (engine as any).analyticsManager;
+        expect(analyticsManager).toBeDefined();
+      });
+
+      it("should work without cloud configuration", async () => {
+        engine = new OnboardingEngine(basicConfig);
+        await engine.ready();
+
+        // Should not throw errors when tracking events without cloud config
+        expect(() => {
+          engine.trackEvent("test_event");
+          engine.trackCustomEvent("test_custom_event");
+        }).not.toThrow();
+      });
+    });
+  });
 });

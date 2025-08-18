@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/react",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Official React bindings for OnboardJS.",
   "keywords": [
     "onboarding",
@@ -59,7 +59,7 @@
     "vitest": "^3.1.4"
   },
   "peerDependencies": {
-    "@onboardjs/core": ">=0.3.1",
+    "@onboardjs/core": ">=0.3.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }
