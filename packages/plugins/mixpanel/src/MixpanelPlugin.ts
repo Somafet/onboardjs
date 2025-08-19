@@ -46,11 +46,12 @@ import { EventDataBuilder } from "./utils/eventBuilder";
 import { ChurnDetectionManager } from "./utils/churnDetection";
 import { PerformanceTracker } from "./utils/performanceMetrics";
 
-export class MixpanelPlugin<
-  TContext extends OnboardingContext,
-> extends BasePlugin<TContext, MixpanelPluginConfig> {
+export class MixpanelPlugin<TContext extends OnboardingContext> extends BasePlugin<
+  TContext,
+  MixpanelPluginConfig
+> {
   readonly name = "@onboardjs/mixpanel-plugin";
-  readonly version = "1.0.0";
+  readonly version = "1.0.1";
   readonly description = "Official Mixpanel analytics plugin for OnboardJS";
 
   private mixpanel!: Mixpanel;

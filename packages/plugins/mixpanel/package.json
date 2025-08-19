@@ -1,6 +1,6 @@
 {
   "name": "@onboardjs/mixpanel-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "description": "Official Mixpanel analytics plugin for OnboardJS.",
   "files": [

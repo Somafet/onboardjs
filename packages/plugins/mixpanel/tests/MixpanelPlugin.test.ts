@@ -31,7 +31,7 @@ describe('MixpanelPlugin', () => {
 
   it('should be created with correct name and version', () => {
     expect(plugin.name).toBe("@onboardjs/mixpanel-plugin");
-    expect(plugin.version).toBe('1.0.0');
+    expect(plugin.version).toBe("1.0.1");
     expect(plugin.description).toBe('Official Mixpanel analytics plugin for OnboardJS');
   });
 
