@@ -29,40 +29,11 @@ import {
   PluginErrorEvent,
   EngineState,
 } from "@onboardjs/core";
-// Mixpanel interface definition
 interface Mixpanel {
   init(token: string, config?: any): void;
   track(event: string, properties?: any): void;
   people: {
     set(properties: any): void;
-  };
-}
-
-// Import mixpanel-browser with proper typing
-let mixpanel: Mixpanel;
-
-// Handle both browser and server environments
-if (typeof window !== "undefined") {
-  try {
-    // Dynamic import for browser environment
-    mixpanel = require("mixpanel-browser") as Mixpanel;
-  } catch (error) {
-    console.warn(
-      "[MixpanelPlugin] Failed to import mixpanel-browser. Make sure it is installed.",
-    );
-    // Create a no-op implementation for fallback
-    mixpanel = {
-      init: () => {},
-      track: () => {},
-      people: { set: () => {} },
-    };
-  }
-} else {
-  // Server-side fallback
-  mixpanel = {
-    init: () => {},
-    track: () => {},
-    people: { set: () => {} },
   };
 }
 
@@ -78,7 +49,7 @@ import { PerformanceTracker } from "./utils/performanceMetrics";
 export class MixpanelPlugin<
   TContext extends OnboardingContext,
 > extends BasePlugin<TContext, MixpanelPluginConfig> {
-  readonly name = "@onboardjs/plugin-mixpanel";
+  readonly name = "@onboardjs/mixpanel-plugin";
   readonly version = "1.0.0";
   readonly description = "Official Mixpanel analytics plugin for OnboardJS";
 
@@ -87,6 +58,7 @@ export class MixpanelPlugin<
   private churnDetection!: ChurnDetectionManager<TContext>;
   private performanceTracker!: PerformanceTracker;
   private progressMilestones = new Set<number>();
+  private retriedSteps = new Map<string, number>(); // Track retry counts per step
 
   private readonly defaultEventNames: EventNameMapping = {
     // Flow events
@@ -138,9 +110,6 @@ export class MixpanelPlugin<
   };
 
   protected async onInstall(): Promise<void> {
-    // Initialize Mixpanel
-    this.initializeMixpanel();
-
     // Initialize utilities
     this.eventBuilder = new EventDataBuilder(this.config);
     this.churnDetection = new ChurnDetectionManager(
@@ -148,6 +117,9 @@ export class MixpanelPlugin<
       this.config.churnRiskThreshold,
     );
     this.performanceTracker = new PerformanceTracker();
+
+    // Initialize Mixpanel
+    await this.initializeMixpanel();
 
     // Log installation
     if (this.config.debug) {
@@ -163,6 +135,7 @@ export class MixpanelPlugin<
     this.churnDetection.cleanup();
     this.performanceTracker.cleanup();
     this.progressMilestones.clear();
+    this.retriedSteps.clear();
 
     if (this.config.debug) {
       console.log(`[MixpanelPlugin] Plugin uninstalled`);
@@ -203,13 +176,37 @@ export class MixpanelPlugin<
     };
   }
 
-  private initializeMixpanel(): void {
+  private async initializeMixpanel(): Promise<void> {
+    // Handle both browser and server environments
+    if (typeof window !== "undefined") {
+      try {
+        // Dynamic import for browser environment
+        this.mixpanel = (await import("mixpanel-browser")).default;
+      } catch (error) {
+        console.warn(
+          "[MixpanelPlugin] Failed to import mixpanel-browser. Make sure it is installed.",
+        );
+        // Create a no-op implementation for fallback
+        this.mixpanel = {
+          init: () => {},
+          track: () => {},
+          people: { set: () => {} },
+        };
+      }
+    } else {
+      // Server-side fallback
+      this.mixpanel = {
+        init: () => {},
+        track: () => {},
+        people: { set: () => {} },
+      };
+    }
+
     if (this.config.mixpanelInstance) {
       this.mixpanel = this.config.mixpanelInstance;
       this.debugLog("Using provided Mixpanel instance");
     } else if (this.config.token) {
-      mixpanel.init(this.config.token, this.config.config || {});
-      this.mixpanel = mixpanel;
+      this.mixpanel.init(this.config.token, this.config.config || {});
       this.debugLog("Initialized Mixpanel with token");
     } else {
       throw new Error(
@@ -440,6 +437,10 @@ export class MixpanelPlugin<
   ): Promise<void> {
     if (!this.shouldTrackEvent("stepRetried")) return;
     const { step, context, retryCount } = event;
+
+    // Track retry count locally
+    this.retriedSteps.set(step.id.toString(), retryCount);
+
     const eventData = this.eventBuilder.buildEventData(
       "stepRetried",
       { step_id: step.id, retry_count: retryCount },
@@ -1027,7 +1028,14 @@ export class MixpanelPlugin<
 
   // Helper methods for data extraction
   private getStepIndex(step: OnboardingStep<TContext>): number {
-    return this._getEngineState().currentStepNumber;
+    // Get the index of the step in the relevant steps list
+    if (this.engine && typeof this.engine.getRelevantSteps === "function") {
+      const relevantSteps = this.engine.getRelevantSteps();
+      const index = relevantSteps.findIndex((s) => s.id === step.id);
+      return index !== -1 ? index : 0;
+    }
+    // Fallback to engine state if getRelevantSteps is not available
+    return this._getEngineState().currentStepNumber - 1; // Convert to 0-based index
   }
 
   private isFirstStep(step: OnboardingStep<TContext>): boolean {
@@ -1048,8 +1056,8 @@ export class MixpanelPlugin<
   }
 
   private getCompletedStepsCount(): number {
-    // This would need to be implemented based on how completed steps are tracked
-    return this._getEngineState().completedSteps ?? 0;
+    const engineState = this._getEngineState();
+    return engineState.completedSteps ?? 0;
   }
 
   private getSkippedStepsCount(context: TContext): number {
@@ -1058,24 +1066,26 @@ export class MixpanelPlugin<
   }
 
   private getRetriedStepsCount(context: TContext): number {
-    // This would need to be implemented based on how retried steps are tracked
-    return (context as any).retriedSteps?.length || 0;
+    // Count unique steps that have been retried
+    return this.retriedSteps.size;
   }
 
   private getFlowCompletionTime(context: TContext): number {
-    // This would need to be implemented based on how flow start time is tracked
-    const startTime = (context as any).flowStartTime;
-    return startTime ? Date.now() - startTime : 0;
+    // Get flow start time from internal tracking data
+    const startedAt = context.flowData?._internal?.startedAt;
+    return startedAt ? Date.now() - startedAt : 0;
   }
 
   private getPreviousStepId(context: TContext): string | undefined {
-    // This would need to be implemented based on your navigation history tracking
-    return (context as any).previousStepId;
+    // Get the previous step from engine state
+    const engineState = this._getEngineState();
+    return engineState.previousStepCandidate?.id?.toString();
   }
 
   private getCurrentStepId(context: TContext): string | number | undefined {
-    // This would need to be implemented based on your current step tracking
-    return this._getEngineState().currentStep?.id;
+    // Get current step ID from engine state
+    const engineState = this._getEngineState();
+    return engineState.currentStep?.id;
   }
 
   private getCompletionMethod(stepData: any): string {
