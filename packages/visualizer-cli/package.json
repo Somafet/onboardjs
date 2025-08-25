@@ -1,6 +1,6 @@
 {
   "name": "onboardjs-visualizer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI tool to serve OnboardJS Visualizer in a web browser",
   "author": "Soma Somorjai <soma@onboardjs.com>",
   "license": "MIT",
@@ -46,7 +46,8 @@
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0",
+    "@onboardjs/visualizer": "^0.1.3"
   }
 }
