@@ -503,7 +503,6 @@ export interface OnboardingEngineConfig<
 
   /**
    * Optional configuration for OnboardJS Cloud Analytics.
-   * If provided, analytics events will be sent to the specified cloud endpoint.
    */
   cloudOptions?: {
     /**
@@ -516,4 +515,9 @@ export interface OnboardingEngineConfig<
      */
     samplingRate?: number;
   };
+
+  /**
+   * The user ID for tracking user-specific events.
+   */
+  userId?: string | null;
 }

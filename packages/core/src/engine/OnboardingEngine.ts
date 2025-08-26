@@ -1296,6 +1296,10 @@ export class OnboardingEngine<
       instanceId: this.instanceId,
     });
 
+    if (this.config.userId) {
+      manager.setUserId(this.config.userId);
+    }
+
     if (analyticsConfig.enabled && manager.providerCount === 0) {
       this.logger.warn(
         "[Analytics] Analytics tracking is enabled, but no external analytics " +
@@ -1502,6 +1506,7 @@ export class OnboardingEngine<
 
   // Method to set user ID for analytics
   public setAnalyticsUserId(userId: string): void {
+    this.config.userId = userId;
     this.analyticsManager.setUserId(userId);
   }
 
