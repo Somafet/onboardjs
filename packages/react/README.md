@@ -90,46 +90,48 @@ export const stepRegistry = {
 ### 3. Wrap Your App with OnboardingProvider
 
 ```tsx
-'use client';
+'use client'
 
-import { OnboardingProvider } from '@onboardjs/react';
-import { steps, stepRegistry } from '@/config/onboarding';
+import { OnboardingProvider } from '@onboardjs/react'
+import { steps, stepRegistry } from '@/config/onboarding'
 
 export default function OnboardingPage() {
-  return (
-    <OnboardingProvider
-      steps={steps}
-      componentRegistry={stepRegistry}
-      localStoragePersistence={{
-        key: 'onboarding_v1',
-        // ttl: 1000 * 60 * 60 * 24, // 1 day (optional)
-      }}
-    >
-      <OnboardingUI />
-    </OnboardingProvider>
-  );
+    return (
+        <OnboardingProvider
+            steps={steps}
+            componentRegistry={stepRegistry}
+            localStoragePersistence={{
+                key: 'onboarding_v1',
+                // ttl: 1000 * 60 * 60 * 24, // 1 day (optional)
+            }}
+        >
+            <OnboardingUI />
+        </OnboardingProvider>
+    )
 }
 ```
 
 ### 4. Build Your UI with useOnboarding
 
 ```tsx
-'use client';
+'use client'
 import { useOnboarding } from '@onboardjs/react'
 
 export default function OnboardingUI({ stepsConfig, stepComponentRegistry }) {
-  const { state, next, isLoading, renderStep } = useOnboarding()
+    const { state, next, isLoading, renderStep } = useOnboarding()
 
-  if (!state || !state.currentStep) return <p>Loading...</p>
-  if (state.isCompleted) return <p>Onboarding complete! 🎉</p>
+    if (!state || !state.currentStep) return <p>Loading...</p>
+    if (state.isCompleted) return <p>Onboarding complete! 🎉</p>
 
-  return (
-    <div>
-      <h2>{state.currentStep.title}</h2>
-      {renderStep()}
-      <button onClick={() => next()} disabled={isLoading || !state.canGoNext}>Next</button>
-    </div>
-  );
+    return (
+        <div>
+            <h2>{state.currentStep.title}</h2>
+            {renderStep()}
+            <button onClick={() => next()} disabled={isLoading || !state.canGoNext}>
+                Next
+            </button>
+        </div>
+    )
 }
 ```
 

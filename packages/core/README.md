@@ -7,7 +7,6 @@
 [![Build Status](https://github.com/Somafet/onboardjs/actions/workflows/core-tests.yml/badge.svg?branch=main&path=packages/core)](#)
 [![npm downloads](https://img.shields.io/npm/dm/@onboardjs/core.svg)](https://www.npmjs.com/package/@onboardjs/core)
 
-
 **`@onboardjs/core` is the headless, framework-agnostic engine that powers dynamic and customizable onboarding experiences. It provides the foundational logic for defining, managing, and transitioning through multi-step user onboarding flows.**
 
 This core library is designed to be integrated into any JavaScript/TypeScript application, with dedicated binding packages (like [`@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)) for popular UI frameworks.
@@ -35,28 +34,28 @@ Building effective user onboarding is crucial for product adoption and user succ
 
 - **Declarative Flow Definition:** Define onboarding flows as a simple array of step objects.
 - **Flexible Step Structure:** Each step includes:
-  - `id`: Unique identifier.
-  - `type`: String identifier for the kind of step (e.g., `INFORMATION`, `SINGLE_CHOICE`, `CHECKLIST`, `CUSTOM_COMPONENT`).
-  - `payload`: Arbitrary data specific to the step type, used to render its content.
+    - `id`: Unique identifier.
+    - `type`: String identifier for the kind of step (e.g., `INFORMATION`, `SINGLE_CHOICE`, `CHECKLIST`, `CUSTOM_COMPONENT`).
+    - `payload`: Arbitrary data specific to the step type, used to render its content.
 - **Dynamic Navigation:**
-  - `nextStep`, `previousStep`, `skipToStep`: Can be a static step ID (string) or a function `(context: OnboardingContext) => string | null | undefined` for conditional routing.
+    - `nextStep`, `previousStep`, `skipToStep`: Can be a static step ID (string) or a function `(context: OnboardingContext) => string | null | undefined` for conditional routing.
 - **Conditional Step Rendering:**
-  - `condition: (context: OnboardingContext) => boolean`: Dynamically show or hide steps based on collected data or user state.
+    - `condition: (context: OnboardingContext) => boolean`: Dynamically show or hide steps based on collected data or user state.
 - **Lifecycle Hooks:**
-  - `onStepActive: (context: OnboardingContext) => Promise<void> | void`: Execute logic when a step becomes active (e.g., pre-load data).
-  - `onStepComplete: (stepData: any, context: OnboardingContext) => Promise<void> | void`: Execute logic when a step is completed (e.g., validate data, make API calls).
+    - `onStepActive: (context: OnboardingContext) => Promise<void> | void`: Execute logic when a step becomes active (e.g., pre-load data).
+    - `onStepComplete: (stepData: any, context: OnboardingContext) => Promise<void> | void`: Execute logic when a step is completed (e.g., validate data, make API calls).
 - **Shared Onboarding Context:**
-  - `OnboardingContext`: An object containing `flowData` (data collected from all steps) and other shared information (like `currentUser`).
+    - `OnboardingContext`: An object containing `flowData` (data collected from all steps) and other shared information (like `currentUser`).
 - **Event System:**
-  - Subscribe to engine events like `stateChange` and `beforeStepChange` to react to flow updates or intercept navigation.
+    - Subscribe to engine events like `stateChange` and `beforeStepChange` to react to flow updates or intercept navigation.
 - **Data Persistence Hooks:**
-  - `loadData`: Allows you to load saved progress when the engine initializes.
-  - `persistData`: Allows you to save progress whenever data changes or steps are completed.
+    - `loadData`: Allows you to load saved progress when the engine initializes.
+    - `persistData`: Allows you to save progress whenever data changes or steps are completed.
 - **Flow Validation Utility:**
-  - `validateFlow()`: A helper function to check your flow definitions for common errors.
+    - `validateFlow()`: A helper function to check your flow definitions for common errors.
 - **Support for Various Step Types:**
-  - Includes definitions for common types (e.g., `INFORMATION`, `CONFIRMATION`, `CHECKLIST`).
-  - Crucially supports `CUSTOM_COMPONENT` type for maximum flexibility when used with UI binding libraries.
+    - Includes definitions for common types (e.g., `INFORMATION`, `CONFIRMATION`, `CHECKLIST`).
+    - Crucially supports `CUSTOM_COMPONENT` type for maximum flexibility when used with UI binding libraries.
 - **Plugin System:** Easily extend the engine with custom plugins for additional functionality (e.g., analytics, custom storage).
 
 ## Installation
@@ -78,148 +77,136 @@ bun add @onboardjs/core
 This example demonstrates the basic usage of the `OnboardingEngine`. For UI integration, you'll typically use a binding library like `@onboardjs/react`.
 
 ```typescript
-import {
-  OnboardingEngine,
-  OnboardingStep,
-  OnboardingContext,
-} from "@onboardjs/core";
+import { OnboardingEngine, OnboardingStep, OnboardingContext } from '@onboardjs/core'
 
 // 1. Define your onboarding steps
 const steps: OnboardingStep[] = [
-  {
-    id: "welcome",
-    type: "INFORMATION", // Predefined or custom type
-    payload: {
-      title: "Welcome to Our App!",
-      mainText: "We are excited to have you.",
+    {
+        id: 'welcome',
+        type: 'INFORMATION', // Predefined or custom type
+        payload: {
+            title: 'Welcome to Our App!',
+            mainText: 'We are excited to have you.',
+        },
+        nextStep: 'profile-setup',
+        onStepActive: (context) => {
+            console.log('Welcome step is now active!', context.flowData)
+        },
     },
-    nextStep: "profile-setup",
-    onStepActive: (context) => {
-      console.log("Welcome step is now active!", context.flowData);
+    {
+        id: 'profile-setup',
+        type: 'CUSTOM_COMPONENT', // Example type
+        payload: {
+            componentKey: 'ProfileSetupComponent', // This should match a registered component
+            title: 'Setup Your Profile',
+            fields: [{ id: 'name', name: 'userName', label: 'Your Name', type: 'text' }],
+        },
+        previousStep: 'welcome',
+        nextStep: (context: OnboardingContext) => {
+            // Dynamic navigation based on collected data
+            return context.flowData?.userName ? 'confirmation' : 'profile-setup-error'
+        },
+        onStepComplete: async (stepData, context) => {
+            console.log('Profile data submitted:', stepData)
+            // context.flowData will be automatically updated by the engine
+            // with stepData before this hook is called if data is passed to engine.next(stepData)
+            // You might make an API call here:
+            // await api.updateUserProfile(context.flowData.userName);
+        },
     },
-  },
-  {
-    id: "profile-setup",
-    type: "CUSTOM_COMPONENT", // Example type
-    payload: {
-      componentKey: "ProfileSetupComponent", // This should match a registered component
-      title: "Setup Your Profile",
-      fields: [
-        { id: "name", name: "userName", label: "Your Name", type: "text" },
-      ],
+    {
+        id: 'profile-setup-error',
+        type: 'INFORMATION',
+        payload: {
+            title: 'Name Required',
+            mainText: 'Please go back and enter your name.',
+        },
+        previousStep: 'profile-setup',
+        nextStep: null,
     },
-    previousStep: "welcome",
-    nextStep: (context: OnboardingContext) => {
-      // Dynamic navigation based on collected data
-      return context.flowData?.userName
-        ? "confirmation"
-        : "profile-setup-error";
+    {
+        id: 'confirmation',
+        type: 'CONFIRMATION',
+        payload: { title: 'All Set!', confirmationMessage: 'Your profile is set up.' },
+        previousStep: 'profile-setup',
+        nextStep: null, // End of flow
     },
-    onStepComplete: async (stepData, context) => {
-      console.log("Profile data submitted:", stepData);
-      // context.flowData will be automatically updated by the engine
-      // with stepData before this hook is called if data is passed to engine.next(stepData)
-      // You might make an API call here:
-      // await api.updateUserProfile(context.flowData.userName);
-    },
-  },
-  {
-    id: "profile-setup-error",
-    type: "INFORMATION",
-    payload: {
-      title: "Name Required",
-      mainText: "Please go back and enter your name.",
-    },
-    previousStep: "profile-setup",
-    nextStep: null,
-  },
-  {
-    id: "confirmation",
-    type: "CONFIRMATION",
-    payload: { title: "All Set!", confirmationMessage: "Your profile is set up." },
-    previousStep: "profile-setup",
-    nextStep: null, // End of flow
-  },
-];
+]
 
 // 2. Configure and instantiate the engine
 const engine = new OnboardingEngine({
-  steps,
-  initialStepId: "welcome", // Optional: defaults to the first step in your steps array
-  initialContext: {
-    // Provide initial global data if needed
-    // flowData: { prefillSomeValue: 'test' },
-    currentUser: { id: "user123", email: "user@example.com" },
-  },
-  onFlowComplete: (context: OnboardingContext) => {
-    console.log("Onboarding flow completed! Final data:", context.flowData);
-    // e.g., mark onboarding as complete for the user in your backend
-  },
-  onStepChange: (newStep, oldStep, context) => {
-    if (newStep) {
-      console.log(
-        `Moved to step: ${newStep.payload.title} (ID: ${newStep.id})`,
-      );
-    }
-    if (oldStep) {
-      console.log(
-        `Came from step: ${oldStep.payload.title} (ID: ${oldStep.id})`,
-      );
-    }
-  },
-  // onDataLoad: async () => {
-  //   if (typeof window !== 'undefined') {
-  //     const saved = localStorage.getItem('onboardingState');
-  //     if (saved) {
-  //       const parsed = JSON.parse(saved);
-  //       // Check TTL if needed
-  //       return parsed.data; // Assuming you store { timestamp, data: LoadedData }
-  //     }
-  //   }
-  //   return null;
-  // },
-  // onDataPersist: async (context, currentStepId) => {
-  //   if (typeof window !== 'undefined') {
-  //     const stateToStore = {
-  //       timestamp: Date.now(),
-  //       data: { flowData: context.flowData, currentStepId }
-  //     };
-  //     localStorage.setItem('onboardingState', JSON.stringify(stateToStore));
-  //   }
-  // }
-});
+    steps,
+    initialStepId: 'welcome', // Optional: defaults to the first step in your steps array
+    initialContext: {
+        // Provide initial global data if needed
+        // flowData: { prefillSomeValue: 'test' },
+        currentUser: { id: 'user123', email: 'user@example.com' },
+    },
+    onFlowComplete: (context: OnboardingContext) => {
+        console.log('Onboarding flow completed! Final data:', context.flowData)
+        // e.g., mark onboarding as complete for the user in your backend
+    },
+    onStepChange: (newStep, oldStep, context) => {
+        if (newStep) {
+            console.log(`Moved to step: ${newStep.payload.title} (ID: ${newStep.id})`)
+        }
+        if (oldStep) {
+            console.log(`Came from step: ${oldStep.payload.title} (ID: ${oldStep.id})`)
+        }
+    },
+    // onDataLoad: async () => {
+    //   if (typeof window !== 'undefined') {
+    //     const saved = localStorage.getItem('onboardingState');
+    //     if (saved) {
+    //       const parsed = JSON.parse(saved);
+    //       // Check TTL if needed
+    //       return parsed.data; // Assuming you store { timestamp, data: LoadedData }
+    //     }
+    //   }
+    //   return null;
+    // },
+    // onDataPersist: async (context, currentStepId) => {
+    //   if (typeof window !== 'undefined') {
+    //     const stateToStore = {
+    //       timestamp: Date.now(),
+    //       data: { flowData: context.flowData, currentStepId }
+    //     };
+    //     localStorage.setItem('onboardingState', JSON.stringify(stateToStore));
+    //   }
+    // }
+})
 
 // 3. Subscribe to state changes (e.g., to update your UI)
-const unsubscribe = engine.addEventListener("stateChange", (newState) => {
-  console.log("Engine state changed:", newState);
-  // Update your UI based on newState.currentStep, newState.context, etc.
-  // For example, if using React, you'd update component state here.
-});
+const unsubscribe = engine.addEventListener('stateChange', (newState) => {
+    console.log('Engine state changed:', newState)
+    // Update your UI based on newState.currentStep, newState.context, etc.
+    // For example, if using React, you'd update component state here.
+})
 
 // 4. Interact with the engine
 async function runFlow() {
-  let currentState = engine.getState();
+    let currentState = engine.getState()
 
-  // Example: Simulate completing the profile setup step
-  if (currentState.currentStep?.id === "profile-setup") {
-    // Data collected by the UI for the 'profile-setup' step
-    const profileData = { userName: "Soma The Developer" };
-    console.log('Simulating "Next" with profile data:', profileData);
-    await engine.next(profileData); // Pass data collected by the current step
-    currentState = engine.getState();
-  }
+    // Example: Simulate completing the profile setup step
+    if (currentState.currentStep?.id === 'profile-setup') {
+        // Data collected by the UI for the 'profile-setup' step
+        const profileData = { userName: 'Soma The Developer' }
+        console.log('Simulating "Next" with profile data:', profileData)
+        await engine.next(profileData) // Pass data collected by the current step
+        currentState = engine.getState()
+    }
 
-  // Example: If on confirmation, simulate "Next" to finish
-  if (currentState.currentStep?.id === "confirmation") {
-    console.log('Simulating "Next" to finish flow.');
-    await engine.next();
-  }
+    // Example: If on confirmation, simulate "Next" to finish
+    if (currentState.currentStep?.id === 'confirmation') {
+        console.log('Simulating "Next" to finish flow.')
+        await engine.next()
+    }
 }
 
 // Call after engine initialization (which might be async due to onDataLoad)
 // A good practice is to wait for the initial hydration/loading state to clear.
 // You can use `engine.ready()` to ensure the engine is ready before running the flow.
-await engine.ready();
+await engine.ready()
 ```
 
 ## Core Concepts
@@ -316,20 +303,20 @@ Use the `onDataLoad` and `onDataPersist` configuration options to integrate with
 
 ```typescript
 const engine = new OnboardingEngine({
-  steps,
-  async onDataLoad() {
-    // Your logic to load { flowData, currentStepId }
-    const data = await myApi.getOnboardingState();
-    return data;
-  },
-  async onDataPersist(context, currentStepId) {
-    // Your logic to save context.flowData and currentStepId
-    await myApi.saveOnboardingState({
-      flowData: context.flowData,
-      currentStepId,
-    });
-  },
-});
+    steps,
+    async onDataLoad() {
+        // Your logic to load { flowData, currentStepId }
+        const data = await myApi.getOnboardingState()
+        return data
+    },
+    async onDataPersist(context, currentStepId) {
+        // Your logic to save context.flowData and currentStepId
+        await myApi.saveOnboardingState({
+            flowData: context.flowData,
+            currentStepId,
+        })
+    },
+})
 ```
 
 ### Conditional Navigation & Step Rendering
@@ -338,25 +325,24 @@ Leverage function arguments for `nextStep`, `previousStep`, `skipToStep`, and th
 
 ```typescript
 const steps: OnboardingStep[] = [
-  {
-    id: "user-type-choice",
-    type: "SINGLE_CHOICE",
-    payload: {
-      dataKey: "userRole",
-      options: [{ value: "admin" }, { value: "user" }],
+    {
+        id: 'user-type-choice',
+        type: 'SINGLE_CHOICE',
+        payload: {
+            dataKey: 'userRole',
+            options: [{ value: 'admin' }, { value: 'user' }],
+        },
+        nextStep: (context) => (context.flowData.userRole === 'admin' ? 'admin-setup' : 'user-setup'),
     },
-    nextStep: (context) =>
-      context.flowData.userRole === "admin" ? "admin-setup" : "user-setup",
-  },
-  {
-    id: "admin-feature",
-    type: "INFO",
-    title: "Admin Feature",
-    payload: { message: "This is for admins only." },
-    condition: (context) => context.currentUser?.role === "admin", // Example using currentUser
-    nextStep: "common-next-step",
-  },
-];
+    {
+        id: 'admin-feature',
+        type: 'INFO',
+        title: 'Admin Feature',
+        payload: { message: 'This is for admins only.' },
+        condition: (context) => context.currentUser?.role === 'admin', // Example using currentUser
+        nextStep: 'common-next-step',
+    },
+]
 ```
 
 ### Custom Step Types

@@ -100,19 +100,19 @@ This repository is a [Turborepo](https://turborepo.org/) monorepo containing the
 ## 🛠️ Getting Started (Development)
 
 1. **Clone & Install:**
-   ```bash
-   git clone https://github.com/Somafet/onboardjs.git
-   cd onboardjs
-   pnpm install
-   ```
+    ```bash
+    git clone https://github.com/Somafet/onboardjs.git
+    cd onboardjs
+    pnpm install
+    ```
 2. **Build All Packages:**
-   ```bash
-   turbo run build
-   ```
+    ```bash
+    turbo run build
+    ```
 3. **Run Tests:**
-   ```bash
-   turbo run test
-   ```
+    ```bash
+    turbo run test
+    ```
 
 ---
 
