@@ -21,24 +21,12 @@ runs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
 
-    - name: Get pnpm cache directory path
-      id: pnpm-cache-dir
-      shell: bash
-      run: echo "PNPM_STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node_version }}
         registry-url: https://registry.npmjs.org
         cache: "pnpm"
-
-    - uses: actions/cache@v4
-      id: pnpm-cache
-      with:
-        path: ${{ steps.pnpm-cache-dir.outputs.PNPM_STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: ${{ runner.os }}-pnpm-
 
     - name: Install package.json dependencies with pnpm
       if: ${{ inputs.install == 'true' }}

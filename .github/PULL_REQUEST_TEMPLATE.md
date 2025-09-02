@@ -19,7 +19,6 @@
 - [ ] @onboardjs/posthog-plugin (plugin)
 - [ ] @onboardjs/supabase-plugin (plugin)
 - [ ] @onboardjs/mixpanel-plugin (plugin)
-- [ ] @onboardjs/visualizer-cli (CLI)
 
 ## Checklist
 
