@@ -23,7 +23,6 @@ jobs:
                     - name: '@onboardjs/posthog-plugin'
                     - name: '@onboardjs/mixpanel-plugin'
                     - name: '@onboardjs/visualizer'
-                    - name: '@onboardjs/visualizer-cli'
 
         steps:
             - name: Checkout the repository
