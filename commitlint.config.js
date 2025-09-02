@@ -1,7 +1,3 @@
-module.exports = {
-  extends: ["@commitlint/config-conventional"],
-  // TODO:
-  // rules: {
-  //   'scope-enum': [2, 'always', ['global', 'web', 'docs', 'shared']],
-  // },
-};
+import commitLint from '@commitlint/config-conventional'
+
+export default commitLint

@@ -1,37 +1,36 @@
-## Description
+## Problem
 
-Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+<!-- Who are we building for, what are their needs, why is this important? -->
 
-Fixes # (issue)
+## Changes
 
-## Type of change
+<!-- What is changed and what information would be useful to a reviewer? -->
 
-Please delete options that are not relevant.
+## Release info Sub-libraries affected
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
+### Libraries affected
 
-## How Has This Been Tested?
+<!-- Please mark which libraries will require a version bump. -->
 
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration.
+- [ ] All of them
+- [ ] @onboardjs/core (headless)
+- [ ] @onboardjs/react (React)
+- [ ] @onboardjs/visualizer (React)
+- [ ] @onboardjs/posthog-plugin (plugin)
+- [ ] @onboardjs/supabase-plugin (plugin)
+- [ ] @onboardjs/mixpanel-plugin (plugin)
+- [ ] @onboardjs/visualizer-cli (CLI)
 
-- [ ] Test A
-- [ ] Test B
+## Checklist
 
-**Test Environment**:
-- Deployment [e.g. Vercel, VPS, localhost]
-- Version [e.g. 0.3.2]
-- Packages [e.g. @onboardjs/core]
+- [ ] Tests for new code
+- [ ] Accounted for the impact of any changes across different platforms
+- [ ] Accounted for backwards compatibility of any changes (no breaking changes!)
+- [ ] Took care not to unnecessarily increase the bundle size
 
-## Checklist:
+### If releasing new changes
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
+- [ ] Ran `pnpm changeset` to generate a changeset file
+- [ ] Added the "release" label to the PR to indicate we're publishing new versions for the affected packages
+
+<!-- For more details check RELEASING.md -->
