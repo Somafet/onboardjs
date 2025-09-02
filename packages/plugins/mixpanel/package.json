@@ -48,10 +48,10 @@
   },
   "devDependencies": {
     "@onboardjs/core": "*",
+    "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "^3.1.4",
+    "mixpanel-browser": "^2.55.0",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.4",
-    "mixpanel-browser": "^2.55.0"
-  },
-  "dependencies": {}
+    "vitest": "^3.1.4"
+  }
 }
