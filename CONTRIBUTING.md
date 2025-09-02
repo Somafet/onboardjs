@@ -54,6 +54,8 @@ We welcome all contributions: code, documentation, bug reports, feature requests
    pnpm install
    ```
 
+   This will also set up git hooks automatically via husky.
+
 3. **Build all packages:**
 
    ```bash
@@ -74,7 +76,15 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 - **Linting:** Run `pnpm lint` before submitting.
 - **Formatting:** Use Prettier (`pnpm format`) for consistent code style.
 - **Tests:** Add or update tests for your changes.
-- **Commits:** Use clear, descriptive commit messages.
+- **Commit Messages:** Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
+  - `feat: add new feature`
+  - `fix: resolve bug`
+  - `docs: update documentation`
+  - `style: code formatting changes`
+  - `refactor: code refactoring`
+  - `test: add or update tests`
+  - `chore: maintenance tasks`
+- **Git Hooks:** Husky is configured to automatically validate commit messages using commitlint.
 
 ---
 
@@ -86,7 +96,7 @@ We welcome all contributions: code, documentation, bug reports, feature requests
    git checkout -b (feature or bug)/your-feature-name
    ```
 
-2. **Make your changes** and commit them.
+2. **Make your changes** and commit them using conventional commit format.
 
 3. **Push to your fork** and open a pull request (PR) against the `main` branch.
 
