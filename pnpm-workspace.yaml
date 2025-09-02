@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - apps/examples/*
+  - packages/*
+  - packages/plugins/*
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - core-js
+  - esbuild
+  - sharp
+  - unrs-resolver

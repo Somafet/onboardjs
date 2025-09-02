@@ -18,34 +18,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "npm"
+          cache: "pnpm"
 
-      - name: Clean install (remove node_modules and lockfile)
-        run: |
-          rm -rf node_modules package-lock.json
-
-      - name: Install dependencies (at root)
-        run: npm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build core package
-        run: npm run build --workspace=@onboardjs/core
+        run: pnpm --filter=@onboardjs/core build
 
       - name: Build react package
-        run: npm run build --workspace=@onboardjs/react
+        run: pnpm --filter=@onboardjs/react build
 
       - name: Run Vitest with coverage
-        run: npx vitest run --coverage
+        run: pnpm test:coverage
         working-directory: packages/react
 
       - name: Display coverage summary
         if: always()
         run: |
           if [ -f coverage/coverage-summary.json ]; then
-            npx vitest coverage report --reporter=text-summary
+            pnpm vitest coverage report --reporter=text-summary
           else
             echo "No coverage summary found."
           fi
+        working-directory: packages/react

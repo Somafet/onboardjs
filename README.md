@@ -32,13 +32,11 @@ To get started with OnboardJS, you can install the core library and the React bi
 ### 1. Install
 
 ```bash
-npm install @onboardjs/core @onboardjs/react
+pnpm add @onboardjs/core @onboardjs/react
 ```
 
 ```bash
 yarn add @onboardjs/core @onboardjs/react
-# or
-pnpm add @onboardjs/core @onboardjs/react
 # or
 bun add @onboardjs/core @onboardjs/react
 ```
@@ -109,16 +107,11 @@ This repository is a [Turborepo](https://turborepo.org/) monorepo containing the
    ```
 2. **Build All Packages:**
    ```bash
-   pnpm build
+   turbo run build
    ```
 3. **Run Tests:**
    ```bash
-   pnpm test
-   ```
-4. **Lint & Format**
-   ```bash
-    pnpm lint
-    pnpm format
+   turbo run test
    ```
 
 ---

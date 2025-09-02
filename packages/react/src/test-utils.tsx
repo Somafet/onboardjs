@@ -1,5 +1,5 @@
 import React from "react";
-import { render, RenderOptions } from "@testing-library/react";
+import { render, RenderOptions, RenderResult } from "@testing-library/react";
 import { vi } from "vitest";
 import {
   OnboardingStep,
@@ -242,7 +242,7 @@ interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
 export function renderWithOnboardingProvider(
   ui: React.ReactElement,
   options: CustomRenderOptions = {},
-) {
+): RenderResult {
   const {
     onboardingConfig = {},
     localStoragePersistence,
@@ -276,6 +276,6 @@ export function renderWithOnboardingProvider(
 export function renderWithTestUtils(
   ui: React.ReactElement,
   options: RenderOptions = {},
-) {
+): RenderResult {
   return render(ui, options);
 }

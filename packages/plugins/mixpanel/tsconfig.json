@@ -23,7 +23,10 @@
 
     /* Output */
     "outDir": "dist",
-    "declarationDir": "dist"
+    "declarationDir": "dist",
+
+    /* Types */
+    "types": ["node"]
   },
   "include": ["src"]
 }
