@@ -1,24 +1,30 @@
-**Describe the bug**
-A clear and concise description of what the bug is.
+---
+name: Bug report
+about: Something not working as expected? Let us look into it
+labels: bug
+---
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Bug description
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+_Please describe._
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## How to reproduce
 
-**Environment:**
-- Deployment [e.g. Vercel, VPS, localhost]
-- Browser [e.g. chrome, safari]
-- Package [e.g. @onboardjs/core]
-- Version [e.g. 0.3.2]
+1.
+2.
+3.
 
-**Additional context**
-Add any other context about the problem here.
+## Related sub-libraries
+
+- [ ] All of them
+- [ ] @onboardjs/core (headless)
+- [ ] @onboardjs/react (React)
+- [ ] @onboardjs/visualizer (React)
+- [ ] @onboardjs/posthog-plugin (plugin)
+- [ ] @onboardjs/supabase-plugin (plugin)
+- [ ] @onboardjs/mixpanel-plugin (plugin)
+- [ ] @onboardjs/visualizer-cli (CLI)
+
+## Additional context
+
+#### _Thank you_ for your bug report – we love squashing them!
