@@ -24,4 +24,4 @@ jobs:
                   stale-pr-label: stale
                   remove-pr-stale-when-updated: true
                   operations-per-run: 250
-                  repo-token: ${{ secrets.ONBOARDJS_BOT_GITHUB_TOKEN }}
+                  repo-token: ${{ secrets.GITHUB_TOKEN }}
