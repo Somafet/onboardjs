@@ -1,2 +1,2 @@
-export * from "./StepJSONParser";
-export * from "./types";
+export * from './StepJSONParser'
+export * from './types'

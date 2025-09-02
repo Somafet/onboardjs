@@ -43,30 +43,30 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 
 1. **Fork the repository** and clone your fork:
 
-   ```bash
-   git clone https://github.com/Somafet/onboardjs.git
-   cd onboardjs
-   ```
+    ```bash
+    git clone https://github.com/Somafet/onboardjs.git
+    cd onboardjs
+    ```
 
 2. **Install dependencies** (we recommend [pnpm](https://pnpm.io/)):
 
-   ```bash
-   pnpm install
-   ```
+    ```bash
+    pnpm install
+    ```
 
-   This will also set up git hooks automatically via husky.
+    This will also set up git hooks automatically via husky.
 
 3. **Build all packages:**
 
-   ```bash
-   pnpm build
-   ```
+    ```bash
+    pnpm build
+    ```
 
 4. **Run tests:**
 
-   ```bash
-   pnpm test
-   ```
+    ```bash
+    pnpm test
+    ```
 
 ---
 
@@ -77,13 +77,13 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 - **Formatting:** Use Prettier (`pnpm format`) for consistent code style.
 - **Tests:** Add or update tests for your changes.
 - **Commit Messages:** Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
-  - `feat: add new feature`
-  - `fix: resolve bug`
-  - `docs: update documentation`
-  - `style: code formatting changes`
-  - `refactor: code refactoring`
-  - `test: add or update tests`
-  - `chore: maintenance tasks`
+    - `feat: add new feature`
+    - `fix: resolve bug`
+    - `docs: update documentation`
+    - `style: code formatting changes`
+    - `refactor: code refactoring`
+    - `test: add or update tests`
+    - `chore: maintenance tasks`
 - **Git Hooks:** Husky is configured to automatically validate commit messages using commitlint.
 
 ---
@@ -92,9 +92,9 @@ We welcome all contributions: code, documentation, bug reports, feature requests
 
 1. **Create a branch** for your change:
 
-   ```bash
-   git checkout -b (feature or bug)/your-feature-name
-   ```
+    ```bash
+    git checkout -b (feature or bug)/your-feature-name
+    ```
 
 2. **Make your changes** and commit them using conventional commit format.
 

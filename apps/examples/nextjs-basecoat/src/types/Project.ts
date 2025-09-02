@@ -1,4 +1,4 @@
 export type Project = {
-  name: string;
-  tasks: string[];
+    name: string
+    tasks: string[]
 }

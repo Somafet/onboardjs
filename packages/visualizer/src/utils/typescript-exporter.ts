@@ -1,748 +1,649 @@
-import { OnboardingStep, OnboardingContext } from "@onboardjs/core";
+import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 
 export interface TypeScriptExportOptions {
-  /** Whether to include imports at the top */
-  includeImports: boolean;
-  /** Whether to include type annotations */
-  includeTypes: boolean;
-  /** Whether to export as const assertion */
-  useConstAssertion: boolean;
-  /** Variable name for the exported steps */
-  variableName: string;
-  /** Whether to include comments */
-  includeComments: boolean;
-  /** Whether to format functions inline or as separate variables */
-  inlineFunctions: boolean;
-  /** Indentation style */
-  indentation: "spaces" | "tabs";
-  /** Number of spaces for indentation (if using spaces) */
-  spacesCount: 2 | 4;
-  /** Whether to include validation helpers */
-  includeValidation: boolean;
+    /** Whether to include imports at the top */
+    includeImports: boolean
+    /** Whether to include type annotations */
+    includeTypes: boolean
+    /** Whether to export as const assertion */
+    useConstAssertion: boolean
+    /** Variable name for the exported steps */
+    variableName: string
+    /** Whether to include comments */
+    includeComments: boolean
+    /** Whether to format functions inline or as separate variables */
+    inlineFunctions: boolean
+    /** Indentation style */
+    indentation: 'spaces' | 'tabs'
+    /** Number of spaces for indentation (if using spaces) */
+    spacesCount: 2 | 4
+    /** Whether to include validation helpers */
+    includeValidation: boolean
 }
 
 export interface TypeScriptExportResult {
-  success: boolean;
-  code?: string;
-  errors: string[];
-  warnings: string[];
+    success: boolean
+    code?: string
+    errors: string[]
+    warnings: string[]
 }
 
 export class TypeScriptExporter {
-  private static readonly DEFAULT_OPTIONS: TypeScriptExportOptions = {
-    includeImports: true,
-    includeTypes: true,
-    useConstAssertion: true,
-    variableName: "onboardingSteps",
-    includeComments: true,
-    inlineFunctions: false,
-    indentation: "spaces",
-    spacesCount: 2,
-    includeValidation: false,
-  };
-
-  static exportToTypeScript<
-    TContext extends OnboardingContext = OnboardingContext,
-  >(
-    steps: OnboardingStep<TContext>[],
-    options: Partial<TypeScriptExportOptions> = {},
-  ): TypeScriptExportResult {
-    const opts = { ...this.DEFAULT_OPTIONS, ...options };
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    try {
-      // Validate steps first
-      if (!steps || steps.length === 0) {
-        warnings.push("No steps provided for export");
-      }
-
-      const codeLines: string[] = [];
-      const indent =
-        opts.indentation === "spaces" ? " ".repeat(opts.spacesCount) : "\t";
-
-      // Add imports
-      if (opts.includeImports) {
-        codeLines.push(...this.generateImports(steps, opts));
-        codeLines.push("");
-      }
-
-      // Add function definitions (if not inline)
-      if (!opts.inlineFunctions) {
-        const functionDefs = this.generateFunctionDefinitions(
-          steps,
-          opts,
-          indent,
-        );
-        if (functionDefs.length > 0) {
-          codeLines.push(...functionDefs);
-          codeLines.push("");
-        }
-      }
-
-      // Add main steps array
-      codeLines.push(
-        ...this.generateStepsArray(steps, opts, indent, errors, warnings),
-      );
-
-      // Add validation helpers
-      if (opts.includeValidation) {
-        codeLines.push("");
-        codeLines.push(...this.generateValidationHelpers(opts, indent));
-      }
-
-      const code = codeLines.join("\n");
-
-      return {
-        success: errors.length === 0,
-        code,
-        errors,
-        warnings,
-      };
-    } catch (error) {
-      errors.push(
-        `TypeScript export failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return {
-        success: false,
-        errors,
-        warnings,
-      };
-    }
-  }
-
-  private static generateImports<TContext extends OnboardingContext>(
-    steps: OnboardingStep<TContext>[],
-    options: TypeScriptExportOptions,
-  ): string[] {
-    const imports = new Set<string>(["OnboardingStep", "OnboardingContext"]);
-
-    // Add step type specific imports
-    const stepTypes = new Set(steps.map((s) => s.type).filter(Boolean));
-    stepTypes.forEach((type) => {
-      switch (type) {
-        case "SINGLE_CHOICE":
-          imports.add("SingleChoiceStepPayload");
-          imports.add("ChoiceOption");
-          break;
-        case "MULTIPLE_CHOICE":
-          imports.add("MultipleChoiceStepPayload");
-          imports.add("ChoiceOption");
-          break;
-        case "CHECKLIST":
-          imports.add("ChecklistStepPayload");
-          imports.add("ChecklistItemDefinition");
-          break;
-        case "CUSTOM_COMPONENT":
-          imports.add("CustomComponentStepPayload");
-          break;
-        case "CONFIRMATION":
-          imports.add("ConfirmationStepPayload");
-          break;
-        case "INFORMATION":
-          imports.add("InformationStepPayload");
-          break;
-      }
-    });
-
-    const lines: string[] = [];
-
-    if (options.includeComments) {
-      lines.push("// Generated by OnboardJS Flow Visualizer");
-      lines.push(`// Export Date: ${new Date().toISOString()}`);
-      lines.push(`// Total Steps: ${steps.length}`);
-      lines.push("");
+    private static readonly DEFAULT_OPTIONS: TypeScriptExportOptions = {
+        includeImports: true,
+        includeTypes: true,
+        useConstAssertion: true,
+        variableName: 'onboardingSteps',
+        includeComments: true,
+        inlineFunctions: false,
+        indentation: 'spaces',
+        spacesCount: 2,
+        includeValidation: false,
     }
 
-    // Core imports
-    lines.push(`import {`);
-    lines.push(`  ${Array.from(imports).sort().join(",\n  ")}`);
-    lines.push(`} from '@onboardjs/core';`);
+    static exportToTypeScript<TContext extends OnboardingContext = OnboardingContext>(
+        steps: OnboardingStep<TContext>[],
+        options: Partial<TypeScriptExportOptions> = {}
+    ): TypeScriptExportResult {
+        const opts = { ...this.DEFAULT_OPTIONS, ...options }
+        const errors: string[] = []
+        const warnings: string[] = []
 
-    return lines;
-  }
+        try {
+            // Validate steps first
+            if (!steps || steps.length === 0) {
+                warnings.push('No steps provided for export')
+            }
 
-  private static generateFunctionDefinitions<
-    TContext extends OnboardingContext,
-  >(
-    steps: OnboardingStep<TContext>[],
-    options: TypeScriptExportOptions,
-    indent: string,
-  ): string[] {
-    const lines: string[] = [];
-    const functionNames = new Set<string>();
+            const codeLines: string[] = []
+            const indent = opts.indentation === 'spaces' ? ' '.repeat(opts.spacesCount) : '\t'
 
-    if (options.includeComments) {
-      lines.push("// Function definitions");
-    }
+            // Add imports
+            if (opts.includeImports) {
+                codeLines.push(...this.generateImports(steps, opts))
+                codeLines.push('')
+            }
 
-    steps.forEach((step, stepIndex) => {
-      // Generate condition function
-      if (step.condition && typeof step.condition === "function") {
-        const functionName = `step${stepIndex}Condition`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// Condition function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction(step.condition, indent)};`,
-          );
-        }
-      }
-
-      // Generate onStepActive function
-      if (step.onStepActive && typeof step.onStepActive === "function") {
-        const functionName = `step${stepIndex}OnActive`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// OnStepActive function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction(step.onStepActive, indent)};`,
-          );
-        }
-      }
-
-      // Generate onStepComplete function
-      if (step.onStepComplete && typeof step.onStepComplete === "function") {
-        const functionName = `step${stepIndex}OnComplete`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// OnStepComplete function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction(step.onStepComplete, indent)};`,
-          );
-        }
-      }
-
-      // Generate nextStep function
-      if (step.nextStep && typeof step.nextStep === "function") {
-        const functionName = `step${stepIndex}NextStep`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// NextStep function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction(step.nextStep, indent)};`,
-          );
-        }
-      }
-
-      // Generate previousStep function
-      if (step.previousStep && typeof step.previousStep === "function") {
-        const functionName = `step${stepIndex}PreviousStep`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// PreviousStep function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction(step.previousStep, indent)};`,
-          );
-        }
-      }
-
-      // Generate skipToStep function
-      if (
-        (step as any).skipToStep &&
-        typeof (step as any).skipToStep === "function"
-      ) {
-        const functionName = `step${stepIndex}SkipToStep`;
-        if (!functionNames.has(functionName)) {
-          functionNames.add(functionName);
-          lines.push("");
-          if (options.includeComments) {
-            lines.push(`// SkipToStep function for step '${step.id}'`);
-          }
-          lines.push(
-            `const ${functionName} = ${this.formatFunction((step as any).skipToStep, indent)};`,
-          );
-        }
-      }
-
-      // Generate checklist item condition functions
-      if (step.type === "CHECKLIST" && step.payload) {
-        const payload = step.payload as any;
-        if (payload.items) {
-          payload.items.forEach((item: any, itemIndex: number) => {
-            if (item.condition && typeof item.condition === "function") {
-              const functionName = `step${stepIndex}Item${itemIndex}Condition`;
-              if (!functionNames.has(functionName)) {
-                functionNames.add(functionName);
-                lines.push("");
-                if (options.includeComments) {
-                  lines.push(
-                    `// Condition function for checklist item '${item.id}' in step '${step.id}'`,
-                  );
+            // Add function definitions (if not inline)
+            if (!opts.inlineFunctions) {
+                const functionDefs = this.generateFunctionDefinitions(steps, opts, indent)
+                if (functionDefs.length > 0) {
+                    codeLines.push(...functionDefs)
+                    codeLines.push('')
                 }
-                lines.push(
-                  `const ${functionName} = ${this.formatFunction(item.condition, indent)};`,
-                );
-              }
             }
-          });
-        }
-      }
-    });
 
-    return lines;
-  }
+            // Add main steps array
+            codeLines.push(...this.generateStepsArray(steps, opts, indent, errors, warnings))
 
-  private static generateStepsArray<TContext extends OnboardingContext>(
-    steps: OnboardingStep<TContext>[],
-    options: TypeScriptExportOptions,
-    indent: string,
-    errors: string[],
-    warnings: string[],
-  ): string[] {
-    const lines: string[] = [];
-
-    if (options.includeComments) {
-      lines.push("// Onboarding Steps Configuration");
-    }
-
-    // Type annotation
-    let typeAnnotation = "";
-    if (options.includeTypes) {
-      typeAnnotation = ": OnboardingStep[]";
-    }
-
-    // Const assertion
-    let constAssertion = "";
-    if (options.useConstAssertion) {
-      constAssertion = " as const";
-    }
-
-    lines.push(`export const ${options.variableName}${typeAnnotation} = [`);
-
-    steps.forEach((step, stepIndex) => {
-      try {
-        const stepLines = this.generateStepObject(
-          step,
-          stepIndex,
-          options,
-          indent,
-          errors,
-          warnings,
-        );
-        lines.push(...stepLines);
-
-        // Add comma except for the last item
-        if (stepIndex < steps.length - 1) {
-          lines[lines.length - 1] = lines[lines.length - 1] + ",";
-        }
-      } catch (error) {
-        errors.push(
-          `Failed to generate step '${step.id}': ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    });
-
-    lines.push(`]${constAssertion};`);
-
-    return lines;
-  }
-
-  private static generateStepObject<TContext extends OnboardingContext>(
-    step: OnboardingStep<TContext>,
-    stepIndex: number,
-    options: TypeScriptExportOptions,
-    indent: string,
-    errors: string[],
-    warnings: string[],
-  ): string[] {
-    const lines: string[] = [];
-    const stepIndent = indent;
-    const propIndent = indent + indent;
-
-    if (options.includeComments && stepIndex > 0) {
-      lines.push("");
-    }
-
-    if (options.includeComments) {
-      lines.push(`${stepIndent}// Step ${stepIndex + 1}: ${step.id}`);
-      if (step.type) {
-        lines.push(`${stepIndent}// Type: ${step.type}`);
-      }
-    }
-
-    lines.push(`${stepIndent}{`);
-
-    // ID
-    lines.push(`${propIndent}id: ${this.formatValue(step.id, propIndent)},`);
-
-    // Type
-    if (step.type) {
-      lines.push(`${propIndent}type: '${step.type}',`);
-    }
-
-    // Navigation properties
-    if (step.nextStep !== undefined) {
-      if (typeof step.nextStep === "function") {
-        if (options.inlineFunctions) {
-          lines.push(
-            `${propIndent}nextStep: ${this.formatFunction(step.nextStep, propIndent)},`,
-          );
-        } else {
-          lines.push(`${propIndent}nextStep: step${stepIndex}NextStep,`);
-        }
-      } else {
-        lines.push(
-          `${propIndent}nextStep: ${this.formatValue(step.nextStep, propIndent)},`,
-        );
-      }
-    }
-
-    if (step.previousStep !== undefined) {
-      if (typeof step.previousStep === "function") {
-        if (options.inlineFunctions) {
-          lines.push(
-            `${propIndent}previousStep: ${this.formatFunction(step.previousStep, propIndent)},`,
-          );
-        } else {
-          lines.push(
-            `${propIndent}previousStep: step${stepIndex}PreviousStep,`,
-          );
-        }
-      } else {
-        lines.push(
-          `${propIndent}previousStep: ${this.formatValue(step.previousStep, propIndent)},`,
-        );
-      }
-    }
-
-    // Skippable properties
-    if (step.isSkippable) {
-      lines.push(`${propIndent}isSkippable: true,`);
-
-      const skipToStep = (step as any).skipToStep;
-      if (skipToStep !== undefined) {
-        if (typeof skipToStep === "function") {
-          if (options.inlineFunctions) {
-            lines.push(
-              `${propIndent}skipToStep: ${this.formatFunction(skipToStep, propIndent)},`,
-            );
-          } else {
-            lines.push(`${propIndent}skipToStep: step${stepIndex}SkipToStep,`);
-          }
-        } else {
-          lines.push(
-            `${propIndent}skipToStep: ${this.formatValue(skipToStep, propIndent)},`,
-          );
-        }
-      }
-    }
-
-    // Function properties
-    if (step.condition) {
-      if (options.inlineFunctions) {
-        lines.push(
-          `${propIndent}condition: ${this.formatFunction(step.condition, propIndent)},`,
-        );
-      } else {
-        lines.push(`${propIndent}condition: step${stepIndex}Condition,`);
-      }
-    }
-
-    if (step.onStepActive) {
-      if (options.inlineFunctions) {
-        lines.push(
-          `${propIndent}onStepActive: ${this.formatFunction(step.onStepActive, propIndent)},`,
-        );
-      } else {
-        lines.push(`${propIndent}onStepActive: step${stepIndex}OnActive,`);
-      }
-    }
-
-    if (step.onStepComplete) {
-      if (options.inlineFunctions) {
-        lines.push(
-          `${propIndent}onStepComplete: ${this.formatFunction(step.onStepComplete, propIndent)},`,
-        );
-      } else {
-        lines.push(`${propIndent}onStepComplete: step${stepIndex}OnComplete,`);
-      }
-    }
-
-    // Payload
-    if (step.payload && Object.keys(step.payload).length > 0) {
-      const payloadLines = this.generatePayload(
-        step,
-        stepIndex,
-        options,
-        propIndent,
-        errors,
-        warnings,
-      );
-      lines.push(`${propIndent}payload: {`);
-      lines.push(...payloadLines);
-      lines.push(`${propIndent}},`);
-    }
-
-    // Meta
-    if (step.meta && Object.keys(step.meta).length > 0) {
-      lines.push(
-        `${propIndent}meta: ${this.formatObject(step.meta, propIndent)},`,
-      );
-    }
-
-    lines.push(`${stepIndent}}`);
-
-    return lines;
-  }
-
-  private static generatePayload<TContext extends OnboardingContext>(
-    step: OnboardingStep<TContext>,
-    stepIndex: number,
-    options: TypeScriptExportOptions,
-    indent: string,
-    errors: string[],
-    warnings: string[],
-  ): string[] {
-    const lines: string[] = [];
-    const propIndent =
-      indent +
-      (options.indentation === "spaces"
-        ? " ".repeat(options.spacesCount)
-        : "\t");
-    const payload = step.payload as any;
-
-    if (!payload) return lines;
-
-    switch (step.type) {
-      case "SINGLE_CHOICE":
-      case "MULTIPLE_CHOICE":
-        if (payload.dataKey) {
-          lines.push(`${propIndent}dataKey: '${payload.dataKey}',`);
-        }
-        if (payload.options && Array.isArray(payload.options)) {
-          lines.push(`${propIndent}options: [`);
-          payload.options.forEach((option: any, index: number) => {
-            const optionLines = this.formatChoiceOption(
-              option,
-              propIndent +
-                (options.indentation === "spaces"
-                  ? " ".repeat(options.spacesCount)
-                  : "\t"),
-            );
-            lines.push(...optionLines);
-            if (index < payload.options.length - 1) {
-              lines[lines.length - 1] = lines[lines.length - 1] + ",";
+            // Add validation helpers
+            if (opts.includeValidation) {
+                codeLines.push('')
+                codeLines.push(...this.generateValidationHelpers(opts, indent))
             }
-          });
-          lines.push(`${propIndent}],`);
-        }
-        if (step.type === "MULTIPLE_CHOICE") {
-          if (payload.minSelections !== undefined) {
-            lines.push(`${propIndent}minSelections: ${payload.minSelections},`);
-          }
-          if (payload.maxSelections !== undefined) {
-            lines.push(`${propIndent}maxSelections: ${payload.maxSelections},`);
-          }
-        }
-        break;
 
-      case "CHECKLIST":
-        if (payload.dataKey) {
-          lines.push(`${propIndent}dataKey: '${payload.dataKey}',`);
-        }
-        if (payload.minItemsToComplete !== undefined) {
-          lines.push(
-            `${propIndent}minItemsToComplete: ${payload.minItemsToComplete},`,
-          );
-        }
-        if (payload.items && Array.isArray(payload.items)) {
-          lines.push(`${propIndent}items: [`);
-          payload.items.forEach((item: any, index: number) => {
-            const itemLines = this.formatChecklistItem(
-              item,
-              stepIndex,
-              index,
-              options,
-              propIndent +
-                (options.indentation === "spaces"
-                  ? " ".repeat(options.spacesCount)
-                  : "\t"),
-            );
-            lines.push(...itemLines);
-            if (index < payload.items.length - 1) {
-              lines[lines.length - 1] = lines[lines.length - 1] + ",";
+            const code = codeLines.join('\n')
+
+            return {
+                success: errors.length === 0,
+                code,
+                errors,
+                warnings,
             }
-          });
-          lines.push(`${propIndent}],`);
+        } catch (error) {
+            errors.push(`TypeScript export failed: ${error instanceof Error ? error.message : String(error)}`)
+            return {
+                success: false,
+                errors,
+                warnings,
+            }
         }
-        break;
+    }
 
-      case "CUSTOM_COMPONENT":
-        if (payload.componentKey) {
-          lines.push(`${propIndent}componentKey: '${payload.componentKey}',`);
+    private static generateImports<TContext extends OnboardingContext>(
+        steps: OnboardingStep<TContext>[],
+        options: TypeScriptExportOptions
+    ): string[] {
+        const imports = new Set<string>(['OnboardingStep', 'OnboardingContext'])
+
+        // Add step type specific imports
+        const stepTypes = new Set(steps.map((s) => s.type).filter(Boolean))
+        stepTypes.forEach((type) => {
+            switch (type) {
+                case 'SINGLE_CHOICE':
+                    imports.add('SingleChoiceStepPayload')
+                    imports.add('ChoiceOption')
+                    break
+                case 'MULTIPLE_CHOICE':
+                    imports.add('MultipleChoiceStepPayload')
+                    imports.add('ChoiceOption')
+                    break
+                case 'CHECKLIST':
+                    imports.add('ChecklistStepPayload')
+                    imports.add('ChecklistItemDefinition')
+                    break
+                case 'CUSTOM_COMPONENT':
+                    imports.add('CustomComponentStepPayload')
+                    break
+                case 'CONFIRMATION':
+                    imports.add('ConfirmationStepPayload')
+                    break
+                case 'INFORMATION':
+                    imports.add('InformationStepPayload')
+                    break
+            }
+        })
+
+        const lines: string[] = []
+
+        if (options.includeComments) {
+            lines.push('// Generated by OnboardJS Flow Visualizer')
+            lines.push(`// Export Date: ${new Date().toISOString()}`)
+            lines.push(`// Total Steps: ${steps.length}`)
+            lines.push('')
         }
-        break;
 
-      default:
-        // Handle generic payload properties
-        Object.entries(payload).forEach(([key, value]) => {
-          if (key !== "__payloadType") {
-            lines.push(
-              `${propIndent}${key}: ${this.formatValue(value, propIndent)},`,
-            );
-          }
-        });
-        break;
+        // Core imports
+        lines.push(`import {`)
+        lines.push(`  ${Array.from(imports).sort().join(',\n  ')}`)
+        lines.push(`} from '@onboardjs/core';`)
+
+        return lines
     }
 
-    return lines;
-  }
+    private static generateFunctionDefinitions<TContext extends OnboardingContext>(
+        steps: OnboardingStep<TContext>[],
+        options: TypeScriptExportOptions,
+        indent: string
+    ): string[] {
+        const lines: string[] = []
+        const functionNames = new Set<string>()
 
-  private static formatChoiceOption(option: any, indent: string): string[] {
-    const lines: string[] = [];
-    lines.push(`${indent}{`);
-    lines.push(`${indent}  id: '${option.id}',`);
-    lines.push(`${indent}  label: '${option.label}',`);
-    lines.push(
-      `${indent}  value: ${this.formatValue(option.value, indent + "  ")},`,
-    );
-    if (option.description) {
-      lines.push(`${indent}  description: '${option.description}',`);
+        if (options.includeComments) {
+            lines.push('// Function definitions')
+        }
+
+        steps.forEach((step, stepIndex) => {
+            // Generate condition function
+            if (step.condition && typeof step.condition === 'function') {
+                const functionName = `step${stepIndex}Condition`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// Condition function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction(step.condition, indent)};`)
+                }
+            }
+
+            // Generate onStepActive function
+            if (step.onStepActive && typeof step.onStepActive === 'function') {
+                const functionName = `step${stepIndex}OnActive`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// OnStepActive function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction(step.onStepActive, indent)};`)
+                }
+            }
+
+            // Generate onStepComplete function
+            if (step.onStepComplete && typeof step.onStepComplete === 'function') {
+                const functionName = `step${stepIndex}OnComplete`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// OnStepComplete function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction(step.onStepComplete, indent)};`)
+                }
+            }
+
+            // Generate nextStep function
+            if (step.nextStep && typeof step.nextStep === 'function') {
+                const functionName = `step${stepIndex}NextStep`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// NextStep function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction(step.nextStep, indent)};`)
+                }
+            }
+
+            // Generate previousStep function
+            if (step.previousStep && typeof step.previousStep === 'function') {
+                const functionName = `step${stepIndex}PreviousStep`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// PreviousStep function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction(step.previousStep, indent)};`)
+                }
+            }
+
+            // Generate skipToStep function
+            if ((step as any).skipToStep && typeof (step as any).skipToStep === 'function') {
+                const functionName = `step${stepIndex}SkipToStep`
+                if (!functionNames.has(functionName)) {
+                    functionNames.add(functionName)
+                    lines.push('')
+                    if (options.includeComments) {
+                        lines.push(`// SkipToStep function for step '${step.id}'`)
+                    }
+                    lines.push(`const ${functionName} = ${this.formatFunction((step as any).skipToStep, indent)};`)
+                }
+            }
+
+            // Generate checklist item condition functions
+            if (step.type === 'CHECKLIST' && step.payload) {
+                const payload = step.payload as any
+                if (payload.items) {
+                    payload.items.forEach((item: any, itemIndex: number) => {
+                        if (item.condition && typeof item.condition === 'function') {
+                            const functionName = `step${stepIndex}Item${itemIndex}Condition`
+                            if (!functionNames.has(functionName)) {
+                                functionNames.add(functionName)
+                                lines.push('')
+                                if (options.includeComments) {
+                                    lines.push(
+                                        `// Condition function for checklist item '${item.id}' in step '${step.id}'`
+                                    )
+                                }
+                                lines.push(`const ${functionName} = ${this.formatFunction(item.condition, indent)};`)
+                            }
+                        }
+                    })
+                }
+            }
+        })
+
+        return lines
     }
-    if (option.icon) {
-      lines.push(`${indent}  icon: '${option.icon}',`);
+
+    private static generateStepsArray<TContext extends OnboardingContext>(
+        steps: OnboardingStep<TContext>[],
+        options: TypeScriptExportOptions,
+        indent: string,
+        errors: string[],
+        warnings: string[]
+    ): string[] {
+        const lines: string[] = []
+
+        if (options.includeComments) {
+            lines.push('// Onboarding Steps Configuration')
+        }
+
+        // Type annotation
+        let typeAnnotation = ''
+        if (options.includeTypes) {
+            typeAnnotation = ': OnboardingStep[]'
+        }
+
+        // Const assertion
+        let constAssertion = ''
+        if (options.useConstAssertion) {
+            constAssertion = ' as const'
+        }
+
+        lines.push(`export const ${options.variableName}${typeAnnotation} = [`)
+
+        steps.forEach((step, stepIndex) => {
+            try {
+                const stepLines = this.generateStepObject(step, stepIndex, options, indent, errors, warnings)
+                lines.push(...stepLines)
+
+                // Add comma except for the last item
+                if (stepIndex < steps.length - 1) {
+                    lines[lines.length - 1] = lines[lines.length - 1] + ','
+                }
+            } catch (error) {
+                errors.push(
+                    `Failed to generate step '${step.id}': ${error instanceof Error ? error.message : String(error)}`
+                )
+            }
+        })
+
+        lines.push(`]${constAssertion};`)
+
+        return lines
     }
-    lines.push(`${indent}}`);
-    return lines;
-  }
 
-  private static formatChecklistItem(
-    item: any,
-    stepIndex: number,
-    itemIndex: number,
-    options: TypeScriptExportOptions,
-    indent: string,
-  ): string[] {
-    const lines: string[] = [];
-    lines.push(`${indent}{`);
-    lines.push(`${indent}  id: '${item.id}',`);
-    lines.push(`${indent}  label: '${item.label}',`);
+    private static generateStepObject<TContext extends OnboardingContext>(
+        step: OnboardingStep<TContext>,
+        stepIndex: number,
+        options: TypeScriptExportOptions,
+        indent: string,
+        errors: string[],
+        warnings: string[]
+    ): string[] {
+        const lines: string[] = []
+        const stepIndent = indent
+        const propIndent = indent + indent
 
-    if (item.description) {
-      lines.push(`${indent}  description: '${item.description}',`);
+        if (options.includeComments && stepIndex > 0) {
+            lines.push('')
+        }
+
+        if (options.includeComments) {
+            lines.push(`${stepIndent}// Step ${stepIndex + 1}: ${step.id}`)
+            if (step.type) {
+                lines.push(`${stepIndent}// Type: ${step.type}`)
+            }
+        }
+
+        lines.push(`${stepIndent}{`)
+
+        // ID
+        lines.push(`${propIndent}id: ${this.formatValue(step.id, propIndent)},`)
+
+        // Type
+        if (step.type) {
+            lines.push(`${propIndent}type: '${step.type}',`)
+        }
+
+        // Navigation properties
+        if (step.nextStep !== undefined) {
+            if (typeof step.nextStep === 'function') {
+                if (options.inlineFunctions) {
+                    lines.push(`${propIndent}nextStep: ${this.formatFunction(step.nextStep, propIndent)},`)
+                } else {
+                    lines.push(`${propIndent}nextStep: step${stepIndex}NextStep,`)
+                }
+            } else {
+                lines.push(`${propIndent}nextStep: ${this.formatValue(step.nextStep, propIndent)},`)
+            }
+        }
+
+        if (step.previousStep !== undefined) {
+            if (typeof step.previousStep === 'function') {
+                if (options.inlineFunctions) {
+                    lines.push(`${propIndent}previousStep: ${this.formatFunction(step.previousStep, propIndent)},`)
+                } else {
+                    lines.push(`${propIndent}previousStep: step${stepIndex}PreviousStep,`)
+                }
+            } else {
+                lines.push(`${propIndent}previousStep: ${this.formatValue(step.previousStep, propIndent)},`)
+            }
+        }
+
+        // Skippable properties
+        if (step.isSkippable) {
+            lines.push(`${propIndent}isSkippable: true,`)
+
+            const skipToStep = (step as any).skipToStep
+            if (skipToStep !== undefined) {
+                if (typeof skipToStep === 'function') {
+                    if (options.inlineFunctions) {
+                        lines.push(`${propIndent}skipToStep: ${this.formatFunction(skipToStep, propIndent)},`)
+                    } else {
+                        lines.push(`${propIndent}skipToStep: step${stepIndex}SkipToStep,`)
+                    }
+                } else {
+                    lines.push(`${propIndent}skipToStep: ${this.formatValue(skipToStep, propIndent)},`)
+                }
+            }
+        }
+
+        // Function properties
+        if (step.condition) {
+            if (options.inlineFunctions) {
+                lines.push(`${propIndent}condition: ${this.formatFunction(step.condition, propIndent)},`)
+            } else {
+                lines.push(`${propIndent}condition: step${stepIndex}Condition,`)
+            }
+        }
+
+        if (step.onStepActive) {
+            if (options.inlineFunctions) {
+                lines.push(`${propIndent}onStepActive: ${this.formatFunction(step.onStepActive, propIndent)},`)
+            } else {
+                lines.push(`${propIndent}onStepActive: step${stepIndex}OnActive,`)
+            }
+        }
+
+        if (step.onStepComplete) {
+            if (options.inlineFunctions) {
+                lines.push(`${propIndent}onStepComplete: ${this.formatFunction(step.onStepComplete, propIndent)},`)
+            } else {
+                lines.push(`${propIndent}onStepComplete: step${stepIndex}OnComplete,`)
+            }
+        }
+
+        // Payload
+        if (step.payload && Object.keys(step.payload).length > 0) {
+            const payloadLines = this.generatePayload(step, stepIndex, options, propIndent, errors, warnings)
+            lines.push(`${propIndent}payload: {`)
+            lines.push(...payloadLines)
+            lines.push(`${propIndent}},`)
+        }
+
+        // Meta
+        if (step.meta && Object.keys(step.meta).length > 0) {
+            lines.push(`${propIndent}meta: ${this.formatObject(step.meta, propIndent)},`)
+        }
+
+        lines.push(`${stepIndent}}`)
+
+        return lines
     }
 
-    if (item.isMandatory !== undefined) {
-      lines.push(`${indent}  isMandatory: ${item.isMandatory},`);
+    private static generatePayload<TContext extends OnboardingContext>(
+        step: OnboardingStep<TContext>,
+        stepIndex: number,
+        options: TypeScriptExportOptions,
+        indent: string,
+        errors: string[],
+        warnings: string[]
+    ): string[] {
+        const lines: string[] = []
+        const propIndent = indent + (options.indentation === 'spaces' ? ' '.repeat(options.spacesCount) : '\t')
+        const payload = step.payload as any
+
+        if (!payload) return lines
+
+        switch (step.type) {
+            case 'SINGLE_CHOICE':
+            case 'MULTIPLE_CHOICE':
+                if (payload.dataKey) {
+                    lines.push(`${propIndent}dataKey: '${payload.dataKey}',`)
+                }
+                if (payload.options && Array.isArray(payload.options)) {
+                    lines.push(`${propIndent}options: [`)
+                    payload.options.forEach((option: any, index: number) => {
+                        const optionLines = this.formatChoiceOption(
+                            option,
+                            propIndent + (options.indentation === 'spaces' ? ' '.repeat(options.spacesCount) : '\t')
+                        )
+                        lines.push(...optionLines)
+                        if (index < payload.options.length - 1) {
+                            lines[lines.length - 1] = lines[lines.length - 1] + ','
+                        }
+                    })
+                    lines.push(`${propIndent}],`)
+                }
+                if (step.type === 'MULTIPLE_CHOICE') {
+                    if (payload.minSelections !== undefined) {
+                        lines.push(`${propIndent}minSelections: ${payload.minSelections},`)
+                    }
+                    if (payload.maxSelections !== undefined) {
+                        lines.push(`${propIndent}maxSelections: ${payload.maxSelections},`)
+                    }
+                }
+                break
+
+            case 'CHECKLIST':
+                if (payload.dataKey) {
+                    lines.push(`${propIndent}dataKey: '${payload.dataKey}',`)
+                }
+                if (payload.minItemsToComplete !== undefined) {
+                    lines.push(`${propIndent}minItemsToComplete: ${payload.minItemsToComplete},`)
+                }
+                if (payload.items && Array.isArray(payload.items)) {
+                    lines.push(`${propIndent}items: [`)
+                    payload.items.forEach((item: any, index: number) => {
+                        const itemLines = this.formatChecklistItem(
+                            item,
+                            stepIndex,
+                            index,
+                            options,
+                            propIndent + (options.indentation === 'spaces' ? ' '.repeat(options.spacesCount) : '\t')
+                        )
+                        lines.push(...itemLines)
+                        if (index < payload.items.length - 1) {
+                            lines[lines.length - 1] = lines[lines.length - 1] + ','
+                        }
+                    })
+                    lines.push(`${propIndent}],`)
+                }
+                break
+
+            case 'CUSTOM_COMPONENT':
+                if (payload.componentKey) {
+                    lines.push(`${propIndent}componentKey: '${payload.componentKey}',`)
+                }
+                break
+
+            default:
+                // Handle generic payload properties
+                Object.entries(payload).forEach(([key, value]) => {
+                    if (key !== '__payloadType') {
+                        lines.push(`${propIndent}${key}: ${this.formatValue(value, propIndent)},`)
+                    }
+                })
+                break
+        }
+
+        return lines
     }
 
-    if (item.condition && typeof item.condition === "function") {
-      if (options.inlineFunctions) {
+    private static formatChoiceOption(option: any, indent: string): string[] {
+        const lines: string[] = []
+        lines.push(`${indent}{`)
+        lines.push(`${indent}  id: '${option.id}',`)
+        lines.push(`${indent}  label: '${option.label}',`)
+        lines.push(`${indent}  value: ${this.formatValue(option.value, indent + '  ')},`)
+        if (option.description) {
+            lines.push(`${indent}  description: '${option.description}',`)
+        }
+        if (option.icon) {
+            lines.push(`${indent}  icon: '${option.icon}',`)
+        }
+        lines.push(`${indent}}`)
+        return lines
+    }
+
+    private static formatChecklistItem(
+        item: any,
+        stepIndex: number,
+        itemIndex: number,
+        options: TypeScriptExportOptions,
+        indent: string
+    ): string[] {
+        const lines: string[] = []
+        lines.push(`${indent}{`)
+        lines.push(`${indent}  id: '${item.id}',`)
+        lines.push(`${indent}  label: '${item.label}',`)
+
+        if (item.description) {
+            lines.push(`${indent}  description: '${item.description}',`)
+        }
+
+        if (item.isMandatory !== undefined) {
+            lines.push(`${indent}  isMandatory: ${item.isMandatory},`)
+        }
+
+        if (item.condition && typeof item.condition === 'function') {
+            if (options.inlineFunctions) {
+                lines.push(`${indent}  condition: ${this.formatFunction(item.condition, indent + '  ')},`)
+            } else {
+                lines.push(`${indent}  condition: step${stepIndex}Item${itemIndex}Condition,`)
+            }
+        }
+
+        if (item.meta && Object.keys(item.meta).length > 0) {
+            lines.push(`${indent}  meta: ${this.formatObject(item.meta, indent + '  ')},`)
+        }
+
+        lines.push(`${indent}}`)
+        return lines
+    }
+
+    private static formatFunction(fn: Function, indent: string): string {
+        const functionString = fn.toString()
+
+        // Handle arrow functions vs regular functions
+        if (functionString.includes('=>')) {
+            return functionString
+        } else {
+            // Convert regular function to arrow function for cleaner syntax
+            const match = functionString.match(/function[^(]*\(([^)]*)\)\s*{([\s\S]*)}/)
+            if (match) {
+                const params = match[1]
+                const body = match[2].trim()
+                return `(${params}) => {${body}}`
+            }
+        }
+
+        return functionString
+    }
+
+    private static formatValue(value: any, indent: string): string {
+        if (value === null) return 'null'
+        if (value === undefined) return 'undefined'
+        if (typeof value === 'string') return `'${value.replace(/'/g, "\\'")}'`
+        if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+        if (typeof value === 'object') return this.formatObject(value, indent)
+        return String(value)
+    }
+
+    private static formatObject(obj: any, indent: string): string {
+        if (Array.isArray(obj)) {
+            if (obj.length === 0) return '[]'
+            const items = obj.map((item) => this.formatValue(item, indent + '  '))
+            return `[\n${indent}  ${items.join(`,\n${indent}  `)}\n${indent}]`
+        }
+
+        const entries = Object.entries(obj)
+        if (entries.length === 0) return '{}'
+
+        const props = entries.map(([key, value]) => `${indent}  ${key}: ${this.formatValue(value, indent + '  ')}`)
+        return `{\n${props.join(',\n')}\n${indent}}`
+    }
+
+    private static generateValidationHelpers(options: TypeScriptExportOptions, indent: string): string[] {
+        const lines: string[] = []
+
+        if (options.includeComments) {
+            lines.push('// Validation helpers')
+        }
+
+        lines.push('')
+        lines.push('// Validate the onboarding configuration')
         lines.push(
-          `${indent}  condition: ${this.formatFunction(item.condition, indent + "  ")},`,
-        );
-      } else {
-        lines.push(
-          `${indent}  condition: step${stepIndex}Item${itemIndex}Condition,`,
-        );
-      }
+            `export function validate${options.variableName.charAt(0).toUpperCase() + options.variableName.slice(1)}(): { isValid: boolean; errors: string[] } {`
+        )
+        lines.push(`${indent}const errors: string[] = [];`)
+        lines.push('')
+        lines.push(`${indent}// Check for duplicate IDs`)
+        lines.push(`${indent}const ids = new Set();`)
+        lines.push(`${indent}${options.variableName}.forEach((step, index) => {`)
+        lines.push(`${indent}${indent}if (ids.has(step.id)) {`)
+        lines.push(`${indent}${indent}${indent}errors.push(\`Duplicate step ID: \${step.id}\`);`)
+        lines.push(`${indent}${indent}}`)
+        lines.push(`${indent}${indent}ids.add(step.id);`)
+        lines.push(`${indent}});`)
+        lines.push('')
+        lines.push(`${indent}return { isValid: errors.length === 0, errors };`)
+        lines.push('}')
+
+        return lines
     }
-
-    if (item.meta && Object.keys(item.meta).length > 0) {
-      lines.push(
-        `${indent}  meta: ${this.formatObject(item.meta, indent + "  ")},`,
-      );
-    }
-
-    lines.push(`${indent}}`);
-    return lines;
-  }
-
-  private static formatFunction(fn: Function, indent: string): string {
-    const functionString = fn.toString();
-
-    // Handle arrow functions vs regular functions
-    if (functionString.includes("=>")) {
-      return functionString;
-    } else {
-      // Convert regular function to arrow function for cleaner syntax
-      const match = functionString.match(
-        /function[^(]*\(([^)]*)\)\s*{([\s\S]*)}/,
-      );
-      if (match) {
-        const params = match[1];
-        const body = match[2].trim();
-        return `(${params}) => {${body}}`;
-      }
-    }
-
-    return functionString;
-  }
-
-  private static formatValue(value: any, indent: string): string {
-    if (value === null) return "null";
-    if (value === undefined) return "undefined";
-    if (typeof value === "string") return `'${value.replace(/'/g, "\\'")}'`;
-    if (typeof value === "number" || typeof value === "boolean")
-      return String(value);
-    if (typeof value === "object") return this.formatObject(value, indent);
-    return String(value);
-  }
-
-  private static formatObject(obj: any, indent: string): string {
-    if (Array.isArray(obj)) {
-      if (obj.length === 0) return "[]";
-      const items = obj.map((item) => this.formatValue(item, indent + "  "));
-      return `[\n${indent}  ${items.join(`,\n${indent}  `)}\n${indent}]`;
-    }
-
-    const entries = Object.entries(obj);
-    if (entries.length === 0) return "{}";
-
-    const props = entries.map(
-      ([key, value]) =>
-        `${indent}  ${key}: ${this.formatValue(value, indent + "  ")}`,
-    );
-    return `{\n${props.join(",\n")}\n${indent}}`;
-  }
-
-  private static generateValidationHelpers(
-    options: TypeScriptExportOptions,
-    indent: string,
-  ): string[] {
-    const lines: string[] = [];
-
-    if (options.includeComments) {
-      lines.push("// Validation helpers");
-    }
-
-    lines.push("");
-    lines.push("// Validate the onboarding configuration");
-    lines.push(
-      `export function validate${options.variableName.charAt(0).toUpperCase() + options.variableName.slice(1)}(): { isValid: boolean; errors: string[] } {`,
-    );
-    lines.push(`${indent}const errors: string[] = [];`);
-    lines.push("");
-    lines.push(`${indent}// Check for duplicate IDs`);
-    lines.push(`${indent}const ids = new Set();`);
-    lines.push(`${indent}${options.variableName}.forEach((step, index) => {`);
-    lines.push(`${indent}${indent}if (ids.has(step.id)) {`);
-    lines.push(
-      `${indent}${indent}${indent}errors.push(\`Duplicate step ID: \${step.id}\`);`,
-    );
-    lines.push(`${indent}${indent}}`);
-    lines.push(`${indent}${indent}ids.add(step.id);`);
-    lines.push(`${indent}});`);
-    lines.push("");
-    lines.push(`${indent}return { isValid: errors.length === 0, errors };`);
-    lines.push("}");
-
-    return lines;
-  }
 }

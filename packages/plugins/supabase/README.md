@@ -64,38 +64,31 @@ If your users are authenticated via Supabase Auth, this is the simplest method. 
 
 ```tsx
 // Example with @onboardjs/react
-import { OnboardingProvider } from "@onboardjs/react";
-import { SupabasePersistencePlugin } from "@onboardjs/supabase-plugin";
-import { createClient } from "@supabase/supabase-js";
+import { OnboardingProvider } from '@onboardjs/react'
+import { SupabasePersistencePlugin } from '@onboardjs/supabase-plugin'
+import { createClient } from '@supabase/supabase-js'
 
 // 1. Initialize your Supabase client
-const supabase = createClient("YOUR_URL", "YOUR_ANON_KEY");
+const supabase = createClient('YOUR_URL', 'YOUR_ANON_KEY')
 
 // 2. Create an instance of the plugin
 const supabasePlugin = createSupabasePlugin({
     client,
-    tableName: "onboarding_state",
-    contextKeyForId: "currentUser.id",
+    tableName: 'onboarding_state',
+    contextKeyForId: 'currentUser.id',
     onError(error, operation) {
-      console.error(
-        `[SupabasePlugin] Error during ${operation}:`,
-        error.message,
-      );
+        console.error(`[SupabasePlugin] Error during ${operation}:`, error.message)
     },
-    stateDataColumn: "flow_data",
-    userIdColumn: "user_id",
-  });
+    stateDataColumn: 'flow_data',
+    userIdColumn: 'user_id',
+})
 
 function App() {
-  return (
-    <OnboardingProvider
-      steps={mySteps}
-      plugins={[supabasePlugin]}
-      componentRegistry={myComponentRegistry}
-    >
-      {/* Your app content */}
-    </OnboardingProvider>
-  );
+    return (
+        <OnboardingProvider steps={mySteps} plugins={[supabasePlugin]} componentRegistry={myComponentRegistry}>
+            {/* Your app content */}
+        </OnboardingProvider>
+    )
 }
 ```
 
@@ -104,32 +97,32 @@ function App() {
 If you store your user ID elsewhere or want to be more explicit, you can provide a path to the ID within the `OnboardingContext`.
 
 ```tsx
-import { SupabasePersistencePlugin } from "@onboardjs/supabase-plugin";
+import { SupabasePersistencePlugin } from '@onboardjs/supabase-plugin'
 
 const supabasePlugin = new SupabasePersistencePlugin({
-  client: supabase,
-  // Tell the plugin where to find the user's ID in the context
-  contextKeyForId: "currentUser.id",
-});
+    client: supabase,
+    // Tell the plugin where to find the user's ID in the context
+    contextKeyForId: 'currentUser.id',
+})
 
 // You must provide an initialContext that matches the key structure
 const initialContext = {
-  currentUser: {
-    id: "user-12345", // This would typically come from your auth state
-  },
-};
+    currentUser: {
+        id: 'user-12345', // This would typically come from your auth state
+    },
+}
 
 function App() {
-  return (
-    <OnboardingProvider
-      steps={mySteps}
-      plugins={[supabasePlugin]}
-      initialContext={initialContext}
-      componentRegistry={myComponentRegistry}
-    >
-      {/* Your app content */}
-    </OnboardingProvider>
-  );
+    return (
+        <OnboardingProvider
+            steps={mySteps}
+            plugins={[supabasePlugin]}
+            initialContext={initialContext}
+            componentRegistry={myComponentRegistry}
+        >
+            {/* Your app content */}
+        </OnboardingProvider>
+    )
 }
 ```
 
@@ -137,31 +130,30 @@ function App() {
 
 The plugin accepts the following configuration options:
 
-| Option           | Type                                               | Required      | Default            | Description                                                                                                 |
-| ---------------- | -------------------------------------------------- | ------------- | ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| client           | SupabaseClient                                     | Yes           | -                  | Your initialized Supabase client instance.                                                                  |
-| useSupabaseAuth  | boolean                                            | No            | false              | If true, automatically uses the authenticated Supabase user's ID.                                           |
-| contextKeyForId  | string                                             | Conditionally | -                  | Dot-notation path to the unique user ID within the OnboardingContext. Required if useSupabaseAuth is false. |
-| tableName        | string                                             | No            | 'onboarding_state' | The name of the table in your database.                                                                     |
-| userIdColumn     | string                                             | No            | 'id'               | The name of the user ID column in your table.                                                               |
-| stateDataColumn  | string                                             | No            | 'state_data'       | The name of the JSONB column where the onboarding state will be stored.                                     |
-| onError          | (error: PostgrestError, operation: string) => void | No            | -                  | Optional callback to handle persistence errors for load, persist, or clear operations.                      |
+| Option          | Type                                               | Required      | Default            | Description                                                                                                 |
+| --------------- | -------------------------------------------------- | ------------- | ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| client          | SupabaseClient                                     | Yes           | -                  | Your initialized Supabase client instance.                                                                  |
+| useSupabaseAuth | boolean                                            | No            | false              | If true, automatically uses the authenticated Supabase user's ID.                                           |
+| contextKeyForId | string                                             | Conditionally | -                  | Dot-notation path to the unique user ID within the OnboardingContext. Required if useSupabaseAuth is false. |
+| tableName       | string                                             | No            | 'onboarding_state' | The name of the table in your database.                                                                     |
+| userIdColumn    | string                                             | No            | 'id'               | The name of the user ID column in your table.                                                               |
+| stateDataColumn | string                                             | No            | 'state_data'       | The name of the JSONB column where the onboarding state will be stored.                                     |
+| onError         | (error: PostgrestError, operation: string) => void | No            | -                  | Optional callback to handle persistence errors for load, persist, or clear operations.                      |
 
 ## 5. Error Handling
 
 The plugin catches errors from Supabase operations and reports them to the OnboardJS engine. You can also provide a custom `onError` callback for more granular control, such as logging to a monitoring service.
 
-
 ```tsx
 const supabasePlugin = new SupabasePersistencePlugin({
-  client: supabase,
-  useSupabaseAuth: true,
-  onError: (error, operation) => {
-    console.error(`Supabase operation '${operation}' failed!`, error);
-    // Example: send to a logging service
-    // Sentry.captureException(error, { extra: { operation } });
-  },
-});
+    client: supabase,
+    useSupabaseAuth: true,
+    onError: (error, operation) => {
+        console.error(`Supabase operation '${operation}' failed!`, error)
+        // Example: send to a logging service
+        // Sentry.captureException(error, { extra: { operation } });
+    },
+})
 ```
 
 ## License

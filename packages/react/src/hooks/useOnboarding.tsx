@@ -1,113 +1,103 @@
 // @onboardjs/react/src/hooks/useOnboarding.ts
-"use client";
+'use client'
 
-import { useContext, useEffect, useRef } from "react";
-import {
-  OnboardingContext,
-  OnboardingContextValue,
-} from "../context/OnboardingProvider";
-import { UseOnboardingOptions } from "./useOnboarding.types";
-import {
-  FlowCompletedEvent,
-  OnboardingContext as OnboardingContextType,
-} from "@onboardjs/core";
+import { useContext, useEffect, useRef } from 'react'
+import { OnboardingContext, OnboardingContextValue } from '../context/OnboardingProvider'
+import { UseOnboardingOptions } from './useOnboarding.types'
+import { FlowCompletedEvent, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 
 export function useOnboarding<
-  TContext extends OnboardingContextType = OnboardingContextType, // Default generic
+    TContext extends OnboardingContextType = OnboardingContextType, // Default generic
 >(options?: UseOnboardingOptions<TContext>): OnboardingContextValue<TContext> {
-  const contextValue = useContext(OnboardingContext) as
-    | OnboardingContextValue<TContext>
-    | undefined;
-  if (contextValue === undefined) {
-    throw new Error("useOnboarding must be used within an OnboardingProvider");
-  }
-
-  const {
-    engine,
-    state,
-    isLoading,
-    skip,
-    next,
-    previous,
-    goToStep,
-    reset,
-    setComponentLoading,
-    updateContext,
-    error,
-    renderStep,
-    analytics,
-  } = contextValue;
-
-  // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
-  const onFlowCompletedRef = useRef(options?.onFlowCompleted);
-  const onStepChangeRef = useRef(options?.onStepChange);
-
-  // Update refs when callback props change
-  useEffect(() => {
-    onFlowCompletedRef.current = options?.onFlowCompleted;
-  }, [options?.onFlowCompleted]);
-
-  useEffect(() => {
-    onStepChangeRef.current = options?.onStepChange;
-  }, [options?.onStepChange]);
-
-  // Effect for onFlowComplete
-  useEffect(() => {
-    if (!engine || !onFlowCompletedRef.current) {
-      return;
+    const contextValue = useContext(OnboardingContext) as OnboardingContextValue<TContext> | undefined
+    if (contextValue === undefined) {
+        throw new Error('useOnboarding must be used within an OnboardingProvider')
     }
 
-    const listener = (event: FlowCompletedEvent<TContext>) => {
-      if (onFlowCompletedRef.current) {
-        onFlowCompletedRef.current(event);
-      }
-    };
+    const {
+        engine,
+        state,
+        isLoading,
+        skip,
+        next,
+        previous,
+        goToStep,
+        reset,
+        setComponentLoading,
+        updateContext,
+        error,
+        renderStep,
+        analytics,
+    } = contextValue
 
-    const unsubscribe = engine.addFlowCompletedListener(listener);
+    // Use refs to store the latest callbacks to avoid re-subscribing unnecessarily
+    const onFlowCompletedRef = useRef(options?.onFlowCompleted)
+    const onStepChangeRef = useRef(options?.onStepChange)
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [engine]);
+    // Update refs when callback props change
+    useEffect(() => {
+        onFlowCompletedRef.current = options?.onFlowCompleted
+    }, [options?.onFlowCompleted])
 
-  // Effect for onStepChange
-  useEffect(() => {
-    if (!engine || !onStepChangeRef.current) {
-      return;
-    }
-    const unsubscribe = engine.addAfterStepChangeListener(
-      ({ oldStep, newStep, context }) => {
-        if (onStepChangeRef.current) {
-          onStepChangeRef.current(newStep, oldStep, context);
+    useEffect(() => {
+        onStepChangeRef.current = options?.onStepChange
+    }, [options?.onStepChange])
+
+    // Effect for onFlowComplete
+    useEffect(() => {
+        if (!engine || !onFlowCompletedRef.current) {
+            return
         }
-      },
-    );
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [engine]);
 
-  // Derive shorthand status values for convenience
-  const isCompleted = state?.isCompleted ?? false;
-  const currentStep = state?.currentStep;
+        const listener = (event: FlowCompletedEvent<TContext>) => {
+            if (onFlowCompletedRef.current) {
+                onFlowCompletedRef.current(event)
+            }
+        }
 
-  return {
-    engine,
-    state,
-    isLoading,
-    skip,
-    next,
-    previous,
-    goToStep,
-    reset,
-    setComponentLoading,
-    updateContext,
-    renderStep,
-    isCompleted,
-    currentStep,
-    error,
-    analytics,
-  };
+        const unsubscribe = engine.addFlowCompletedListener(listener)
+
+        return () => {
+            if (unsubscribe) {
+                unsubscribe()
+            }
+        }
+    }, [engine])
+
+    // Effect for onStepChange
+    useEffect(() => {
+        if (!engine || !onStepChangeRef.current) {
+            return
+        }
+        const unsubscribe = engine.addAfterStepChangeListener(({ oldStep, newStep, context }) => {
+            if (onStepChangeRef.current) {
+                onStepChangeRef.current(newStep, oldStep, context)
+            }
+        })
+        return () => {
+            if (unsubscribe) unsubscribe()
+        }
+    }, [engine])
+
+    // Derive shorthand status values for convenience
+    const isCompleted = state?.isCompleted ?? false
+    const currentStep = state?.currentStep
+
+    return {
+        engine,
+        state,
+        isLoading,
+        skip,
+        next,
+        previous,
+        goToStep,
+        reset,
+        setComponentLoading,
+        updateContext,
+        renderStep,
+        isCompleted,
+        currentStep,
+        error,
+        analytics,
+    }
 }

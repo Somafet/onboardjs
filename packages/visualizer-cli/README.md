@@ -42,11 +42,11 @@ For active development of `@onboardjs/visualizer-cli` or when working on Onboard
     ```
 
     - **Permission Note:** If you encounter a "Permission denied" error when running the command after `npm link`, ensure the executable file has the necessary permissions:
-      ```bash
-      chmod +x bin/cli.js
-      npm unlink # Unlink old link
-      npm link   # Re-link with correct permissions
-      ```
+        ```bash
+        chmod +x bin/cli.js
+        npm unlink # Unlink old link
+        npm link   # Re-link with correct permissions
+        ```
 
 4.  **You can now run the CLI from any directory:**
     ```bash
