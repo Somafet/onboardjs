@@ -40,8 +40,8 @@ export function ConditionalEdge({
                 return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: '3,3' }
             case 'conditional':
                 return { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '8,4' }
-            default:
-                return { stroke: '#374151', strokeWidth: 2 }
+            default: // 'next' and other sequential cases
+                return { stroke: '#1f2937', strokeWidth: 2 }
         }
     }
 

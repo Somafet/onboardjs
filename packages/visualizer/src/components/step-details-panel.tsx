@@ -138,26 +138,16 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 <input type="checkbox" checked={typeof editedStep.condition === 'function'} disabled />
                                 Has Condition Function
                             </label>
-                        </div>
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={typeof editedStep.onStepActive === 'function'}
-                                    disabled
-                                />
-                                Has onStepActive Function
-                            </label>
-                        </div>
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={typeof editedStep.onStepComplete === 'function'}
-                                    disabled
-                                />
-                                Has onStepComplete Function
-                            </label>
+                            {typeof editedStep.condition === 'function' && (
+                                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Condition Code:
+                                    </label>
+                                    <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto">
+                                        {editedStep.condition.toString()}
+                                    </pre>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -194,7 +184,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 onChange={(e) =>
                                     handleChange({
                                         previousStep: e.target.value || undefined,
-                                    } as any)
+                                    })
                                 }
                                 disabled={readonly || typeof editedStep.previousStep === 'function'}
                                 placeholder="Auto (previous in sequence)"
@@ -208,16 +198,18 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 <input
                                     type="text"
                                     value={
-                                        typeof (editedStep as any).skipToStep === 'function'
+                                        typeof editedStep.skipToStep === 'function'
                                             ? '[Function]'
-                                            : String((editedStep as any).skipToStep || '')
+                                            : editedStep.skipToStep === null
+                                              ? 'END'
+                                              : String(editedStep.skipToStep || '')
                                     }
                                     onChange={(e) =>
                                         handleChange({
                                             skipToStep: e.target.value || undefined,
-                                        } as any)
+                                        })
                                     }
-                                    disabled={readonly || typeof (editedStep as any).skipToStep === 'function'}
+                                    disabled={readonly || typeof editedStep.skipToStep === 'function'}
                                     placeholder="Auto (next step)"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
                                 />
