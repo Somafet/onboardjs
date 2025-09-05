@@ -25,16 +25,19 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { StepJSONParser, StepJSONParserOptions } from '@onboardjs/core'
 import { TypeScriptExporter, TypeScriptExportOptions } from './utils/typescript-exporter'
 import { StepNode } from './nodes/step-node'
+import { EndNode } from './nodes/end-node'
 import { ConditionalEdge, ConditionalFlowEdge } from './edges/conditional-edge'
 import { FlowToolbar, ExportFormat } from './components/flow-toolbar'
 import { FlowSidebar } from './components/flow-sidebar'
 import { StepDetailsPanel } from './components/step-details-panel'
+import { ConditionalFlowMode } from './components/conditional-flow-mode'
 import { convertStepsToFlow, convertFlowToSteps, layoutNodes } from './utils/flow-converters'
 import './flow-visualizer.css'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
     stepNode: StepNode,
+    endNode: EndNode,
 }
 
 const edgeTypes: EdgeTypes = {
@@ -85,6 +88,13 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const [selectedStep, setSelectedStep] = useState<OnboardingStep<TContext> | null>(null)
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [detailsPanelOpen, setDetailsPanelOpen] = useState(false)
+    const [conditionalModeOpen, setConditionalModeOpen] = useState(false)
+    const [edgeVisibility, setEdgeVisibility] = useState({
+        next: true,
+        conditional: true,
+        skip: true,
+        previous: true,
+    })
     const [exportOptions, setExportOptions] = useState<Partial<StepJSONParserOptions>>({
         prettyPrint: true,
         functionHandling: 'serialize',
@@ -108,21 +118,33 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     // Convert steps to flow data
     const { nodes: initialNodes, edges: initialEdges } = useMemo(() => convertStepsToFlow(steps), [steps])
 
+    // Filter edges based on visibility settings
+    const visibleEdges = useMemo(() => {
+        return initialEdges.filter((edge) => {
+            const edgeType = edge.data?.edgeType || 'next'
+            return edgeVisibility[edgeType as keyof typeof edgeVisibility]
+        })
+    }, [initialEdges, edgeVisibility])
+
     // React Flow state
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+    const [edges, setEdges, onEdgesChange] = useEdgesState(visibleEdges)
 
-    const { fitView, getNodes, getEdges } = useReactFlow<StepNode, ConditionalFlowEdge>()
+    const { fitView, getNodes, getEdges } = useReactFlow<StepNode | EndNode, ConditionalFlowEdge>()
 
     // Update flow when steps change
     React.useEffect(() => {
         const { nodes: newNodes, edges: newEdges } = convertStepsToFlow(steps)
+        const filteredEdges = newEdges.filter((edge) => {
+            const edgeType = edge.data?.edgeType || 'next'
+            return edgeVisibility[edgeType as keyof typeof edgeVisibility]
+        })
         setNodes(newNodes)
-        setEdges(newEdges)
-    }, [steps, setNodes, setEdges])
+        setEdges(filteredEdges)
+    }, [steps, edgeVisibility, setNodes, setEdges])
 
     const updateStepsFromFlow = useCallback(
-        (nodes?: StepNode[], edges?: ConditionalFlowEdge[]) => {
+        (nodes?: (StepNode | EndNode)[], edges?: ConditionalFlowEdge[]) => {
             if (readonly) return
 
             const currentNodes = nodes || getNodes()
@@ -194,13 +216,16 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     )
 
     const onNodeClick = useCallback(
-        (event: React.MouseEvent, node: StepNode) => {
-            const step = steps.find((s) => s.id === node.data.stepId)
-            if (step) {
-                console.log('Node clicked', step)
+        (event: React.MouseEvent, node: StepNode | EndNode) => {
+            // Only handle clicks on StepNode, not EndNode
+            if (node.type === 'stepNode') {
+                const step = steps.find((s) => s.id === node.data.stepId)
+                if (step) {
+                    console.log('Node clicked', step)
 
-                setSelectedStep(step)
-                setDetailsPanelOpen(true)
+                    setSelectedStep(step)
+                    setDetailsPanelOpen(true)
+                }
             }
         },
         [steps]
@@ -210,7 +235,9 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         (nodesToDelete: Node[]) => {
             if (readonly) return
 
-            const stepIdsToDelete = new Set(nodesToDelete.map((node) => node.data.stepId))
+            // Filter out END nodes and only delete step nodes
+            const stepNodesToDelete = nodesToDelete.filter((node) => node.type === 'stepNode')
+            const stepIdsToDelete = new Set(stepNodesToDelete.map((node) => (node as StepNode).data.stepId))
             const newSteps = steps.filter((step) => !stepIdsToDelete.has(step.id))
 
             setSteps(newSteps)
@@ -269,13 +296,24 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             console.log('Updating step', updatedStep)
 
-            const newSteps = steps.map((step) => (step.id === updatedStep.id ? updatedStep : step))
+            // Handle ID changes: find step by checking if it's the currently selected step
+            // or by comparing the original ID if it hasn't changed
+            const newSteps = steps.map((step) => {
+                if (selectedStep && step.id === selectedStep.id) {
+                    // This is the step being edited, update it with the new data
+                    return updatedStep
+                } else if (step.id === updatedStep.id) {
+                    // ID hasn't changed, normal update
+                    return updatedStep
+                }
+                return step
+            })
 
             setSteps(newSteps)
             onStepsChange?.(newSteps)
             setSelectedStep(updatedStep)
         },
-        [readonly, steps, onStepsChange]
+        [readonly, steps, onStepsChange, selectedStep]
     )
 
     const deleteStep = useCallback(
@@ -296,7 +334,11 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
     const layoutFlow = useCallback(
         (direction: 'TB' | 'LR' = 'TB') => {
-            const layoutedElements = layoutNodes<StepNode, ConditionalFlowEdge>(getNodes(), getEdges(), direction)
+            const layoutedElements = layoutNodes<StepNode | EndNode, ConditionalFlowEdge>(
+                getNodes(),
+                getEdges(),
+                direction
+            )
             setNodes(layoutedElements.nodes)
             setEdges(layoutedElements.edges)
 
@@ -407,6 +449,8 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                 onClear={clearFlow}
                 onLayout={layoutFlow}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                onToggleConditionalMode={() => setConditionalModeOpen(!conditionalModeOpen)}
+                isConditionalMode={conditionalModeOpen}
                 exportOptions={exportOptions}
                 onExportOptionsChange={setExportOptions}
                 typeScriptExportOptions={typeScriptExportOptions}
@@ -417,6 +461,22 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             {/* Main flow area */}
             <div className="flow-container">
+                {/* Conditional Flow Mode */}
+                {conditionalModeOpen && (
+                    <div className="absolute top-4 left-4 z-10 max-w-md">
+                        <ConditionalFlowMode
+                            steps={steps}
+                            onStepsChange={(newSteps) => {
+                                setSteps(newSteps)
+                                onStepsChange?.(newSteps)
+                            }}
+                            isActive={conditionalModeOpen}
+                            onToggle={() => setConditionalModeOpen(!conditionalModeOpen)}
+                            readonly={readonly}
+                        />
+                    </div>
+                )}
+
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -446,6 +506,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     <Controls />
                     <MiniMap
                         nodeColor={(node) => {
+                            if (node.type === 'endNode') return '#f59e0b'
                             const stepType = (node.data?.stepType as any) || 'INFORMATION'
                             return getStepTypeColor(stepType)
                         }}
@@ -453,6 +514,55 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                         zoomable
                         pannable
                     />
+
+                    {/* Edge Visibility Controls */}
+                    <div className="edge-visibility-panel">
+                        <div className="edge-visibility-header">
+                            <h4>Edge Visibility</h4>
+                        </div>
+                        <div className="edge-visibility-controls">
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.next}
+                                    onChange={(e) => setEdgeVisibility((prev) => ({ ...prev, next: e.target.checked }))}
+                                />
+                                <span className="edge-type-indicator next"></span>
+                                Sequential
+                            </label>
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.conditional}
+                                    onChange={(e) =>
+                                        setEdgeVisibility((prev) => ({ ...prev, conditional: e.target.checked }))
+                                    }
+                                />
+                                <span className="edge-type-indicator conditional"></span>
+                                Conditional
+                            </label>
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.skip}
+                                    onChange={(e) => setEdgeVisibility((prev) => ({ ...prev, skip: e.target.checked }))}
+                                />
+                                <span className="edge-type-indicator skip"></span>
+                                Skip
+                            </label>
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.previous}
+                                    onChange={(e) =>
+                                        setEdgeVisibility((prev) => ({ ...prev, previous: e.target.checked }))
+                                    }
+                                />
+                                <span className="edge-type-indicator previous"></span>
+                                Previous
+                            </label>
+                        </div>
+                    </div>
                 </ReactFlow>
 
                 {/* Sidebar */}
@@ -478,6 +588,23 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                         onClose={() => setDetailsPanelOpen(false)}
                         readonly={readonly}
                     />
+                )}
+
+                {/* Conditional Flow Mode */}
+                {conditionalModeOpen && (
+                    <div className="absolute top-4 left-4 z-40">
+                        <ConditionalFlowMode
+                            steps={steps}
+                            onStepsChange={(newSteps) => {
+                                setSteps(newSteps)
+                                onStepsChange?.(newSteps)
+                            }}
+                            isActive={conditionalModeOpen}
+                            onToggle={() => setConditionalModeOpen(false)}
+                            defaultCondition={(context) => context.flowData?.userRole === 'admin'}
+                            readonly={readonly}
+                        />
+                    </div>
                 )}
             </div>
 

@@ -5,6 +5,7 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { XIcon } from 'lucide-react'
 import { OptionsListEditor } from './option-list-editor'
 import { ChecklistItemsEditor } from './checklist-item-editor'
+import { ConditionBuilder } from './condition-builder'
 import { getStepLabel } from '../utils/helpers'
 
 interface StepDetailsPanelProps<TContext extends OnboardingContext = OnboardingContext> {
@@ -129,37 +130,15 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                     </div>
                 )}
 
-                {/* Functions */}
+                {/* Condition */}
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3">Functions</h3>
-                    <div className="space-y-3">
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input type="checkbox" checked={typeof editedStep.condition === 'function'} disabled />
-                                Has Condition Function
-                            </label>
-                        </div>
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={typeof editedStep.onStepActive === 'function'}
-                                    disabled
-                                />
-                                Has onStepActive Function
-                            </label>
-                        </div>
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={typeof editedStep.onStepComplete === 'function'}
-                                    disabled
-                                />
-                                Has onStepComplete Function
-                            </label>
-                        </div>
-                    </div>
+                    <h3 className="font-medium text-gray-900 mb-3">Condition</h3>
+                    <ConditionBuilder
+                        condition={editedStep.condition as any}
+                        onConditionChange={(condition) => handleChange({ condition } as any)}
+                        onApplyCondition={handleSave}
+                        readonly={readonly}
+                    />
                 </div>
 
                 {/* Navigation */}
@@ -194,7 +173,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 onChange={(e) =>
                                     handleChange({
                                         previousStep: e.target.value || undefined,
-                                    } as any)
+                                    })
                                 }
                                 disabled={readonly || typeof editedStep.previousStep === 'function'}
                                 placeholder="Auto (previous in sequence)"
@@ -208,16 +187,18 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 <input
                                     type="text"
                                     value={
-                                        typeof (editedStep as any).skipToStep === 'function'
+                                        typeof editedStep.skipToStep === 'function'
                                             ? '[Function]'
-                                            : String((editedStep as any).skipToStep || '')
+                                            : editedStep.skipToStep === null
+                                              ? 'END'
+                                              : String(editedStep.skipToStep || '')
                                     }
                                     onChange={(e) =>
                                         handleChange({
                                             skipToStep: e.target.value || undefined,
-                                        } as any)
+                                        })
                                     }
-                                    disabled={readonly || typeof (editedStep as any).skipToStep === 'function'}
+                                    disabled={readonly || typeof editedStep.skipToStep === 'function'}
                                     placeholder="Auto (next step)"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
                                 />
