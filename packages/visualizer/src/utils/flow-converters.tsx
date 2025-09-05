@@ -115,19 +115,16 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
                 },
             })
         } else if (step.nextStep && typeof step.nextStep !== 'function') {
-            // Explicit next step - determine if edge should be conditional based on SOURCE step
-            const targetStep = stepMap.get(step.nextStep)
-            const sourceIsConditional = typeof step.condition === 'function'
-
+            // Explicit next step - this is always a sequential connection
             edges.push({
                 id: `${sourceId}-next-${step.nextStep}`,
                 source: sourceId,
-                target: String(targetStep?.id ?? step.nextStep),
+                target: String(step.nextStep),
                 sourceHandle: 'next',
                 type: 'conditional',
                 data: {
-                    edgeType: sourceIsConditional ? 'conditional' : 'next',
-                    label: sourceIsConditional ? 'Cond' : 'Next',
+                    edgeType: 'next',
+                    label: 'Next',
                 },
             })
         } else if (step.nextStep === undefined) {
@@ -250,13 +247,34 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
 
         // Set navigation properties based on outgoing edges
         if (nextEdges.length > 0) {
-            const targetId = nextEdges[0].target
-            if (targetId === 'END') {
-                step.nextStep = null as any
+            // Check if there are multiple conditional edges (conditional branching)
+            const conditionalEdges = nextEdges.filter((e) => e.data?.edgeType === 'conditional')
+            const sequentialEdges = nextEdges.filter((e) => e.data?.edgeType === 'next')
+
+            if (conditionalEdges.length > 1) {
+                // Multiple conditional branches - keep nextStep undefined to allow conditional evaluation
+                step.nextStep = undefined
+            } else if (conditionalEdges.length === 1 && sequentialEdges.length === 0) {
+                // Single conditional edge - this means the step has an explicit nextStep with a condition
+                const targetId = conditionalEdges[0].target
+                if (targetId === 'END') {
+                    step.nextStep = null as any
+                } else {
+                    const targetNode = nodes.find((n) => n.id === targetId)
+                    if (targetNode && targetNode.type === 'stepNode') {
+                        step.nextStep = targetNode.data.stepId as any
+                    }
+                }
             } else {
-                const targetNode = nodes.find((n) => n.id === targetId)
-                if (targetNode && targetNode.type === 'stepNode') {
-                    step.nextStep = targetNode.data.stepId as any
+                // Sequential edge or mixed - use the first edge found
+                const targetId = nextEdges[0].target
+                if (targetId === 'END') {
+                    step.nextStep = null as any
+                } else {
+                    const targetNode = nodes.find((n) => n.id === targetId)
+                    if (targetNode && targetNode.type === 'stepNode') {
+                        step.nextStep = targetNode.data.stepId as any
+                    }
                 }
             }
         }
