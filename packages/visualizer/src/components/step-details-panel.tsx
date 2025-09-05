@@ -5,6 +5,7 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { XIcon } from 'lucide-react'
 import { OptionsListEditor } from './option-list-editor'
 import { ChecklistItemsEditor } from './checklist-item-editor'
+import { ConditionBuilder } from './condition-builder'
 import { getStepLabel } from '../utils/helpers'
 
 interface StepDetailsPanelProps<TContext extends OnboardingContext = OnboardingContext> {
@@ -129,27 +130,15 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                     </div>
                 )}
 
-                {/* Functions */}
+                {/* Condition */}
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3">Functions</h3>
-                    <div className="space-y-3">
-                        <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input type="checkbox" checked={typeof editedStep.condition === 'function'} disabled />
-                                Has Condition Function
-                            </label>
-                            {typeof editedStep.condition === 'function' && (
-                                <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        Condition Code:
-                                    </label>
-                                    <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono overflow-x-auto">
-                                        {editedStep.condition.toString()}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <h3 className="font-medium text-gray-900 mb-3">Condition</h3>
+                    <ConditionBuilder
+                        condition={editedStep.condition as any}
+                        onConditionChange={(condition) => handleChange({ condition } as any)}
+                        onApplyCondition={handleSave}
+                        readonly={readonly}
+                    />
                 </div>
 
                 {/* Navigation */}

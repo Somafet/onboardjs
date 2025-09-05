@@ -30,6 +30,7 @@ import { ConditionalEdge, ConditionalFlowEdge } from './edges/conditional-edge'
 import { FlowToolbar, ExportFormat } from './components/flow-toolbar'
 import { FlowSidebar } from './components/flow-sidebar'
 import { StepDetailsPanel } from './components/step-details-panel'
+import { ConditionalFlowMode } from './components/conditional-flow-mode'
 import { convertStepsToFlow, convertFlowToSteps, layoutNodes } from './utils/flow-converters'
 import './flow-visualizer.css'
 
@@ -87,6 +88,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const [selectedStep, setSelectedStep] = useState<OnboardingStep<TContext> | null>(null)
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [detailsPanelOpen, setDetailsPanelOpen] = useState(false)
+    const [conditionalModeOpen, setConditionalModeOpen] = useState(false)
     const [edgeVisibility, setEdgeVisibility] = useState({
         next: true,
         conditional: true,
@@ -294,13 +296,24 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             console.log('Updating step', updatedStep)
 
-            const newSteps = steps.map((step) => (step.id === updatedStep.id ? updatedStep : step))
+            // Handle ID changes: find step by checking if it's the currently selected step
+            // or by comparing the original ID if it hasn't changed
+            const newSteps = steps.map((step) => {
+                if (selectedStep && step.id === selectedStep.id) {
+                    // This is the step being edited, update it with the new data
+                    return updatedStep
+                } else if (step.id === updatedStep.id) {
+                    // ID hasn't changed, normal update
+                    return updatedStep
+                }
+                return step
+            })
 
             setSteps(newSteps)
             onStepsChange?.(newSteps)
             setSelectedStep(updatedStep)
         },
-        [readonly, steps, onStepsChange]
+        [readonly, steps, onStepsChange, selectedStep]
     )
 
     const deleteStep = useCallback(
@@ -436,6 +449,8 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                 onClear={clearFlow}
                 onLayout={layoutFlow}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                onToggleConditionalMode={() => setConditionalModeOpen(!conditionalModeOpen)}
+                isConditionalMode={conditionalModeOpen}
                 exportOptions={exportOptions}
                 onExportOptionsChange={setExportOptions}
                 typeScriptExportOptions={typeScriptExportOptions}
@@ -446,6 +461,22 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             {/* Main flow area */}
             <div className="flow-container">
+                {/* Conditional Flow Mode */}
+                {conditionalModeOpen && (
+                    <div className="absolute top-4 left-4 z-10 max-w-md">
+                        <ConditionalFlowMode
+                            steps={steps}
+                            onStepsChange={(newSteps) => {
+                                setSteps(newSteps)
+                                onStepsChange?.(newSteps)
+                            }}
+                            isActive={conditionalModeOpen}
+                            onToggle={() => setConditionalModeOpen(!conditionalModeOpen)}
+                            readonly={readonly}
+                        />
+                    </div>
+                )}
+
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -557,6 +588,23 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                         onClose={() => setDetailsPanelOpen(false)}
                         readonly={readonly}
                     />
+                )}
+
+                {/* Conditional Flow Mode */}
+                {conditionalModeOpen && (
+                    <div className="absolute top-4 left-4 z-40">
+                        <ConditionalFlowMode
+                            steps={steps}
+                            onStepsChange={(newSteps) => {
+                                setSteps(newSteps)
+                                onStepsChange?.(newSteps)
+                            }}
+                            isActive={conditionalModeOpen}
+                            onToggle={() => setConditionalModeOpen(false)}
+                            defaultCondition={(context) => context.flowData?.userRole === 'admin'}
+                            readonly={readonly}
+                        />
+                    </div>
                 )}
             </div>
 

@@ -10,6 +10,7 @@ import {
     FileJsonIcon,
     GalleryHorizontalIcon,
     GalleryVerticalIcon,
+    GitBranchIcon,
     ImportIcon,
     PlusIcon,
     TrashIcon,
@@ -25,6 +26,8 @@ interface FlowToolbarProps {
     onClear: () => void
     onLayout: (direction?: 'TB' | 'LR') => void
     onToggleSidebar: () => void
+    onToggleConditionalMode?: () => void
+    isConditionalMode?: boolean
     exportOptions: Partial<StepJSONParserOptions>
     onExportOptionsChange: (options: Partial<StepJSONParserOptions>) => void
     typeScriptExportOptions: Partial<TypeScriptExportOptions>
@@ -40,6 +43,8 @@ export function FlowToolbar({
     onClear,
     onLayout,
     onToggleSidebar,
+    onToggleConditionalMode,
+    isConditionalMode = false,
     exportOptions,
     onExportOptionsChange,
     typeScriptExportOptions,
@@ -144,6 +149,24 @@ export function FlowToolbar({
                         <GalleryVerticalIcon className="w-5 h-5" />
                     </button>
                 </div>
+
+                {!readonly && onToggleConditionalMode && (
+                    <>
+                        <div className="h-6 w-px bg-gray-300" />
+                        <button
+                            onClick={onToggleConditionalMode}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                                isConditionalMode
+                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                            title="Toggle Conditional Flow Mode"
+                        >
+                            <GitBranchIcon className="w-4 h-4" />
+                            {isConditionalMode ? 'Exit' : 'Conditional'} Mode
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* Center section */}

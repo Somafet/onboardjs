@@ -73,7 +73,7 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNode>) => {
             <Handle type="target" position={Position.Top} className="w-3 h-3 border-2 bg-white" />
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 gap-2">
                 <div className="flex items-center gap-2">
                     {getStepIcon(stepType)}
                     <span className="font-medium text-sm text-gray-700">{stepType.replace('_', ' ')}</span>
