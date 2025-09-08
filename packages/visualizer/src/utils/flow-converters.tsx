@@ -145,9 +145,7 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
                         sourceHandle: 'next',
                     })
                 } else {
-                    const conditionalStepsAfter = steps
-                        .slice(nextStepIndex)
-                        .filter((s) => typeof s.condition === 'function')
+                    const conditionalStepsAfter = steps.slice(nextStepIndex)
 
                     if (conditionalStepsAfter.length > 0 && typeof step.condition !== 'function') {
                         // Current step is not conditional but there are conditional steps after

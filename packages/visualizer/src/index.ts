@@ -4,4 +4,4 @@ export * from './components/index'
 export * from './utils/flow-converters'
 export * from './flow-visualizer'
 
-import '../styles.css'
+export * from './parser'

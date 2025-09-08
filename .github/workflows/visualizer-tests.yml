@@ -1,0 +1,56 @@
+name: Visualizer Package Tests
+
+on:
+    push:
+        paths:
+            - 'packages/visualizer/**'
+            - '.github/workflows/visualizer-tests.yml'
+    pull_request:
+        paths:
+            - 'packages/visualizer/**'
+            - '.github/workflows/visualizer-tests.yml'
+
+jobs:
+    test-visualizer:
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: packages/visualizer
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.15.0
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: 'pnpm'
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+              working-directory: .
+
+            - name: Run Vitest with coverage
+              run: pnpm test:run
+
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v4
+              with:
+                  name: visualizer-coverage-report
+                  path: packages/visualizer/coverage
+
+            - name: Display coverage summary
+              if: always()
+              run: |
+                  if [ -f coverage/coverage-summary.json ]; then
+                    pnpm vitest coverage report --reporter=text-summary
+                  else
+                    echo "No coverage summary found."
+                  fi

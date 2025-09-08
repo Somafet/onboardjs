@@ -30,9 +30,9 @@ export interface TypeScriptExportResult {
 
 export class TypeScriptExporter {
     private static readonly DEFAULT_OPTIONS: TypeScriptExportOptions = {
-        includeImports: true,
-        includeTypes: true,
-        useConstAssertion: true,
+        includeImports: false,
+        includeTypes: false,
+        useConstAssertion: false,
         variableName: 'onboardingSteps',
         includeComments: true,
         inlineFunctions: false,
@@ -165,7 +165,7 @@ export class TypeScriptExporter {
 
         steps.forEach((step, stepIndex) => {
             // Generate condition function
-            if (step.condition && typeof step.condition === 'function') {
+            if (step.condition) {
                 const functionName = `step${stepIndex}Condition`
                 if (!functionNames.has(functionName)) {
                     functionNames.add(functionName)
@@ -358,7 +358,9 @@ export class TypeScriptExporter {
                     lines.push(`${propIndent}nextStep: step${stepIndex}NextStep,`)
                 }
             } else {
-                lines.push(`${propIndent}nextStep: ${this.formatValue(step.nextStep, propIndent)},`)
+                // Convert 'END' to null for nextStep
+                const nextStepValue = step.nextStep === 'END' ? null : step.nextStep
+                lines.push(`${propIndent}nextStep: ${this.formatValue(nextStepValue, propIndent)},`)
             }
         }
 
@@ -370,7 +372,9 @@ export class TypeScriptExporter {
                     lines.push(`${propIndent}previousStep: step${stepIndex}PreviousStep,`)
                 }
             } else {
-                lines.push(`${propIndent}previousStep: ${this.formatValue(step.previousStep, propIndent)},`)
+                // Convert 'END' to null for previousStep
+                const previousStepValue = step.previousStep === 'END' ? null : step.previousStep
+                lines.push(`${propIndent}previousStep: ${this.formatValue(previousStepValue, propIndent)},`)
             }
         }
 
@@ -387,7 +391,9 @@ export class TypeScriptExporter {
                         lines.push(`${propIndent}skipToStep: step${stepIndex}SkipToStep,`)
                     }
                 } else {
-                    lines.push(`${propIndent}skipToStep: ${this.formatValue(skipToStep, propIndent)},`)
+                    // Convert 'END' to null for skipToStep
+                    const skipToStepValue = skipToStep === 'END' ? null : skipToStep
+                    lines.push(`${propIndent}skipToStep: ${this.formatValue(skipToStepValue, propIndent)},`)
                 }
             }
         }
@@ -598,7 +604,11 @@ export class TypeScriptExporter {
     private static formatValue(value: any, indent: string): string {
         if (value === null) return 'null'
         if (value === undefined) return 'undefined'
-        if (typeof value === 'string') return `'${value.replace(/'/g, "\\'")}'`
+        if (typeof value === 'string') {
+            // Convert 'END' step IDs to null for nextStep, previousStep, and skipToStep
+            if (value === 'END') return 'null'
+            return `'${value.replace(/'/g, "\\'")}'`
+        }
         if (typeof value === 'number' || typeof value === 'boolean') return String(value)
         if (typeof value === 'object') return this.formatObject(value, indent)
         return String(value)
