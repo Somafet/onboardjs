@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/visualizer",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "A React component library to visually build and edit OnboardJS flows.",
     "author": "Soma Somorjai <soma@onboardjs.com>",
     "license": "MIT",
