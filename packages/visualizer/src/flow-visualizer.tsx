@@ -33,6 +33,7 @@ import { StepDetailsPanel } from './components/step-details-panel'
 import { ConditionalFlowMode } from './components/conditional-flow-mode'
 import { convertStepsToFlow, convertFlowToSteps, layoutNodes } from './utils/flow-converters'
 import './flow-visualizer.css'
+import '../styles.css'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
@@ -102,12 +103,12 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         validateSteps: true,
     })
     const [typeScriptExportOptions, setTypeScriptExportOptions] = useState<Partial<TypeScriptExportOptions>>({
-        includeImports: true,
-        includeTypes: true,
-        useConstAssertion: true,
-        variableName: 'onboardingSteps',
+        includeImports: false,
+        includeTypes: false,
+        useConstAssertion: false,
+        variableName: 'steps',
         includeComments: true,
-        inlineFunctions: false,
+        inlineFunctions: true,
         indentation: 'spaces',
         spacesCount: 2,
         includeValidation: false,
@@ -199,8 +200,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                 },
             }
 
-            console.log('Adding new edge', newEdge)
-
             setEdges((currentEdges) => {
                 const updatedEdges = addEdge(newEdge, currentEdges)
 
@@ -216,13 +215,11 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     )
 
     const onNodeClick = useCallback(
-        (event: React.MouseEvent, node: StepNode | EndNode) => {
+        (_: React.MouseEvent, node: StepNode | EndNode) => {
             // Only handle clicks on StepNode, not EndNode
             if (node.type === 'stepNode') {
                 const step = steps.find((s) => s.id === node.data.stepId)
                 if (step) {
-                    console.log('Node clicked', step)
-
                     setSelectedStep(step)
                     setDetailsPanelOpen(true)
                 }
@@ -253,8 +250,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             const edgeIdsToDelete = new Set(edgesToDelete.map((edge) => edge.id))
             const currentEdges = getEdges()
             const remainingEdges = currentEdges.filter((edge) => !edgeIdsToDelete.has(edge.id))
-
-            console.log('Deleting edges', { edgesToDelete, remainingEdges })
 
             // Update steps with the remaining edges
             updateStepsFromFlow(getNodes(), remainingEdges)
@@ -293,8 +288,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const updateStep = useCallback(
         (updatedStep: OnboardingStep<TContext>) => {
             if (readonly) return
-
-            console.log('Updating step', updatedStep)
 
             // Handle ID changes: find step by checking if it's the currently selected step
             // or by comparing the original ID if it hasn't changed
