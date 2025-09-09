@@ -1,42 +1,42 @@
 {
-  "name": "@onboardjs/core",
-  "version": "0.3.8",
-  "description": "Headless core logic for dynamic onboarding flows.",
-  "private": false,
-  "author": {
-    "name": "Soma Somorjai",
-    "email": "soma@onboardjs.com",
-    "url": "https://somafet.com"
-  },
-  "keywords": [
-    "onboardjs",
-    "onboarding",
-    "core",
-    "headless",
-    "typescript"
-  ],
-  "files": [
-    "dist"
-  ],
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.es.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.es.js",
-      "require": "./dist/index.cjs.js"
-    }
-  },
-  "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly true",
-    "test": "vitest --coverage"
-  },
-  "devDependencies": {
-    "@types/node": "^24.3.0",
-    "@vitest/coverage-v8": "^3.1.4",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.4"
-  },
-  "license": "MIT"
+    "name": "@onboardjs/core",
+    "version": "0.3.9",
+    "description": "Headless core logic for dynamic onboarding flows.",
+    "private": false,
+    "author": {
+        "name": "Soma Somorjai",
+        "email": "soma@onboardjs.com",
+        "url": "https://somafet.com"
+    },
+    "keywords": [
+        "onboardjs",
+        "onboarding",
+        "core",
+        "headless",
+        "typescript"
+    ],
+    "files": [
+        "dist"
+    ],
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.es.js",
+            "require": "./dist/index.cjs.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build && tsc --emitDeclarationOnly true",
+        "test": "vitest --coverage"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.0",
+        "@vitest/coverage-v8": "^3.1.4",
+        "typescript": "^5.8.3",
+        "vitest": "^3.1.4"
+    },
+    "license": "MIT"
 }
