@@ -1088,6 +1088,78 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
         this.errorHandler.clearErrorHistory()
     }
 
+    /**
+     * Pause the onboarding flow
+     * This emits a flowPaused event for analytics tracking
+     */
+    public pauseFlow(reason: 'user_action' | 'timeout' | 'error' = 'user_action'): void {
+        this.eventManager.notifyListeners('flowPaused', {
+            context: this.contextInternal,
+            reason,
+        })
+    }
+
+    /**
+     * Resume the onboarding flow
+     * This emits a flowResumed event for analytics tracking
+     */
+    public resumeFlow(resumePoint: string = 'current_step'): void {
+        this.eventManager.notifyListeners('flowResumed', {
+            context: this.contextInternal,
+            resumePoint,
+        })
+    }
+
+    /**
+     * Mark the flow as abandoned
+     * This emits a flowAbandoned event for analytics tracking
+     */
+    public abandonFlow(abandonmentReason: string = 'user_action'): void {
+        this.eventManager.notifyListeners('flowAbandoned', {
+            context: this.contextInternal,
+            abandonmentReason,
+        })
+    }
+
+    /**
+     * Mark the current step as abandoned due to timeout or other reasons
+     * This emits a stepAbandoned event for analytics tracking
+     */
+    public abandonStep(timeOnStep?: number): void {
+        if (this.currentStepInternal) {
+            const actualTimeOnStep = timeOnStep || this.getTimeOnCurrentStep()
+            this.eventManager.notifyListeners('stepAbandoned', {
+                step: this.currentStepInternal,
+                context: this.contextInternal,
+                timeOnStep: actualTimeOnStep,
+            })
+        }
+    }
+
+    /**
+     * Mark the current step as retried
+     * This emits a stepRetried event for analytics tracking
+     */
+    public retryStep(retryCount: number = 1): void {
+        if (this.currentStepInternal) {
+            this.eventManager.notifyListeners('stepRetried', {
+                step: this.currentStepInternal,
+                context: this.contextInternal,
+                retryCount,
+            })
+        }
+    }
+
+    /**
+     * Get the time spent on the current step in milliseconds
+     */
+    private getTimeOnCurrentStep(): number {
+        if (!this.currentStepInternal) return 0
+
+        const stepStartTime = this.contextInternal.flowData._internal?.stepStartTimes?.[this.currentStepInternal.id]
+        return stepStartTime ? Date.now() - stepStartTime : 0
+    }
+
     private initializeAnalytics(config: OnboardingEngineConfig<TContext>): AnalyticsManager<TContext> {
         // Create default analytics config
         let analyticsConfig: AnalyticsConfig = { enabled: false }
@@ -1170,7 +1242,22 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
         this.addEventListener('stepCompleted', (event) => {
             const startTime = event.context.flowData?._internal?.stepStartTimes?.[event.step.id] || 0
             const duration = startTime ? Date.now() - startTime : 0
-            manager.trackStepCompleted(event.step, event.context, duration)
+            manager.trackStepCompleted(event.step, event.context, duration, event.stepData)
+        })
+
+        // Track step skipped
+        this.addEventListener('stepSkipped', (event) => {
+            manager.trackStepSkipped(event.step, event.context, event.skipReason)
+        })
+
+        // Track step validation failed
+        this.addEventListener('stepValidationFailed', (event) => {
+            manager.trackStepValidationFailed(event.step, event.context, event.validationErrors)
+        })
+
+        // Track step help requested
+        this.addEventListener('stepHelpRequested', (event) => {
+            manager.trackStepHelpRequested(event.step, event.context, event.helpType)
         })
 
         // Track flow started
@@ -1182,6 +1269,79 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
         this.addEventListener('flowCompleted', (event) => {
             manager.trackFlowCompleted(event.context)
             manager.flush()
+        })
+
+        // Track flow reset
+        this.addEventListener('flowReset', (event) => {
+            manager.trackFlowReset(event.context, event.resetReason)
+        })
+
+        // Track flow paused
+        this.addEventListener('flowPaused', (event) => {
+            manager.trackFlowPaused(event.context, event.reason)
+        })
+
+        // Track flow resumed
+        this.addEventListener('flowResumed', (event) => {
+            manager.trackFlowResumed(event.context, event.resumePoint)
+        })
+
+        // Track flow abandoned
+        this.addEventListener('flowAbandoned', (event) => {
+            manager.trackFlowAbandoned(event.context, event.abandonmentReason)
+        })
+
+        // Track step abandoned
+        this.addEventListener('stepAbandoned', (event) => {
+            manager.trackStepAbandoned(event.step, event.context, event.timeOnStep)
+        })
+
+        // Track step retried
+        this.addEventListener('stepRetried', (event) => {
+            manager.trackStepRetried(event.step, event.context, event.retryCount)
+        })
+
+        // Track navigation events
+        this.addEventListener('navigationBack', (event) => {
+            manager.trackNavigationBack(event.fromStep, event.toStep, event.context)
+        })
+
+        this.addEventListener('navigationForward', (event) => {
+            manager.trackNavigationForward(event.fromStep, event.toStep, event.context)
+        })
+
+        this.addEventListener('navigationJump', (event) => {
+            manager.trackNavigationJump(event.fromStep, event.toStep, event.context)
+        })
+
+        // Track context updates (data changes)
+        this.addEventListener('contextUpdate', (event) => {
+            // Extract changed fields from the context comparison
+            const changedFields = this.getChangedFields(event.oldContext, event.newContext)
+            manager.trackDataChanged(
+                event.newContext,
+                changedFields,
+                event.oldContext.flowData,
+                event.newContext.flowData
+            )
+        })
+
+        // Track user activity
+        this.addEventListener('userIdle', (event) => {
+            manager.trackUserIdle(event.step, event.context, event.idleDuration)
+        })
+
+        this.addEventListener('userReturned', (event) => {
+            manager.trackUserReturned(event.step, event.context, event.awayDuration)
+        })
+
+        this.addEventListener('persistenceFailure', (event) => {
+            manager.trackPersistenceFailure(event.context, event.error)
+        })
+
+        // Track errors
+        this.addEventListener('error', (event) => {
+            manager.trackErrorEncountered(event.error, event.context)
         })
 
         // Track flow registration events
@@ -1199,13 +1359,46 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
             })
         })
 
-        // Track flow reset events with version info
-        this.addEventListener('flowReset', (event) => {
-            manager.trackEvent('flow_reset', {
-                resetReason: event.resetReason,
-                flowInfo: this.getFlowInfo(),
+        // Track plugin events
+        this.addEventListener('pluginInstalled', (event) => {
+            manager.trackEvent('plugin_installed', {
+                pluginName: event.pluginName,
+                timestamp: Date.now(),
             })
         })
+
+        this.addEventListener('pluginError', (event) => {
+            manager.trackEvent('plugin_error', {
+                pluginName: event.pluginName,
+                errorMessage: event.error.message,
+                timestamp: Date.now(),
+            })
+        })
+    }
+
+    /**
+     * Helper method to identify changed fields between contexts
+     */
+    private getChangedFields(oldContext: TContext, newContext: TContext): string[] {
+        const changedFields: string[] = []
+        const oldData = oldContext.flowData
+        const newData = newContext.flowData
+
+        // Simple comparison of top-level properties
+        const allKeys = new Set([...Object.keys(oldData), ...Object.keys(newData)])
+
+        allKeys.forEach((key) => {
+            if (key === '_internal') return // Skip internal properties
+
+            const oldValue = JSON.stringify(oldData[key])
+            const newValue = JSON.stringify(newData[key])
+
+            if (oldValue !== newValue) {
+                changedFields.push(key)
+            }
+        })
+
+        return changedFields
     }
 
     // Public method to track custom events
