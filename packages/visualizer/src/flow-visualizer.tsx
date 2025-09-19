@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useState, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
     ReactFlow,
     Node,
     Edge,
-    addEdge,
     useNodesState,
     useEdgesState,
     Controls,
@@ -34,6 +33,8 @@ import { ConditionalFlowMode } from './components/conditional-flow-mode'
 import { convertStepsToFlow, convertFlowToSteps, layoutNodes } from './utils/flow-converters'
 import './flow-visualizer.css'
 import '../styles.css'
+import { getStepTypeColor } from './utils/colors.utils'
+import { generateStepId, getDefaultPayload } from './utils/step.utils'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
@@ -87,6 +88,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     // State
     const [steps, setSteps] = useState<OnboardingStep<TContext>[]>(initialSteps)
     const [selectedStep, setSelectedStep] = useState<OnboardingStep<TContext> | null>(null)
+
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [detailsPanelOpen, setDetailsPanelOpen] = useState(false)
     const [conditionalModeOpen, setConditionalModeOpen] = useState(false)
@@ -114,10 +116,14 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         includeValidation: false,
     })
 
+    const stepsById = useMemo(() => {
+        return new Map(steps.map((step) => [step.id, step]))
+    }, [steps])
+
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Convert steps to flow data
-    const { nodes: initialNodes, edges: initialEdges } = useMemo(() => convertStepsToFlow(steps), [steps])
+    // Convert steps to flow data (preserve positions if nodes already exist)
+    const { nodes: initialNodes, edges: initialEdges } = useMemo(() => convertStepsToFlow(steps), [])
 
     // Filter edges based on visibility settings
     const visibleEdges = useMemo(() => {
@@ -134,8 +140,10 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const { fitView, getNodes, getEdges } = useReactFlow<StepNode | EndNode, ConditionalFlowEdge>()
 
     // Update flow when steps change
-    React.useEffect(() => {
-        const { nodes: newNodes, edges: newEdges } = convertStepsToFlow(steps)
+    useEffect(() => {
+        const { nodes: newNodes, edges: newEdges } = convertStepsToFlow(steps, {
+            existingNodes: nodes,
+        })
         const filteredEdges = newEdges.filter((edge) => {
             const edgeType = edge.data?.edgeType || 'next'
             return edgeVisibility[edgeType as keyof typeof edgeVisibility]
@@ -145,29 +153,29 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     }, [steps, edgeVisibility, setNodes, setEdges])
 
     const updateStepsFromFlow = useCallback(
-        (nodes?: (StepNode | EndNode)[], edges?: ConditionalFlowEdge[]) => {
-            if (readonly) return
+        (newNodes?: (StepNode | EndNode)[], newEdges?: ConditionalFlowEdge[]) => {
+            if (readonly) {
+                return { updatedSteps: steps, updatedNodes: nodes, updatedEdges: edges }
+            }
 
-            const currentNodes = nodes || getNodes()
-            const currentEdges = edges || getEdges()
-
-            console.log('Updating steps from flow data', {
-                currentNodes,
-                currentEdges,
-            })
+            const currentNodes = newNodes ?? nodes
+            const currentEdges = newEdges ?? edges
 
             // Pass current steps to preserve payload data
-            const newSteps = convertFlowToSteps<TContext>(currentNodes, currentEdges, steps)
+            const newSteps = convertFlowToSteps<TContext>(currentNodes, currentEdges)
 
             setSteps(newSteps)
             onStepsChange?.(newSteps)
+
+            return { updatedSteps: newSteps, updatedNodes: currentNodes, updatedEdges: currentEdges }
         },
-        [readonly, getNodes, getEdges, onStepsChange, steps]
+        [readonly, getNodes, getEdges, onStepsChange, steps, nodes, edges]
     )
 
-    // Fixed onConnect to detect edge type from source handle
     const onConnect = useCallback(
         (params: Connection) => {
+            console.log('onConnect', params)
+
             if (readonly) return
 
             // Determine edge type based on source handle
@@ -189,7 +197,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             }
 
             const newEdge: ConditionalFlowEdge = {
-                id: `edge-${params.source}-${params.target}-${edgeType}`,
+                id: `edge-${params.source}-${edgeType}-${params.target}`,
                 ...params,
                 markerStart,
                 markerEnd,
@@ -200,18 +208,12 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                 },
             }
 
-            setEdges((currentEdges) => {
-                const updatedEdges = addEdge(newEdge, currentEdges)
+            // Prevent multiple outgoing edges of the same type from a single node
+            const filteredEdges = edges.filter((e) => e.source !== params.source && e.data?.edgeType === edgeType)
 
-                // Update steps with the new edges immediately
-                setTimeout(() => {
-                    updateStepsFromFlow(getNodes(), updatedEdges)
-                }, 0)
-
-                return updatedEdges
-            })
+            updateStepsFromFlow(undefined, [...filteredEdges, newEdge])
         },
-        [readonly, setEdges, getNodes, updateStepsFromFlow]
+        [readonly, steps, updateStepsFromFlow]
     )
 
     const onNodeClick = useCallback(
@@ -248,13 +250,12 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             if (readonly) return
 
             const edgeIdsToDelete = new Set(edgesToDelete.map((edge) => edge.id))
-            const currentEdges = getEdges()
-            const remainingEdges = currentEdges.filter((edge) => !edgeIdsToDelete.has(edge.id))
+            const remainingEdges = edges.filter((edge) => !edgeIdsToDelete.has(edge.id))
 
             // Update steps with the remaining edges
-            updateStepsFromFlow(getNodes(), remainingEdges)
+            updateStepsFromFlow(undefined, remainingEdges)
         },
-        [readonly, getNodes, getEdges, updateStepsFromFlow]
+        [readonly, updateStepsFromFlow]
     )
 
     // Step management (keeping existing functions)
@@ -262,20 +263,11 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         (stepType: OnboardingStep<TContext>['type'] = 'INFORMATION') => {
             if (readonly) return
 
-            const newId = `step_${Date.now()}`
+            const newId = generateStepId()
             const newStep: OnboardingStep<TContext> = {
                 id: newId,
                 type: stepType,
-                payload:
-                    stepType === 'SINGLE_CHOICE'
-                        ? { options: [] }
-                        : stepType === 'MULTIPLE_CHOICE'
-                          ? { options: [] }
-                          : stepType === 'CHECKLIST'
-                            ? { dataKey: `${newId}_data`, items: [] }
-                            : stepType === 'CUSTOM_COMPONENT'
-                              ? { componentKey: 'DefaultComponent' }
-                              : {},
+                payload: getDefaultPayload(stepType),
             } as OnboardingStep<TContext>
 
             const newSteps = [...steps, newStep]
@@ -498,11 +490,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     <Background />
                     <Controls />
                     <MiniMap
-                        nodeColor={(node) => {
-                            if (node.type === 'endNode') return '#f59e0b'
-                            const stepType = (node.data?.stepType as any) || 'INFORMATION'
-                            return getStepTypeColor(stepType)
-                        }}
+                        nodeColor={(node) => getStepTypeColor((node as StepNode).data.stepType || 'endNode')}
                         nodeStrokeWidth={3}
                         zoomable
                         pannable
@@ -617,24 +605,4 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             />
         </div>
     )
-}
-
-// Helper function for step type colors (keeping existing)
-function getStepTypeColor(stepType: string): string {
-    switch (stepType) {
-        case 'INFORMATION':
-            return '#3b82f6'
-        case 'SINGLE_CHOICE':
-            return '#10b981'
-        case 'MULTIPLE_CHOICE':
-            return '#8b5cf6'
-        case 'CHECKLIST':
-            return '#f59e0b'
-        case 'CONFIRMATION':
-            return '#ef4444'
-        case 'CUSTOM_COMPONENT':
-            return '#6b7280'
-        default:
-            return '#3b82f6'
-    }
 }

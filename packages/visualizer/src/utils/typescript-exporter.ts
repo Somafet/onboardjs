@@ -358,8 +358,8 @@ export class TypeScriptExporter {
                     lines.push(`${propIndent}nextStep: step${stepIndex}NextStep,`)
                 }
             } else {
-                // Convert 'END' to null for nextStep
-                const nextStepValue = step.nextStep === 'END' ? null : step.nextStep
+                // Convert 'null' to null for nextStep
+                const nextStepValue = step.nextStep === 'null' ? null : step.nextStep
                 lines.push(`${propIndent}nextStep: ${this.formatValue(nextStepValue, propIndent)},`)
             }
         }
@@ -372,8 +372,8 @@ export class TypeScriptExporter {
                     lines.push(`${propIndent}previousStep: step${stepIndex}PreviousStep,`)
                 }
             } else {
-                // Convert 'END' to null for previousStep
-                const previousStepValue = step.previousStep === 'END' ? null : step.previousStep
+                // Convert 'null' to null for previousStep
+                const previousStepValue = step.previousStep === 'null' ? null : step.previousStep
                 lines.push(`${propIndent}previousStep: ${this.formatValue(previousStepValue, propIndent)},`)
             }
         }
@@ -391,8 +391,8 @@ export class TypeScriptExporter {
                         lines.push(`${propIndent}skipToStep: step${stepIndex}SkipToStep,`)
                     }
                 } else {
-                    // Convert 'END' to null for skipToStep
-                    const skipToStepValue = skipToStep === 'END' ? null : skipToStep
+                    // Convert 'null' to null for skipToStep
+                    const skipToStepValue = skipToStep === 'null' ? null : skipToStep
                     lines.push(`${propIndent}skipToStep: ${this.formatValue(skipToStepValue, propIndent)},`)
                 }
             }
@@ -605,8 +605,6 @@ export class TypeScriptExporter {
         if (value === null) return 'null'
         if (value === undefined) return 'undefined'
         if (typeof value === 'string') {
-            // Convert 'END' step IDs to null for nextStep, previousStep, and skipToStep
-            if (value === 'END') return 'null'
             return `'${value.replace(/'/g, "\\'")}'`
         }
         if (typeof value === 'number' || typeof value === 'boolean') return String(value)

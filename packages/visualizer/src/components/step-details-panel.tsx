@@ -6,7 +6,7 @@ import { XIcon } from 'lucide-react'
 import { OptionsListEditor } from './option-list-editor'
 import { ChecklistItemsEditor } from './checklist-item-editor'
 import { ConditionBuilder } from './condition-builder'
-import { getStepLabel } from '../utils/helpers'
+import { getStepLabel } from '../utils/step.utils'
 
 interface StepDetailsPanelProps<TContext extends OnboardingContext = OnboardingContext> {
     step: OnboardingStep<TContext>
@@ -50,7 +50,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
     }
 
     return (
-        <div className="step-details-panel bg-white border-l border-gray-200 w-96 h-full overflow-hidden flex flex-col">
+        <div className="step-details-panel bg-white border-l border-gray-200 w-124 h-full overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h2 className="font-semibold text-gray-900">Step Details</h2>
@@ -189,9 +189,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                     value={
                                         typeof editedStep.skipToStep === 'function'
                                             ? '[Function]'
-                                            : editedStep.skipToStep === null
-                                              ? 'END'
-                                              : String(editedStep.skipToStep || '')
+                                            : String(editedStep.skipToStep)
                                     }
                                     onChange={(e) =>
                                         handleChange({

@@ -282,9 +282,9 @@ const someFunction = (context) => context.isReady;`
 const steps = [
   {
     id: 'step1',
-    nextStep: 'END',
-    previousStep: 'END',
-    skipToStep: 'END'
+    nextStep: 'null',
+    previousStep: 'null',
+    skipToStep: 'null'
   }
 ];`
 

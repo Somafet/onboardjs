@@ -132,21 +132,21 @@ export class OnboardJSParser {
         const nextStepMatch = objectStr.match(/nextStep\s*:\s*(['"]([^'"]+)['"]|null)/)
         if (nextStepMatch) {
             step.nextStep = nextStepMatch[2] || null
-            if (step.nextStep === 'END') step.nextStep = null
+            if (step.nextStep === 'null') step.nextStep = null
         }
 
         // Extract previousStep
         const prevStepMatch = objectStr.match(/previousStep\s*:\s*(['"]([^'"]+)['"]|null)/)
         if (prevStepMatch) {
             step.previousStep = prevStepMatch[2] || null
-            if (step.previousStep === 'END') step.previousStep = null
+            if (step.previousStep === 'null') step.previousStep = null
         }
 
         // Extract skipToStep
         const skipToMatch = objectStr.match(/skipToStep\s*:\s*(['"]([^'"]+)['"]|null)/)
         if (skipToMatch) {
             step.skipToStep = skipToMatch[2] || null
-            if (step.skipToStep === 'END') step.skipToStep = null
+            if (step.skipToStep === 'null') step.skipToStep = null
         }
 
         // Extract isSkippable
@@ -464,20 +464,20 @@ export class OnboardJSParser {
 
                 case 'nextStep':
                     step.nextStep = this.extractNavigationValue(prop.value)
-                    // Convert 'END' to null
-                    if (step.nextStep === 'END') step.nextStep = null
+                    // Convert 'null' to null
+                    if (step.nextStep === 'null') step.nextStep = null
                     break
 
                 case 'previousStep':
                     step.previousStep = this.extractNavigationValue(prop.value)
-                    // Convert 'END' to null
-                    if (step.previousStep === 'END') step.previousStep = null
+                    // Convert 'null' to null
+                    if (step.previousStep === 'null') step.previousStep = null
                     break
 
                 case 'skipToStep':
                     step.skipToStep = this.extractNavigationValue(prop.value)
-                    // Convert 'END' to null
-                    if (step.skipToStep === 'END') step.skipToStep = null
+                    // Convert 'null' to null
+                    if (step.skipToStep === 'null') step.skipToStep = null
                     break
 
                 case 'isSkippable':
@@ -687,8 +687,8 @@ export class OnboardJSParser {
                     ;(step as Record<string, unknown>)[prop] = null
                 }
 
-                // Convert 'END' to null
-                if (value === 'END') {
+                // Convert 'null' to null
+                if (value === 'null') {
                     ;(step as Record<string, unknown>)[prop] = null
                 }
             }

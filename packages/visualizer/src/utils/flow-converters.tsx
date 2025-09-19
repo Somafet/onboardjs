@@ -5,63 +5,63 @@ import dagre from 'dagre'
 import { StepNode } from '../nodes/step-node'
 import { EndNode } from '../nodes/end-node'
 import { ConditionalFlowEdge } from '../edges/conditional-edge'
-import { getStepLabel } from './helpers'
+import { getDefaultPayload, getStepDescription, getStepLabel } from './step.utils'
 
 export interface FlowData {
     nodes: (StepNode | EndNode)[]
     edges: ConditionalFlowEdge[]
 }
 
+type ConvertOptions = {
+    existingNodes: (StepNode | EndNode)[]
+    autoConnectUndefined?: boolean
+}
+
 export function convertStepsToFlow<TContext extends OnboardingContext = OnboardingContext>(
-    steps: OnboardingStep<TContext>[]
+    steps: OnboardingStep<TContext>[],
+    options: ConvertOptions = { autoConnectUndefined: false, existingNodes: [] }
 ): FlowData {
     const nodes: (StepNode | EndNode)[] = []
     const edges: ConditionalFlowEdge[] = []
 
-    // Check if we need an end node
-    const hasStepsEndingWithNull = steps.some((step) => step.nextStep === null || (step as any).skipToStep === null)
+    const { existingNodes, autoConnectUndefined } = options
 
-    // Create step nodes
+    // Create step nodes (reuse positions from existing nodes when available)
     steps.forEach((step, index) => {
         const nodeData: StepNode['data'] = {
             stepId: step.id,
-            stepType: step.type || 'INFORMATION',
+            stepType: step.type ?? 'INFORMATION',
             label: getStepLabel(step),
             description: getStepDescription(step),
             isSkippable: Boolean(step.isSkippable),
             hasCondition: typeof step.condition === 'function',
         }
 
+        // Try to find an existing node with the same id to preserve position
+        const existingNode = existingNodes.find((n) => n.id === String(step.id))
+
         const node: StepNode = {
             id: String(step.id),
             type: 'stepNode',
             data: nodeData,
-            position: { x: 0, y: index * 150 }, // Will be positioned properly by layout
-            targetPosition: Position.Top,
-            sourcePosition: Position.Bottom,
+            position: existingNode?.position ?? { x: 0, y: index * 150 },
         }
 
         nodes.push(node)
     })
 
-    // Add end node if needed
-    if (hasStepsEndingWithNull) {
-        const endNode: EndNode = {
-            id: 'END',
-            type: 'endNode',
-            data: {
-                label: 'End',
-                description: 'Flow completed',
-            },
-            position: { x: 0, y: steps.length * 150 },
-            targetPosition: Position.Top,
-            sourcePosition: Position.Bottom,
-        }
-        nodes.push(endNode)
+    // Create end node and reuse existing end node position if present
+    const existingEnd = existingNodes?.find((n) => n.id === 'null')
+    const endNode: EndNode = {
+        id: 'null',
+        type: 'endNode',
+        data: {
+            label: 'End',
+            description: 'Flow completed',
+        },
+        position: existingEnd?.position ?? { x: 0, y: steps.length * 150 },
     }
-
-    // Create a map for easier step lookup
-    const stepMap = new Map(steps.map((step) => [step.id, step]))
+    nodes.push(endNode)
 
     // Process each step to create edges
     steps.forEach((step, index) => {
@@ -71,12 +71,12 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
         if (step.isSkippable) {
             const skipToStep = step.skipToStep
 
-            if (skipToStep === null) {
+            if (skipToStep === null || skipToStep === 'null') {
                 // Skip to end
                 edges.push({
-                    id: `${sourceId}-skip-END`,
+                    id: `${sourceId}-skip-null`,
                     source: sourceId,
-                    target: 'END',
+                    target: 'null',
                     sourceHandle: 'skip',
                     type: 'conditional',
                     data: {
@@ -101,12 +101,12 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
         }
 
         // Handle nextStep navigation
-        if (step.nextStep === null) {
-            // Explicit end - connect to END node
+        if (step.nextStep === null || step.nextStep === 'null') {
+            // Explicit end - connect to end node
             edges.push({
-                id: `${sourceId}-next-END`,
+                id: `${sourceId}-next-null`,
                 source: sourceId,
-                target: 'END',
+                target: 'null',
                 sourceHandle: 'next',
                 type: 'conditional',
                 data: {
@@ -137,58 +137,24 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
                 // Check if there are conditional steps after current step
                 const hasCondition = nextStep.condition !== undefined
 
-                if (!hasCondition) {
+                if (!hasCondition && autoConnectUndefined) {
                     edges.push({
                         id: `${sourceId}-next-${nextStep.id}`,
                         source: sourceId,
                         target: String(nextStep.id),
                         sourceHandle: 'next',
                     })
-                } else {
-                    const conditionalStepsAfter = steps.slice(nextStepIndex)
-
-                    if (conditionalStepsAfter.length > 0 && typeof step.condition !== 'function') {
-                        // Current step is not conditional but there are conditional steps after
-                        // Create conditional edges to all conditional steps that could follow
-                        conditionalStepsAfter.forEach((condStep) => {
-                            edges.push({
-                                id: `${sourceId}-cond-${condStep.id}`,
-                                source: sourceId,
-                                target: String(condStep.id),
-                                sourceHandle: 'next',
-                                type: 'conditional',
-                                data: {
-                                    edgeType: 'conditional',
-                                    label: 'Cond',
-                                },
-                            })
-                        })
-                    } else {
-                        // Either no conditional steps after OR current step is conditional
-                        // Create sequential edge to immediate next step
-                        edges.push({
-                            id: `${sourceId}-next-${nextStep.id}`,
-                            source: sourceId,
-                            target: String(nextStep.id),
-                            sourceHandle: 'next',
-                            type: 'conditional',
-                            data: {
-                                edgeType: 'next',
-                                label: 'Next',
-                            },
-                        })
-                    }
                 }
             }
         }
 
         // Handle previous step edges
-        const prevStepId = typeof step.previousStep === 'function' ? '[Function]' : step.previousStep
-        if (prevStepId && prevStepId !== '[Function]') {
+        const prevStep = typeof step.previousStep === 'function' ? '[Function]' : step.previousStep
+        if (prevStep && prevStep !== '[Function]') {
             edges.push({
-                id: `${sourceId}-prev-${prevStepId}`,
+                id: `${sourceId}-prev-${prevStep}`,
                 source: sourceId,
-                target: String(prevStepId),
+                target: String(prevStep),
                 sourceHandle: 'previous',
                 type: 'conditional',
                 data: {
@@ -200,35 +166,33 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
     })
 
     // Layout nodes
-    const layouted = layoutNodes(nodes, edges)
+    // const layouted = layoutNodes(nodes, edges)
 
     return {
-        nodes: layouted.nodes,
-        edges: layouted.edges,
+        nodes: nodes,
+        edges: edges,
     }
 }
 
 // This function correctly interprets the visual model created above.
 export function convertFlowToSteps<TContext extends OnboardingContext = OnboardingContext>(
     nodes: (StepNode | EndNode)[],
-    edges: ConditionalFlowEdge[],
-    originalSteps?: OnboardingStep<TContext>[]
+    edges: ConditionalFlowEdge[]
 ): OnboardingStep<TContext>[] {
     const steps: OnboardingStep<TContext>[] = []
 
     // Filter out the END node when converting back to steps
-    const stepNodes = nodes.filter((node): node is StepNode => node.type === 'stepNode' && 'stepId' in node.data)
+    const stepNodes = nodes.filter((node): node is StepNode => node.type === 'stepNode')
 
     stepNodes.forEach((node) => {
-        const { stepId, stepType } = node.data
-        const originalStep = originalSteps?.find((s) => s.id === stepId)
-        const step: OnboardingStep<TContext> = originalStep
-            ? { ...originalStep }
-            : ({
-                  id: stepId,
-                  type: stepType,
-                  payload: getDefaultPayload(stepType) as any,
-              } as OnboardingStep<TContext>)
+        const { id, data } = node
+
+        const { stepType } = data
+        const step = {
+            id: id,
+            type: stepType,
+            payload: getDefaultPayload(stepType),
+        } as OnboardingStep<TContext>
 
         // Find edges where THIS node is the SOURCE
         const nextEdges = edges.filter(
@@ -240,8 +204,7 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
         // Reset navigation properties
         step.nextStep = undefined
         step.previousStep = undefined
-        step.isSkippable = skipEdges.length > 0
-        ;(step as any).skipToStep = undefined
+        step.skipToStep = undefined
 
         // Set navigation properties based on outgoing edges
         if (nextEdges.length > 0) {
@@ -255,7 +218,7 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
             } else if (conditionalEdges.length === 1 && sequentialEdges.length === 0) {
                 // Single conditional edge - this means the step has an explicit nextStep with a condition
                 const targetId = conditionalEdges[0].target
-                if (targetId === 'END') {
+                if (targetId === 'null') {
                     step.nextStep = null as any
                 } else {
                     const targetNode = nodes.find((n) => n.id === targetId)
@@ -266,14 +229,7 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
             } else {
                 // Sequential edge or mixed - use the first edge found
                 const targetId = nextEdges[0].target
-                if (targetId === 'END') {
-                    step.nextStep = null as any
-                } else {
-                    const targetNode = nodes.find((n) => n.id === targetId)
-                    if (targetNode && targetNode.type === 'stepNode') {
-                        step.nextStep = targetNode.data.stepId as any
-                    }
-                }
+                step.nextStep = targetId
             }
         }
 
@@ -281,14 +237,14 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
             const targetId = skipEdges[0].target
             step.isSkippable = true
 
-            if (targetId === 'END') {
-                ;(step as any).skipToStep = null
+            if (targetId === 'null') {
+                step.skipToStep = null
             } else {
                 const targetNode = nodes.find((n) => n.id === targetId)
                 if (targetNode && targetNode.type === 'stepNode') {
-                    ;(step as any).skipToStep = targetNode.data.stepId
+                    step.skipToStep = targetNode.data.stepId
                 } else {
-                    ;(step as any).skipToStep = null
+                    step.skipToStep = null
                 }
             }
         }
@@ -297,7 +253,7 @@ export function convertFlowToSteps<TContext extends OnboardingContext = Onboardi
         if (prevEdges.length > 0) {
             const targetNode = nodes.find((n) => n.id === prevEdges[0].target)
             if (targetNode && targetNode.type === 'stepNode') {
-                step.previousStep = targetNode.data.stepId as any
+                step.previousStep = targetNode.id
             }
         }
 
@@ -344,34 +300,5 @@ export function layoutNodes<TNode extends Node, TEdge extends Edge>(
     return {
         nodes: layoutedNodes,
         edges,
-    }
-}
-
-function getStepDescription<TContext extends OnboardingContext>(step: OnboardingStep<TContext>): string | undefined {
-    const payload = step.payload as any
-
-    if (payload?.description) return payload.description
-    if (payload?.subtitle) return payload.subtitle
-    if (payload?.options && Array.isArray(payload.options)) {
-        return `${payload.options.length} options`
-    }
-    if (payload?.items && Array.isArray(payload.items)) {
-        return `${payload.items.length} items`
-    }
-
-    return undefined
-}
-
-function getDefaultPayload(stepType: string): Record<string, any> {
-    switch (stepType) {
-        case 'SINGLE_CHOICE':
-        case 'MULTIPLE_CHOICE':
-            return { options: [] }
-        case 'CHECKLIST':
-            return { dataKey: 'checklist_data', items: [] }
-        case 'CUSTOM_COMPONENT':
-            return { componentKey: 'DefaultComponent' }
-        default:
-            return {}
     }
 }

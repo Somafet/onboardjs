@@ -5,6 +5,19 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
     plugins: [react(), tailwindcss()],
+    // Development server configuration for better HMR
+    server: {
+        port: 3000,
+        open: true, // Auto-open browser
+        hmr: {
+            overlay: true, // Show error overlay on HMR updates
+        },
+        // Watch additional files for changes
+        watch: {
+            usePolling: false, // Use native file system events
+            interval: 100,
+        },
+    },
     build: {
         lib: {
             entry: path.resolve(__dirname, 'src/index.ts'), // Entry point for library build
