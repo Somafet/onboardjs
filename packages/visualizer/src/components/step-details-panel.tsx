@@ -50,7 +50,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
     }
 
     return (
-        <div className="step-details-panel bg-white border-l border-gray-200 w-124 h-full overflow-hidden flex flex-col">
+        <div className="step-details-panel bg-white border-l border-gray-200 w-108 h-full overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <h2 className="font-semibold text-gray-900">Step Details</h2>
@@ -129,17 +129,6 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                         />
                     </div>
                 )}
-
-                {/* Condition */}
-                <div>
-                    <h3 className="font-medium text-gray-900 mb-3">Condition</h3>
-                    <ConditionBuilder
-                        condition={editedStep.condition as any}
-                        onConditionChange={(condition) => handleChange({ condition } as any)}
-                        onApplyCondition={handleSave}
-                        readonly={readonly}
-                    />
-                </div>
 
                 {/* Navigation */}
                 <div>

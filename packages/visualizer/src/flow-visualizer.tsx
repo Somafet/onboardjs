@@ -25,21 +25,25 @@ import { StepJSONParser, StepJSONParserOptions } from '@onboardjs/core'
 import { TypeScriptExporter, TypeScriptExportOptions } from './utils/typescript-exporter'
 import { StepNode } from './nodes/step-node'
 import { EndNode } from './nodes/end-node'
+import { ConditionNode } from './nodes/condition-node'
 import { ConditionalEdge, ConditionalFlowEdge } from './edges/conditional-edge'
 import { FlowToolbar, ExportFormat } from './components/flow-toolbar'
 import { FlowSidebar } from './components/flow-sidebar'
+import { NodePalette } from './components/node-palette'
 import { StepDetailsPanel } from './components/step-details-panel'
+import { ConditionDetailsPanel } from './components/condition-details-panel'
 import { ConditionalFlowMode } from './components/conditional-flow-mode'
 import { convertStepsToFlow, convertFlowToSteps, layoutNodes } from './utils/flow-converters'
 import './flow-visualizer.css'
 import '../styles.css'
 import { getStepTypeColor } from './utils/colors.utils'
-import { generateStepId, getDefaultPayload } from './utils/step.utils'
+import { generateId, getDefaultPayload } from './utils/step.utils'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
     stepNode: StepNode,
     endNode: EndNode,
+    conditionNode: ConditionNode,
 }
 
 const edgeTypes: EdgeTypes = {
@@ -87,7 +91,9 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 }: FlowVisualizerProps<TContext>) {
     // State
     const [steps, setSteps] = useState<OnboardingStep<TContext>[]>(initialSteps)
+    const [conditionNodes, setConditionNodes] = useState<ConditionNode[]>([])
     const [selectedStep, setSelectedStep] = useState<OnboardingStep<TContext> | null>(null)
+    const [selectedConditionNode, setSelectedConditionNode] = useState<ConditionNode | null>(null)
 
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [detailsPanelOpen, setDetailsPanelOpen] = useState(false)
@@ -97,6 +103,8 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         conditional: true,
         skip: true,
         previous: true,
+        then: true,
+        else: true,
     })
     const [exportOptions, setExportOptions] = useState<Partial<StepJSONParserOptions>>({
         prettyPrint: true,
@@ -123,7 +131,9 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Convert steps to flow data (preserve positions if nodes already exist)
-    const { nodes: initialNodes, edges: initialEdges } = useMemo(() => convertStepsToFlow(steps), [])
+    // Initial flow state (combine step nodes and condition nodes)
+    const { nodes: initialStepNodes, edges: initialEdges } = useMemo(() => convertStepsToFlow(steps), [])
+    const initialNodes = useMemo(() => [...initialStepNodes, ...conditionNodes], [initialStepNodes, conditionNodes])
 
     // Filter edges based on visibility settings
     const visibleEdges = useMemo(() => {
@@ -137,23 +147,27 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
     const [edges, setEdges, onEdgesChange] = useEdgesState(visibleEdges)
 
-    const { fitView, getNodes, getEdges } = useReactFlow<StepNode | EndNode, ConditionalFlowEdge>()
+    const { fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow<
+        StepNode | EndNode | ConditionNode,
+        ConditionalFlowEdge
+    >()
 
-    // Update flow when steps change
+    // Update flow when steps or condition nodes change
     useEffect(() => {
-        const { nodes: newNodes, edges: newEdges } = convertStepsToFlow(steps, {
+        const { nodes: newStepNodes, edges: newEdges } = convertStepsToFlow(steps, {
             existingNodes: nodes,
         })
+        const allNodes = [...newStepNodes, ...conditionNodes]
         const filteredEdges = newEdges.filter((edge) => {
             const edgeType = edge.data?.edgeType || 'next'
             return edgeVisibility[edgeType as keyof typeof edgeVisibility]
         })
-        setNodes(newNodes)
+        setNodes(allNodes)
         setEdges(filteredEdges)
-    }, [steps, edgeVisibility, setNodes, setEdges])
+    }, [steps, conditionNodes, edgeVisibility, setNodes, setEdges])
 
     const updateStepsFromFlow = useCallback(
-        (newNodes?: (StepNode | EndNode)[], newEdges?: ConditionalFlowEdge[]) => {
+        (newNodes?: (StepNode | EndNode | ConditionNode)[], newEdges?: ConditionalFlowEdge[]) => {
             if (readonly) {
                 return { updatedSteps: steps, updatedNodes: nodes, updatedEdges: edges }
             }
@@ -161,10 +175,16 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             const currentNodes = newNodes ?? nodes
             const currentEdges = newEdges ?? edges
 
-            // Pass current steps to preserve payload data
-            const newSteps = convertFlowToSteps<TContext>(currentNodes, currentEdges)
+            // Separate step nodes from condition nodes
+            const stepNodes = currentNodes.filter(
+                (n): n is StepNode | EndNode => n.type === 'stepNode' || n.type === 'endNode'
+            )
+            const conditionNodesList = currentNodes.filter((n): n is ConditionNode => n.type === 'conditionNode')
+
+            const newSteps = convertFlowToSteps<TContext>(stepNodes, currentEdges)
 
             setSteps(newSteps)
+            setConditionNodes(conditionNodesList)
             onStepsChange?.(newSteps)
 
             return { updatedSteps: newSteps, updatedNodes: currentNodes, updatedEdges: currentEdges }
@@ -179,7 +199,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             if (readonly) return
 
             // Determine edge type based on source handle
-            let edgeType: 'next' | 'skip' | 'previous' = 'next'
+            let edgeType: 'next' | 'skip' | 'previous' | 'then' | 'else' = 'next'
             let label = 'Next'
             let markerEnd: { type: MarkerType } | undefined = {
                 type: MarkerType.ArrowClosed,
@@ -194,6 +214,12 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                 label = 'Back'
                 markerEnd = undefined // No arrow for previous edges
                 markerStart = { type: MarkerType.ArrowClosed }
+            } else if (params.sourceHandle === 'then') {
+                edgeType = 'then'
+                label = 'Then'
+            } else if (params.sourceHandle === 'else') {
+                edgeType = 'else'
+                label = 'Else'
             }
 
             const newEdge: ConditionalFlowEdge = {
@@ -209,40 +235,117 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             }
 
             // Prevent multiple outgoing edges of the same type from a single node
-            const filteredEdges = edges.filter((e) => e.source !== params.source && e.data?.edgeType === edgeType)
+            const filteredEdges = edges.filter((e) => !(e.source === params.source && e.data?.edgeType === edgeType))
 
             updateStepsFromFlow(undefined, [...filteredEdges, newEdge])
         },
-        [readonly, steps, updateStepsFromFlow]
+        [readonly, edges, updateStepsFromFlow]
+    )
+
+    // Validate connections - ensure proper flow logic
+    const isValidConnection = useCallback(
+        (connection: ConditionalFlowEdge | Connection) => {
+            // Don't allow self-connections
+            if (connection.source === connection.target) {
+                return false
+            }
+
+            // Allow connections from condition nodes (then/else handles) to any step node
+            const sourceNode = nodes.find((n) => n.id === connection.source)
+            const targetNode = nodes.find((n) => n.id === connection.target)
+
+            if (!sourceNode || !targetNode) {
+                return false
+            }
+
+            // Condition nodes can connect to step nodes or end nodes
+            if (
+                sourceNode.type === 'conditionNode' &&
+                (connection.sourceHandle === 'then' || connection.sourceHandle === 'else')
+            ) {
+                return targetNode.type === 'stepNode' || targetNode.type === 'endNode'
+            }
+
+            // Step nodes can connect to other step nodes, end nodes, or condition nodes
+            if (sourceNode.type === 'stepNode') {
+                return (
+                    targetNode.type === 'stepNode' ||
+                    targetNode.type === 'endNode' ||
+                    targetNode.type === 'conditionNode'
+                )
+            }
+
+            // Don't allow connections from end nodes
+            if (sourceNode.type === 'endNode') {
+                return false
+            }
+
+            return true
+        },
+        [nodes]
     )
 
     const onNodeClick = useCallback(
-        (_: React.MouseEvent, node: StepNode | EndNode) => {
-            // Only handle clicks on StepNode, not EndNode
+        (_: React.MouseEvent, node: StepNode | EndNode | ConditionNode) => {
             if (node.type === 'stepNode') {
                 const step = steps.find((s) => s.id === node.data.stepId)
                 if (step) {
                     setSelectedStep(step)
+                    setSelectedConditionNode(null)
+                    setDetailsPanelOpen(true)
+                }
+            } else if (node.type === 'conditionNode') {
+                const conditionNode = conditionNodes.find((c) => c.id === node.id)
+                if (conditionNode) {
+                    setSelectedConditionNode(conditionNode)
+                    setSelectedStep(null)
                     setDetailsPanelOpen(true)
                 }
             }
         },
-        [steps]
+        [steps, conditionNodes]
     )
 
     const onNodesDelete = useCallback(
         (nodesToDelete: Node[]) => {
             if (readonly) return
 
-            // Filter out END nodes and only delete step nodes
+            // Separate step nodes and condition nodes for deletion
             const stepNodesToDelete = nodesToDelete.filter((node) => node.type === 'stepNode')
-            const stepIdsToDelete = new Set(stepNodesToDelete.map((node) => (node as StepNode).data.stepId))
-            const newSteps = steps.filter((step) => !stepIdsToDelete.has(step.id))
+            const conditionNodesToDelete = nodesToDelete.filter((node) => node.type === 'conditionNode')
 
-            setSteps(newSteps)
-            onStepsChange?.(newSteps)
+            // Delete step nodes
+            if (stepNodesToDelete.length > 0) {
+                const stepIdsToDelete = new Set(stepNodesToDelete.map((node) => (node as StepNode).data.stepId))
+                const newSteps = steps.filter((step) => !stepIdsToDelete.has(step.id))
+                setSteps(newSteps)
+                onStepsChange?.(newSteps)
+
+                console.log(selectedStep, stepIdsToDelete)
+
+                // Clear selection if deleted
+                if (selectedStep && stepIdsToDelete.has(selectedStep.id)) {
+                    console.log('asd')
+
+                    setSelectedStep(null)
+                    setDetailsPanelOpen(false)
+                }
+            }
+
+            // Delete condition nodes
+            if (conditionNodesToDelete.length > 0) {
+                const conditionIdsToDelete = new Set(conditionNodesToDelete.map((node) => node.id))
+                const newConditionNodes = conditionNodes.filter((node) => !conditionIdsToDelete.has(node.id))
+                setConditionNodes(newConditionNodes)
+
+                // Clear selection if deleted
+                if (selectedConditionNode && conditionIdsToDelete.has(selectedConditionNode.id)) {
+                    setSelectedConditionNode(null)
+                    setDetailsPanelOpen(false)
+                }
+            }
         },
-        [readonly, steps, onStepsChange]
+        [readonly, steps, conditionNodes, onStepsChange, selectedStep, selectedConditionNode]
     )
 
     const onEdgesDelete = useCallback(
@@ -263,7 +366,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         (stepType: OnboardingStep<TContext>['type'] = 'INFORMATION') => {
             if (readonly) return
 
-            const newId = generateStepId()
+            const newId = generateId('step')
             const newStep: OnboardingStep<TContext> = {
                 id: newId,
                 type: stepType,
@@ -317,9 +420,88 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         [readonly, steps, onStepsChange, selectedStep]
     )
 
+    const updateConditionNode = useCallback(
+        (updatedNode: ConditionNode) => {
+            if (readonly) return
+
+            const newConditionNodes = conditionNodes.map((node) => (node.id === updatedNode.id ? updatedNode : node))
+            setConditionNodes(newConditionNodes)
+            setSelectedConditionNode(updatedNode)
+        },
+        [readonly, conditionNodes]
+    )
+
+    // Drag and drop handlers
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+    }, [])
+
+    const onDrop = useCallback(
+        (event: React.DragEvent) => {
+            event.preventDefault()
+
+            if (readonly) return
+
+            const data = event.dataTransfer.getData('application/reactflow')
+            if (!data) return
+
+            try {
+                const nodeData = JSON.parse(data)
+                const position = screenToFlowPosition({
+                    x: event.clientX - 75,
+                    y: event.clientY - 50,
+                })
+
+                if (nodeData.type === 'condition') {
+                    // Add condition node
+                    const newId = generateId('condition')
+                    const newCondition: ConditionNode = {
+                        id: newId,
+                        type: 'conditionNode',
+                        data: {
+                            conditionId: newId,
+                            description: 'When the user is happy!',
+                        },
+                        position,
+                    }
+
+                    const newConditionNodes = [...conditionNodes, newCondition]
+                    setConditionNodes(newConditionNodes)
+                } else if (nodeData.type === 'step' && nodeData.stepType) {
+                    // Add step node
+                    const newId = generateId('step')
+                    const newStep: OnboardingStep<TContext> = {
+                        id: newId,
+                        type: nodeData.stepType,
+                        payload: getDefaultPayload(nodeData.stepType),
+                    } as OnboardingStep<TContext>
+
+                    const newSteps = [...steps, newStep]
+                    setSteps(newSteps)
+                    onStepsChange?.(newSteps)
+
+                    // Update the position of the newly added step
+                    setTimeout(() => {
+                        const newNodes = getNodes().map((node) => {
+                            if (node.type === 'stepNode' && node.id === String(newId)) {
+                                return { ...node, position }
+                            }
+                            return node
+                        })
+                        setNodes(newNodes)
+                    }, 0)
+                }
+            } catch (error) {
+                console.error('Error parsing drop data:', error)
+            }
+        },
+        [readonly, conditionNodes, screenToFlowPosition, steps, onStepsChange, getNodes, setNodes]
+    )
+
     const layoutFlow = useCallback(
         (direction: 'TB' | 'LR' = 'TB') => {
-            const layoutedElements = layoutNodes<StepNode | EndNode, ConditionalFlowEdge>(
+            const layoutedElements = layoutNodes<StepNode | EndNode | ConditionNode, ConditionalFlowEdge>(
                 getNodes(),
                 getEdges(),
                 direction
@@ -428,14 +610,11 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         <div className={`flow-visualizer ${className}`}>
             {/* Updated Toolbar */}
             <FlowToolbar
-                onAddStep={addStep}
                 onExport={exportFlow}
                 onImport={() => importFlow()}
                 onClear={clearFlow}
                 onLayout={layoutFlow}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-                onToggleConditionalMode={() => setConditionalModeOpen(!conditionalModeOpen)}
-                isConditionalMode={conditionalModeOpen}
                 exportOptions={exportOptions}
                 onExportOptionsChange={setExportOptions}
                 typeScriptExportOptions={typeScriptExportOptions}
@@ -446,6 +625,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             {/* Main flow area */}
             <div className="flow-container">
+                <NodePalette />
                 {/* Conditional Flow Mode */}
                 {conditionalModeOpen && (
                     <div className="absolute top-4 left-4 z-10 max-w-md">
@@ -468,9 +648,12 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
+                    isValidConnection={isValidConnection}
                     onNodeClick={onNodeClick}
                     onNodesDelete={onNodesDelete}
                     onEdgesDelete={onEdgesDelete}
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     connectionLineType={ConnectionLineType.SmoothStep}
@@ -542,6 +725,24 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                                 <span className="edge-type-indicator previous"></span>
                                 Previous
                             </label>
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.then}
+                                    onChange={(e) => setEdgeVisibility((prev) => ({ ...prev, then: e.target.checked }))}
+                                />
+                                <span className="edge-type-indicator then"></span>
+                                Then
+                            </label>
+                            <label className="edge-control">
+                                <input
+                                    type="checkbox"
+                                    checked={edgeVisibility.else}
+                                    onChange={(e) => setEdgeVisibility((prev) => ({ ...prev, else: e.target.checked }))}
+                                />
+                                <span className="edge-type-indicator else"></span>
+                                Else
+                            </label>
                         </div>
                     </div>
                 </ReactFlow>
@@ -552,6 +753,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                         steps={steps}
                         onStepSelect={(step) => {
                             setSelectedStep(step)
+                            setSelectedConditionNode(null)
                             setDetailsPanelOpen(true)
                         }}
                         onStepAdd={addStep}
@@ -566,6 +768,16 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     <StepDetailsPanel
                         step={selectedStep}
                         onStepUpdate={updateStep}
+                        onClose={() => setDetailsPanelOpen(false)}
+                        readonly={readonly}
+                    />
+                )}
+
+                {/* Condition Details Panel */}
+                {detailsPanelOpen && selectedConditionNode && (
+                    <ConditionDetailsPanel
+                        conditionNode={selectedConditionNode}
+                        onUpdate={updateConditionNode}
                         onClose={() => setDetailsPanelOpen(false)}
                         readonly={readonly}
                     />

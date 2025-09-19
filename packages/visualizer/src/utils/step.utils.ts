@@ -11,8 +11,10 @@ export const getStepLabel = (step: OnboardingStep<any>): string => {
     return String(step.id)
 }
 
-export const generateStepId = () => {
-    return `step-${Math.random().toString(36).substr(2, 6)}`
+type IdPrefix = 'step' | 'condition'
+
+export const generateId = (pre: IdPrefix) => {
+    return `${pre}-${Math.random().toString(36).substr(2, 6)}`
 }
 
 export const getStepDescription = (step: OnboardingStep<any>): string | undefined => {

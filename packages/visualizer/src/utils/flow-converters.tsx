@@ -4,16 +4,17 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import dagre from 'dagre'
 import { StepNode } from '../nodes/step-node'
 import { EndNode } from '../nodes/end-node'
+import { ConditionNode } from '../nodes/condition-node'
 import { ConditionalFlowEdge } from '../edges/conditional-edge'
 import { getDefaultPayload, getStepDescription, getStepLabel } from './step.utils'
 
 export interface FlowData {
-    nodes: (StepNode | EndNode)[]
+    nodes: (StepNode | EndNode | ConditionNode)[]
     edges: ConditionalFlowEdge[]
 }
 
 type ConvertOptions = {
-    existingNodes: (StepNode | EndNode)[]
+    existingNodes: (StepNode | EndNode | ConditionNode)[]
     autoConnectUndefined?: boolean
 }
 
@@ -21,7 +22,7 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
     steps: OnboardingStep<TContext>[],
     options: ConvertOptions = { autoConnectUndefined: false, existingNodes: [] }
 ): FlowData {
-    const nodes: (StepNode | EndNode)[] = []
+    const nodes: (StepNode | EndNode | ConditionNode)[] = []
     const edges: ConditionalFlowEdge[] = []
 
     const { existingNodes, autoConnectUndefined } = options
@@ -61,6 +62,7 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
         },
         position: existingEnd?.position ?? { x: 0, y: steps.length * 150 },
     }
+
     nodes.push(endNode)
 
     // Process each step to create edges
@@ -176,12 +178,12 @@ export function convertStepsToFlow<TContext extends OnboardingContext = Onboardi
 
 // This function correctly interprets the visual model created above.
 export function convertFlowToSteps<TContext extends OnboardingContext = OnboardingContext>(
-    nodes: (StepNode | EndNode)[],
+    nodes: (StepNode | EndNode | ConditionNode)[],
     edges: ConditionalFlowEdge[]
 ): OnboardingStep<TContext>[] {
     const steps: OnboardingStep<TContext>[] = []
 
-    // Filter out the END node when converting back to steps
+    // Filter out the END node and condition nodes when converting back to steps
     const stepNodes = nodes.filter((node): node is StepNode => node.type === 'stepNode')
 
     stepNodes.forEach((node) => {

@@ -1,58 +1,30 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { OnboardingContext } from '@onboardjs/core'
 import { PlusIcon, TrashIcon, CodeIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
-
-export interface ConditionRule {
-    id: string
-    field: string
-    operator:
-        | 'equals'
-        | 'not_equals'
-        | 'contains'
-        | 'not_contains'
-        | 'greater_than'
-        | 'less_than'
-        | 'exists'
-        | 'not_exists'
-    value: string
-    valueType: 'string' | 'number' | 'boolean'
-}
-
-export interface ConditionGroup {
-    id: string
-    logic: 'AND' | 'OR'
-    rules: ConditionRule[]
-}
+import { ConditionGroup, ConditionRule, conditionToCode } from '../utils/conditon'
 
 interface ConditionBuilderProps {
-    condition?: (context: OnboardingContext) => boolean
-    conditionString?: string
-    onConditionChange: (
-        condition: ((context: OnboardingContext) => boolean) | undefined,
-        conditionString?: string
-    ) => void
-    onApplyCondition?: () => void
+    condition?: ConditionGroup[]
+    onConditionChange: (condition: ConditionGroup[] | undefined) => void
     readonly?: boolean
 }
 
-export function ConditionBuilder({
-    condition,
-    conditionString,
-    onConditionChange,
-    onApplyCondition,
-    readonly = false,
-}: ConditionBuilderProps) {
+export function ConditionBuilder({ condition, onConditionChange, readonly = false }: ConditionBuilderProps) {
     const [isVisualMode, setIsVisualMode] = useState(true)
-    const [conditionGroups, setConditionGroups] = useState<ConditionGroup[]>([
-        {
-            id: 'group_1',
-            logic: 'AND',
-            rules: [],
-        },
-    ])
-    const [customCode, setCustomCode] = useState<string>(conditionString || (condition ? condition.toString() : ''))
+    const [conditionGroups, setConditionGroups] = useState<ConditionGroup[]>(
+        condition && condition.length > 0
+            ? condition
+            : [
+                  {
+                      id: 'group_1',
+                      logic: 'AND',
+                      rules: [],
+                  },
+              ]
+    )
+    const conditionCode = useMemo(() => conditionToCode(conditionGroups), [conditionGroups])
 
     const addRule = useCallback(
         (groupId: string) => {
@@ -141,62 +113,6 @@ export function ConditionBuilder({
         [readonly, conditionGroups.length]
     )
 
-    const generateConditionFunction = useCallback(() => {
-        if (conditionGroups.length === 0 || conditionGroups.every((group) => group.rules.length === 0)) {
-            onConditionChange(undefined)
-            return
-        }
-
-        // Generate condition function code
-        const groupConditions = conditionGroups.map((group) => {
-            if (group.rules.length === 0) return 'true'
-
-            const ruleConditions = group.rules.map((rule) => {
-                const fieldAccess = `context.flowData?.${rule.field}`
-                const value = rule.valueType === 'string' ? `'${rule.value}'` : rule.value
-
-                switch (rule.operator) {
-                    case 'equals':
-                        return `${fieldAccess} === ${value}`
-                    case 'not_equals':
-                        return `${fieldAccess} !== ${value}`
-                    case 'contains':
-                        return `${fieldAccess}?.includes(${value})`
-                    case 'not_contains':
-                        return `!${fieldAccess}?.includes(${value})`
-                    case 'greater_than':
-                        return `${fieldAccess} > ${value}`
-                    case 'less_than':
-                        return `${fieldAccess} < ${value}`
-                    case 'exists':
-                        return `${fieldAccess} !== undefined && ${fieldAccess} !== null`
-                    case 'not_exists':
-                        return `${fieldAccess} === undefined || ${fieldAccess} === null`
-                    default:
-                        return 'true'
-                }
-            })
-
-            return `(${ruleConditions.join(` ${group.logic} `)})`
-        })
-
-        const conditionCode = groupConditions.join(' AND ')
-        const functionCode = `(context) => ${conditionCode}`
-
-        // Store as string instead of converting to function
-        setCustomCode(functionCode)
-        onConditionChange(undefined, functionCode)
-        onApplyCondition?.()
-    }, [conditionGroups, onConditionChange, onApplyCondition])
-
-    const applyCustomCode = useCallback(() => {
-        if (readonly) return
-
-        // Simply pass the string without eval
-        onConditionChange(undefined, customCode)
-        onApplyCondition?.()
-    }, [customCode, onConditionChange, onApplyCondition, readonly])
-
     const clearCondition = useCallback(() => {
         if (readonly) return
 
@@ -208,9 +124,7 @@ export function ConditionBuilder({
                 rules: [],
             },
         ])
-        setCustomCode('')
-        onApplyCondition?.()
-    }, [readonly, onConditionChange, onApplyCondition])
+    }, [readonly, onConditionChange])
 
     return (
         <div className="condition-builder border border-gray-200 rounded-lg p-4 space-y-4">
@@ -278,7 +192,7 @@ export function ConditionBuilder({
                             {/* Rules */}
                             <div className="space-y-2">
                                 {group.rules.map((rule, ruleIndex) => (
-                                    <div key={rule.id} className="flex items-center gap-2 text-sm">
+                                    <div key={rule.id} className="flex flex-col gap-2 text-sm">
                                         {ruleIndex > 0 && <span className="text-gray-500 text-xs">{group.logic}</span>}
 
                                         {/* Field */}
@@ -380,7 +294,7 @@ export function ConditionBuilder({
                     {/* Apply Button */}
                     {!readonly && (
                         <button
-                            onClick={generateConditionFunction}
+                            onClick={() => onConditionChange(conditionGroups)}
                             className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
                         >
                             Apply Condition
@@ -391,29 +305,22 @@ export function ConditionBuilder({
                 /* Code Mode */
                 <div className="space-y-3">
                     <textarea
-                        value={customCode}
-                        onChange={(e) => setCustomCode(e.target.value)}
+                        readOnly
+                        value={conditionCode}
                         disabled={readonly}
                         placeholder="(context) => context.flowData?.userRole === 'admin'"
-                        className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md text-sm font-mono disabled:bg-gray-100"
+                        rows={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono disabled:bg-gray-100"
                     />
-                    {!readonly && (
-                        <button
-                            onClick={applyCustomCode}
-                            className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
-                        >
-                            Apply Custom Code
-                        </button>
-                    )}
                 </div>
             )}
 
             {/* Current Condition Display */}
             {condition && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <label className="block text-xs font-medium text-blue-700 mb-1">Current Condition:</label>
+                    <label className="block text-md font-medium text-blue-700 mb-1">Current Condition:</label>
                     <pre className="text-xs text-blue-800 whitespace-pre-wrap font-mono overflow-x-auto">
-                        {condition.toString()}
+                        <code>{conditionCode}</code>
                     </pre>
                 </div>
             )}

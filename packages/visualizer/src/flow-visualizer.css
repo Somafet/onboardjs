@@ -149,6 +149,14 @@
     background-image: repeating-linear-gradient(to right, #6b7280 0px, #6b7280 2px, transparent 2px, transparent 4px);
 }
 
+.edge-type-indicator.then {
+    background-color: #10b981;
+}
+
+.edge-type-indicator.else {
+    background-color: #ef4444;
+}
+
 /* Scrollbar styles */
 .flow-sidebar::-webkit-scrollbar,
 .step-details-panel::-webkit-scrollbar {

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { OnboardingStepType } from '@onboardjs/core'
 import { StepJSONParserOptions } from '@onboardjs/core'
 import { TypeScriptExportOptions } from '../utils/typescript-exporter'
 import {
@@ -12,7 +11,7 @@ import {
     GalleryVerticalIcon,
     GitBranchIcon,
     ImportIcon,
-    PlusIcon,
+    Palette,
     TrashIcon,
     WaypointsIcon,
 } from 'lucide-react'
@@ -20,14 +19,11 @@ import {
 export type ExportFormat = 'json' | 'typescript'
 
 interface FlowToolbarProps {
-    onAddStep: (stepType?: OnboardingStepType) => void
     onExport: (format: ExportFormat) => void
     onImport: () => void
     onClear: () => void
     onLayout: (direction?: 'TB' | 'LR') => void
     onToggleSidebar: () => void
-    onToggleConditionalMode?: () => void
-    isConditionalMode?: boolean
     exportOptions: Partial<StepJSONParserOptions>
     onExportOptionsChange: (options: Partial<StepJSONParserOptions>) => void
     typeScriptExportOptions: Partial<TypeScriptExportOptions>
@@ -37,14 +33,11 @@ interface FlowToolbarProps {
 }
 
 export function FlowToolbar({
-    onAddStep,
     onExport,
     onImport,
     onClear,
     onLayout,
     onToggleSidebar,
-    onToggleConditionalMode,
-    isConditionalMode = false,
     exportOptions,
     onExportOptionsChange,
     typeScriptExportOptions,
@@ -52,42 +45,8 @@ export function FlowToolbar({
     readonly = false,
     stepCount,
 }: FlowToolbarProps) {
-    const [showAddMenu, setShowAddMenu] = useState(false)
     const [showExportOptions, setShowExportOptions] = useState(false)
     const [selectedExportFormat, setSelectedExportFormat] = useState<ExportFormat>('json')
-
-    const stepTypes: Array<{
-        type: OnboardingStepType
-        label: string
-        description: string
-    }> = [
-        {
-            type: 'INFORMATION',
-            label: 'Information',
-            description: 'Display information',
-        },
-        {
-            type: 'SINGLE_CHOICE',
-            label: 'Single Choice',
-            description: 'Select one option',
-        },
-        {
-            type: 'MULTIPLE_CHOICE',
-            label: 'Multiple Choice',
-            description: 'Select multiple options',
-        },
-        { type: 'CHECKLIST', label: 'Checklist', description: 'Complete tasks' },
-        {
-            type: 'CONFIRMATION',
-            label: 'Confirmation',
-            description: 'Confirm action',
-        },
-        {
-            type: 'CUSTOM_COMPONENT',
-            label: 'Custom',
-            description: 'Custom component',
-        },
-    ]
 
     return (
         <div className="flow-toolbar bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
@@ -102,36 +61,6 @@ export function FlowToolbar({
                 </button>
 
                 <div className="h-6 w-px bg-gray-300" />
-
-                {!readonly && (
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowAddMenu(!showAddMenu)}
-                            className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-                        >
-                            <PlusIcon className="w-4 h-4" />
-                            Add Step
-                        </button>
-
-                        {showAddMenu && (
-                            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[200px]">
-                                {stepTypes.map(({ type, label, description }) => (
-                                    <button
-                                        key={type}
-                                        onClick={() => {
-                                            onAddStep(type)
-                                            setShowAddMenu(false)
-                                        }}
-                                        className="block w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                                    >
-                                        <div className="font-medium text-sm text-gray-900">{label}</div>
-                                        <div className="text-xs text-gray-500">{description}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 <div className="flex gap-1">
                     <button
@@ -149,24 +78,6 @@ export function FlowToolbar({
                         <GalleryVerticalIcon className="w-5 h-5" />
                     </button>
                 </div>
-
-                {!readonly && onToggleConditionalMode && (
-                    <>
-                        <div className="h-6 w-px bg-gray-300" />
-                        <button
-                            onClick={onToggleConditionalMode}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                                isConditionalMode
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                            title="Toggle Conditional Flow Mode"
-                        >
-                            <GitBranchIcon className="w-4 h-4" />
-                            {isConditionalMode ? 'Exit' : 'Conditional'} Mode
-                        </button>
-                    </>
-                )}
             </div>
 
             {/* Center section */}
