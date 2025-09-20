@@ -9,14 +9,11 @@ import {
     FileJsonIcon,
     GalleryHorizontalIcon,
     GalleryVerticalIcon,
-    GitBranchIcon,
     ImportIcon,
-    Palette,
     TrashIcon,
     WaypointsIcon,
 } from 'lucide-react'
-
-export type ExportFormat = 'json' | 'typescript'
+import { ExportFormat } from '../types'
 
 interface FlowToolbarProps {
     onExport: (format: ExportFormat) => void

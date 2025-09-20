@@ -1,21 +1,11 @@
 import { memo } from 'react'
-import { Handle, Position, NodeProps, Node } from '@xyflow/react'
+import { Handle, Position, NodeProps } from '@xyflow/react'
 import { OnboardingStepType } from '@onboardjs/core'
 import { InfoIcon, CheckCircleIcon, ListIcon, HandIcon, ListChecksIcon, PuzzleIcon } from 'lucide-react'
+import { StepNodeType, getStepTypeColor as getNodeTypeColor } from '../types/node-types'
 
-export type StepNode = Node<
-    {
-        stepId: string | number
-        stepType: OnboardingStepType
-        label: string
-        description?: string
-        isSkippable?: boolean
-        hasCondition?: boolean
-        isCompleted?: boolean
-        errors?: string[]
-    },
-    'stepNode'
->
+// Re-export the type for backwards compatibility
+export type StepNode = StepNodeType
 
 export const StepNode = memo(({ data, selected }: NodeProps<StepNode>) => {
     const { stepType, label, description, isSkippable, hasCondition, isCompleted, errors = [] } = data
@@ -42,22 +32,7 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNode>) => {
     }
 
     const getStepTypeColor = (type: OnboardingStepType) => {
-        switch (type) {
-            case 'INFORMATION':
-                return 'border-blue-500 bg-blue-50'
-            case 'SINGLE_CHOICE':
-                return 'border-green-500 bg-green-50'
-            case 'MULTIPLE_CHOICE':
-                return 'border-purple-500 bg-purple-50'
-            case 'CHECKLIST':
-                return 'border-amber-500 bg-amber-50'
-            case 'CONFIRMATION':
-                return 'border-orange-500 bg-orange-50'
-            case 'CUSTOM_COMPONENT':
-                return 'border-gray-500 bg-gray-50'
-            default:
-                return 'border-blue-500 bg-blue-50'
-        }
+        return getNodeTypeColor(type)
     }
 
     return (

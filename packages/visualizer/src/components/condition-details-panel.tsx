@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
-import { ConditionNode } from '../nodes/condition-node'
 import { XIcon, GitBranchIcon } from 'lucide-react'
 import { ConditionBuilder } from './condition-builder'
+import { EnhancedConditionNode } from '../types/flow-types'
 
 interface ConditionDetailsPanelProps {
-    conditionNode: ConditionNode | null
-    onUpdate: (updatedNode: ConditionNode) => void
+    conditionNode: EnhancedConditionNode | null
+    onUpdate: (updatedNode: EnhancedConditionNode) => void
     onClose: () => void
     readonly?: boolean
 }
@@ -17,10 +17,10 @@ export function ConditionDetailsPanel({
     readonly = false,
 }: ConditionDetailsPanelProps) {
     const handleSave = useCallback(
-        (conditionDataUpdate: Partial<ConditionNode['data']>) => {
+        (conditionDataUpdate: Partial<EnhancedConditionNode['data']>) => {
             if (!conditionNode || readonly) return
 
-            const updatedNode: ConditionNode = {
+            const updatedNode: EnhancedConditionNode = {
                 ...conditionNode,
                 data: {
                     ...conditionNode.data,
