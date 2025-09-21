@@ -128,10 +128,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     // Derive steps from flow state for backwards compatibility
     const steps = useMemo(() => exportFlowAsSteps<TContext>(flowState), [flowState])
 
-    const stepsById = useMemo(() => {
-        return new Map(steps.map((step) => [step.id, step]))
-    }, [steps])
-
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isInitialMount = useRef(true)
     const lastInitialSteps = useRef(initialSteps)
@@ -266,8 +262,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
     const onConnect = useCallback(
         (params: Connection) => {
-            console.log('onConnect', params)
-
             if (readonly) return
 
             // Determine edge type based on source handle
@@ -592,73 +586,69 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             const data = event.dataTransfer.getData('application/reactflow')
             if (!data) return
 
-            try {
-                const nodeData = JSON.parse(data)
-                const position = screenToFlowPosition({
-                    x: event.clientX - 75,
-                    y: event.clientY - 50,
-                })
+            const nodeData = JSON.parse(data)
+            const position = screenToFlowPosition({
+                x: event.clientX - 75,
+                y: event.clientY - 50,
+            })
 
-                if (nodeData.type === 'condition') {
-                    // Add condition node
-                    const newId = generateId('condition')
-                    const newCondition: EnhancedConditionNode = {
-                        id: newId,
-                        type: 'conditionNode',
-                        data: {
-                            conditionId: newId,
-                            description: 'When the user is happy!',
-                        },
-                        position,
-                    }
-
-                    const newFlowState: FlowState = {
-                        nodes: [...flowState.nodes, newCondition],
-                        edges: flowState.edges,
-                    }
-
-                    updateFlowState(newFlowState)
-                } else if (nodeData.type === 'step' && nodeData.stepType) {
-                    // Create step node directly with the dropped position
-                    if (readonly) return
-
-                    const newId = generateId('step')
-                    const newStep: OnboardingStep<TContext> = {
-                        id: newId,
-                        type: nodeData.stepType,
-                        payload: getDefaultPayload(nodeData.stepType),
-                    } as OnboardingStep<TContext>
-
-                    // Create enhanced step node with the drop position
-                    const newStepNode: EnhancedStepNode = {
-                        id: String(newId),
-                        type: 'stepNode',
-                        data: {
-                            stepId: newId,
-                            stepType: nodeData.stepType,
-                            label: getStepLabel(newStep),
-                            description: getStepDescription(newStep),
-                            isSkippable: Boolean(newStep.isSkippable),
-                            hasCondition: typeof newStep.condition === 'function',
-                            payload: newStep.payload,
-                            condition: newStep.condition,
-                            metadata: {},
-                            nextStep: newStep.nextStep,
-                            previousStep: newStep.previousStep,
-                            skipToStep: newStep.skipToStep,
-                        },
-                        position: position, // Use the dropped position directly
-                    }
-
-                    const newFlowState: FlowState = {
-                        nodes: [...flowState.nodes, newStepNode],
-                        edges: flowState.edges,
-                    }
-
-                    updateFlowState(newFlowState)
+            if (nodeData.type === 'condition') {
+                // Add condition node
+                const newId = generateId('condition')
+                const newCondition: EnhancedConditionNode = {
+                    id: newId,
+                    type: 'conditionNode',
+                    data: {
+                        conditionId: newId,
+                        description: 'When the user is happy!',
+                    },
+                    position,
                 }
-            } catch (error) {
-                console.error('Error parsing drop data:', error)
+
+                const newFlowState: FlowState = {
+                    nodes: [...flowState.nodes, newCondition],
+                    edges: flowState.edges,
+                }
+
+                updateFlowState(newFlowState)
+            } else if (nodeData.type === 'step' && nodeData.stepType) {
+                // Create step node directly with the dropped position
+                if (readonly) return
+
+                const newId = generateId('step')
+                const newStep: OnboardingStep<TContext> = {
+                    id: newId,
+                    type: nodeData.stepType,
+                    payload: getDefaultPayload(nodeData.stepType),
+                } as OnboardingStep<TContext>
+
+                // Create enhanced step node with the drop position
+                const newStepNode: EnhancedStepNode = {
+                    id: String(newId),
+                    type: 'stepNode',
+                    data: {
+                        stepId: newId,
+                        stepType: nodeData.stepType,
+                        label: getStepLabel(newStep),
+                        description: getStepDescription(newStep),
+                        isSkippable: Boolean(newStep.isSkippable),
+                        hasCondition: typeof newStep.condition === 'function',
+                        payload: newStep.payload,
+                        condition: newStep.condition,
+                        metadata: {},
+                        nextStep: newStep.nextStep,
+                        previousStep: newStep.previousStep,
+                        skipToStep: newStep.skipToStep,
+                    },
+                    position: position, // Use the dropped position directly
+                }
+
+                const newFlowState: FlowState = {
+                    nodes: [...flowState.nodes, newStepNode],
+                    edges: flowState.edges,
+                }
+
+                updateFlowState(newFlowState)
             }
         },
         [readonly, screenToFlowPosition, flowState, updateFlowState, addStep]
@@ -825,6 +815,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     onDragOver={onDragOver}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
+                    selectNodesOnDrag={false}
                     connectionLineType={ConnectionLineType.Bezier}
                     defaultEdgeOptions={{
                         markerEnd: { type: MarkerType.ArrowClosed },

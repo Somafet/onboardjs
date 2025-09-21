@@ -1,22 +1,71 @@
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import { FlowState, EnhancedStepNode, ConditionalFlowEdge } from '../types/flow-types'
+import { FlowState, EnhancedStepNode, EnhancedConditionNode } from '../types/flow-types'
 import { getDefaultPayload } from '../utils/step.utils'
+import { conditionToCode } from '../utils/conditon'
+
+/**
+ * Helper: build a conditional function string
+ */
+function buildConditionalFunction(
+    conditionNode: EnhancedConditionNode,
+    thenTarget: string | null,
+    elseTarget: string | null
+): string {
+    const conditionCode = conditionNode.data.condition ? conditionToCode(conditionNode.data.condition) : '() => true'
+
+    return `(context) => {
+        const condition = ${conditionCode}
+        return condition(context) ? ${JSON.stringify(thenTarget)} : ${JSON.stringify(elseTarget)}
+    }`
+}
+
+/**
+ * Helper: resolve a target (direct or conditional) into a step pointer or function
+ */
+function resolveTarget(
+    targetId: string,
+    nodes: FlowState['nodes'],
+    edges: FlowState['edges']
+): string | ((ctx: any) => string | null) | null {
+    if (targetId === 'null') return null
+
+    const targetNode = nodes.find((n) => n.id === targetId)
+    if (!targetNode) return null
+
+    if (targetNode.type === 'stepNode') {
+        return String(targetNode.data.stepId)
+    }
+
+    if (targetNode.type === 'conditionNode') {
+        const conditionalNode = targetNode as EnhancedConditionNode
+
+        // find then/else edges
+        const thenEdge = edges.find((e) => e.source === conditionalNode.id && e.data?.edgeType === 'then')
+        const elseEdge = edges.find((e) => e.source === conditionalNode.id && e.data?.edgeType === 'else')
+
+        const thenTarget = thenEdge?.target ?? null
+        const elseTarget = elseEdge?.target ?? null
+
+        return buildConditionalFunction(conditionalNode, thenTarget, elseTarget) as any
+    }
+
+    return null
+}
 
 /**
  * Convert FlowState to OnboardingStep[] for export
- * This is where we handle the complexity of translating visual flows to linear steps
  */
 export function exportFlowAsSteps<TContext extends OnboardingContext = OnboardingContext>(
     flowState: FlowState
 ): OnboardingStep<TContext>[] {
-    const steps: OnboardingStep<TContext>[] = []
     const { nodes, edges } = flowState
+    const steps: OnboardingStep<TContext>[] = []
 
-    // Filter out the END node and condition nodes when converting back to steps
+    // Filter for stepNodes only
     const stepNodes = nodes.filter((node): node is EnhancedStepNode => node.type === 'stepNode')
 
-    stepNodes.forEach((node) => {
-        const { id, data } = node
+    for (const node of stepNodes) {
+        const { data, id } = node
 
         const step: OnboardingStep<TContext> = {
             id: data.stepId,
@@ -24,67 +73,26 @@ export function exportFlowAsSteps<TContext extends OnboardingContext = Onboardin
             payload: data.payload || getDefaultPayload(data.stepType),
         } as OnboardingStep<TContext>
 
-        // Add condition if present
-        if (data.condition && typeof data.condition === 'function') {
+        if (typeof data.condition === 'function') {
             step.condition = data.condition as any
         }
 
-        // Find edges where THIS node is the SOURCE
-        const nextEdges = edges.filter(
-            (e) => e.source === node.id && (e.data?.edgeType === 'next' || e.data?.edgeType === 'conditional')
-        )
-        const skipEdges = edges.filter((e) => e.source === node.id && e.data?.edgeType === 'skip')
-        const prevEdges = edges.filter((e) => e.source === node.id && e.data?.edgeType === 'previous')
+        // outgoing edges grouped by type
+        const outgoing = edges.filter((e) => e.source === id)
+        const nextEdge = outgoing.find((e) => e.data?.edgeType === 'next' || e.data?.edgeType === 'conditional')
+        const skipEdge = outgoing.find((e) => e.data?.edgeType === 'skip')
+        const prevEdge = outgoing.find((e) => e.data?.edgeType === 'previous')
 
-        // Reset navigation properties
-        step.nextStep = undefined
-        step.previousStep = undefined
-        step.skipToStep = undefined
+        step.nextStep = nextEdge ? resolveTarget(nextEdge.target, nodes, edges) : undefined
 
-        // Set navigation properties based on outgoing edges
-        if (nextEdges.length > 0) {
-            const nextEdge = nextEdges[0]
-            if (nextEdge.target === 'null') {
-                step.nextStep = null
-            } else {
-                const targetNode = nodes.find((n) => n.id === nextEdge.target)
-                if (targetNode?.type === 'stepNode') {
-                    step.nextStep = targetNode.data.stepId
-                } else if (targetNode?.type === 'conditionNode') {
-                    // For condition nodes, we might need special handling
-                    step.nextStep = nextEdge.target as any
-                }
-            }
-        }
+        step.skipToStep = skipEdge ? resolveTarget(skipEdge.target, nodes, edges) : undefined
 
-        // Set isSkippable from node data, not from edges
-        if (data.isSkippable) {
-            step.isSkippable = true
-        }
+        step.previousStep = prevEdge ? resolveTarget(prevEdge.target, nodes, edges) : undefined
 
-        if (skipEdges.length > 0) {
-            const skipEdge = skipEdges[0]
-            if (skipEdge.target === 'null') {
-                step.skipToStep = null
-            } else {
-                const targetNode = nodes.find((n) => n.id === skipEdge.target)
-                if (targetNode?.type === 'stepNode') {
-                    step.skipToStep = targetNode.data.stepId
-                }
-            }
-        }
-
-        // Handle previous step edges
-        if (prevEdges.length > 0) {
-            const prevEdge = prevEdges[0]
-            const targetNode = nodes.find((n) => n.id === prevEdge.target)
-            if (targetNode?.type === 'stepNode') {
-                step.previousStep = targetNode.data.stepId
-            }
-        }
+        if (data.isSkippable) step.isSkippable = true
 
         steps.push(step)
-    })
+    }
 
     return steps
 }

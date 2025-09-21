@@ -25,7 +25,14 @@ const logicOperatorMap = {
     OR: '||',
 }
 
-export const conditionToCode = (condition: ConditionGroup[]): string => {
+export type ConditionToCodeOptions = {
+    wrapInFunction?: boolean
+}
+
+export const conditionToCode = (
+    condition: ConditionGroup[],
+    options: ConditionToCodeOptions = { wrapInFunction: true }
+): string => {
     if (condition.length === 0 || condition.every((group) => group.rules.length === 0)) {
         return '() => true'
     }
@@ -65,5 +72,5 @@ export const conditionToCode = (condition: ConditionGroup[]): string => {
     const conditionCode = groupConditions.join(' && ')
     const functionCode = `(context) => ${conditionCode}`
 
-    return functionCode
+    return options.wrapInFunction ? functionCode : conditionCode
 }

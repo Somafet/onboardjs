@@ -1,6 +1,37 @@
-import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import { FlowState, ExportOptions, TypeScriptExportOptions } from '../types/flow-types'
+import { OnboardingContext } from '@onboardjs/core'
+import { FlowState } from '../types/flow-types'
 import { exportFlowAsSteps } from './flow-to-steps'
+
+/**
+ * Format steps array with proper handling of function strings
+ * Converts function strings back to actual functions in the output
+ */
+function formatStepsWithFunctions(steps: any[], indent: number = 2): string {
+    let result = JSON.stringify(steps, null, indent)
+
+    // Remove unnecessary quotes from property names
+    result = result.replace(/"([a-zA-Z_$][a-zA-Z0-9_$]*)"\s*:/g, '$1:')
+
+    // Convert function strings back to actual functions
+    // We need to handle the full function content including escaped quotes
+    result = result.replace(
+        /(nextStep|previousStep|skipToStep):\s*"((?:\\.|[^"\\])*?\(context\)(?:\\.|[^"\\])*)"/g,
+        (_, property, functionBody) => {
+            // Unescape the function body completely
+            let unescapedFunction = functionBody
+                .replace(/\\n/g, '\n') // Convert \n to actual newlines
+                .replace(/\\"/g, '"') // Convert \" to "
+                .replace(/\\\\/g, '\\') // Convert \\\\ to \\
+
+            // Fix quotes within the function: convert "null" to null, keep step IDs as strings
+            unescapedFunction = unescapedFunction.replace(/"\s*null\s*"/g, 'null') // "null" -> null
+
+            return `${property}: ${unescapedFunction}`
+        }
+    )
+
+    return result
+}
 
 /**
  * Generate TypeScript/JavaScript code from FlowState
@@ -32,7 +63,10 @@ export function exportFlowAsCode(
     }
 
     const typeAnnotation = isTypeScript && includeTypes ? ': OnboardingStep[]' : ''
-    code += `export const ${variableName}${typeAnnotation} = ${JSON.stringify(steps, null, 2)}\n`
+
+    // Convert to string with proper formatting and function handling
+    const stepsString = formatStepsWithFunctions(steps, 2)
+    code += `export const ${variableName}${typeAnnotation} = ${stepsString}\n`
 
     return code
 }
