@@ -86,7 +86,7 @@ export function FlowToolbar({
 
             {/* Right section */}
             <div className="vis:flex vis:items-center vis:gap-2">
-                <div className="relative">
+                <div className="vis:relative">
                     <button
                         onClick={() => setShowExportOptions(!showExportOptions)}
                         className="vis:p-2 vis:hover:bg-gray-100 vis:rounded-md vis:transition-colors"

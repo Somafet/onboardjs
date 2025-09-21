@@ -5,6 +5,7 @@ import './globals.css'
 import OnboardingProviderWrapper from '@/components/onboarding/OnboardingProviderWrapper'
 import { createClient } from '@/lib/supabase-server'
 import { PostHogProvider } from '@/components/posthog/PostHogProvider'
+import { ReactNode } from 'react'
 
 const lexend = Lexend({
     variable: '--font-lexend',
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
     children,
 }: Readonly<{
-    children: React.ReactNode
+    children: ReactNode
 }>) {
     const client = await createClient()
     const {

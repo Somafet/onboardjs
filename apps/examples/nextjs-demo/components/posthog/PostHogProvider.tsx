@@ -3,9 +3,9 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react'
-import { Suspense, useEffect } from 'react'
+import { ReactNode, Suspense, useEffect } from 'react'
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
+export function PostHogProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!process.env.NEXT_PUBLIC_DISABLE_POSTHOG) {
             posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {

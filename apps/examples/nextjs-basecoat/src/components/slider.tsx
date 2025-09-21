@@ -1,7 +1,7 @@
 'use client'
 
 import clsx from 'clsx'
-import { ComponentPropsWithRef, useEffect, useRef } from 'react'
+import { ChangeEvent, ComponentPropsWithRef, useEffect, useRef } from 'react'
 
 export default function Slider({
     onChange,
@@ -10,7 +10,7 @@ export default function Slider({
     ...props
 }: ComponentPropsWithRef<'input'> & { showValue?: boolean }) {
     const inputRef = useRef<HTMLInputElement>(null)
-    const handleOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleOnChange = (event: ChangeEvent<HTMLInputElement>) => {
         if (onChange) {
             onChange(event)
         }

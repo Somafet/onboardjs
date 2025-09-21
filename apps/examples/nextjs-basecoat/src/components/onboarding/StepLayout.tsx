@@ -1,10 +1,11 @@
 'use client'
 
 import { useOnboarding } from '@onboardjs/react'
+import { ReactNode } from 'react'
 
 type StepLayoutProps = {
-    children: React.ReactNode
-    aside: React.ReactNode
+    children: ReactNode
+    aside: ReactNode
 }
 
 export default function StepLayout({ children, aside }: StepLayoutProps) {

@@ -1,53 +1,53 @@
 name: React Package Tests
 
 on:
-  push:
-    paths:
-      - "packages/react/**"
-      - ".github/workflows/react-tests.yml"
-  pull_request:
-    paths:
-      - "packages/react/**"
-      - ".github/workflows/react-tests.yml"
+    push:
+        paths:
+            - 'packages/react/**'
+            - '.github/workflows/react-tests.yml'
+    pull_request:
+        paths:
+            - 'packages/react/**'
+            - '.github/workflows/react-tests.yml'
 
 jobs:
-  test-react:
-    runs-on: ubuntu-latest
+    test-react:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.0
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.15.0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
-      - name: Build core package
-        run: pnpm --filter=@onboardjs/core build
+            - name: Build core package
+              run: pnpm --filter=@onboardjs/core build
 
-      - name: Build react package
-        run: pnpm --filter=@onboardjs/react build
+            - name: Build react package
+              run: pnpm --filter=@onboardjs/react build
 
-      - name: Run Vitest with coverage
-        run: pnpm test:coverage
-        working-directory: packages/react
+            - name: Run Vitest with coverage
+              run: pnpm test:coverage
+              working-directory: packages/react
 
-      - name: Display coverage summary
-        if: always()
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            pnpm vitest coverage report --reporter=text-summary
-          else
-            echo "No coverage summary found."
-          fi
-        working-directory: packages/react
+            - name: Display coverage summary
+              if: always()
+              run: |
+                  if [ -f coverage/coverage-summary.json ]; then
+                    pnpm vitest coverage report --reporter=text-summary
+                  else
+                    echo "No coverage summary found."
+                  fi
+              working-directory: packages/react
