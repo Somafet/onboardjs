@@ -44,12 +44,12 @@ export const STEP_TYPE_ICONS = {
 
 // Step Type Color Mapping
 export const STEP_TYPE_COLORS = {
-    INFORMATION: 'border-blue-500 bg-blue-50',
-    SINGLE_CHOICE: 'border-green-500 bg-green-50',
-    MULTIPLE_CHOICE: 'border-purple-500 bg-purple-50',
-    CHECKLIST: 'border-amber-500 bg-amber-50',
-    CONFIRMATION: 'border-orange-500 bg-orange-50',
-    CUSTOM_COMPONENT: 'border-gray-500 bg-gray-50',
+    INFORMATION: 'vis:border-blue-500 vis:bg-blue-50',
+    SINGLE_CHOICE: 'vis:border-green-500 vis:bg-green-50',
+    MULTIPLE_CHOICE: 'vis:border-purple-500 vis:bg-purple-50',
+    CHECKLIST: 'vis:border-amber-500 vis:bg-amber-50',
+    CONFIRMATION: 'vis:border-orange-500 vis:bg-orange-50',
+    CUSTOM_COMPONENT: 'vis:border-gray-500 vis:bg-gray-50',
 } as const
 
 // Utility functions for step nodes
