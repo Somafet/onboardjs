@@ -1,5 +1,6 @@
 import { Node } from '@xyflow/react'
 import { OnboardingStepType } from '@onboardjs/core'
+import { ConditionGroup } from './flow-types'
 
 // Step Node Type Definition
 export interface StepNodeData extends Record<string, unknown> {
@@ -14,6 +15,22 @@ export interface StepNodeData extends Record<string, unknown> {
 }
 
 export type StepNodeType = Node<StepNodeData, 'stepNode'>
+
+export interface EndNodeData extends Record<string, unknown> {
+    label: string
+    description?: string
+}
+
+export type EndNodeType = Node<EndNodeData, 'endNode'>
+
+export interface ConditionNodeData extends Record<string, unknown> {
+    conditionId: string | number
+    condition?: ConditionGroup[]
+    description?: string
+    errors?: string[]
+}
+
+export type ConditionNodeType = Node<ConditionNodeData, 'conditionNode'>
 
 // Step Icon Mapping
 export const STEP_TYPE_ICONS = {

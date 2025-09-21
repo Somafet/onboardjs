@@ -1,5 +1,5 @@
-import { Node, Edge } from '@xyflow/react'
-import { OnboardingStep, OnboardingContext, OnboardingStepType } from '@onboardjs/core'
+import { Node } from '@xyflow/react'
+import { OnboardingStepType } from '@onboardjs/core'
 
 // Import the existing edge type first
 import type { ConditionalFlowEdge } from '../edges/conditional-edge'

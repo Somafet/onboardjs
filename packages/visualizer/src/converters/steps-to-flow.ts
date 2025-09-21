@@ -1,6 +1,6 @@
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { FlowState, EnhancedStepNode, EnhancedConditionNode, EndNode, ConditionNode } from '../types/flow-types'
-import { getStepLabel, getStepDescription, getDefaultPayload } from '../utils/step.utils'
+import { getStepLabel, getStepDescription } from '../utils/step.utils'
 
 /**
  * Convert legacy steps to enhanced flow state

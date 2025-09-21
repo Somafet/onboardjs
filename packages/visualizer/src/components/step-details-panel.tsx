@@ -5,7 +5,6 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { XIcon } from 'lucide-react'
 import { OptionsListEditor } from './option-list-editor'
 import { ChecklistItemsEditor } from './checklist-item-editor'
-import { ConditionBuilder } from './condition-builder'
 import { getStepLabel } from '../utils/step.utils'
 
 interface StepDetailsPanelProps<TContext extends OnboardingContext = OnboardingContext> {
@@ -50,49 +49,58 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
     }
 
     return (
-        <div className="step-details-panel bg-white border-l border-gray-200 w-108 h-full overflow-hidden flex flex-col">
+        <div className="step-details-panel vis:bg-white vis:border-l vis:border-gray-200 vis:w-108 vis:h-full vis:overflow-hidden vis:flex vis:flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="font-semibold text-gray-900">Step Details</h2>
-                <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-                    <XIcon className="w-5 h-5" />
+            <div className="vis:flex vis:items-center vis:justify-between vis:p-4 vis:border-b vis:border-gray-200">
+                <h2 className="vis:font-semibold vis:text-gray-900">Step Details</h2>
+                <button
+                    onClick={onClose}
+                    className="vis:p-1 hover:vis:bg-gray-100 vis:rounded-md vis:transition-colors"
+                >
+                    <XIcon className="vis:w-5 vis:h-5" />
                 </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="vis:flex-1 vis:overflow-y-auto vis:p-4 vis:space-y-6">
                 {/* Basic Info */}
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3">Basic Information</h3>
-                    <div className="space-y-3">
+                    <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Basic Information</h3>
+                    <div className="vis:space-y-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Step ID</label>
+                            <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                Step ID
+                            </label>
                             <input
                                 type="text"
                                 value={editedStep.id}
                                 onChange={(e) => handleChange({ id: e.target.value })}
                                 disabled={readonly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Step Name</label>
+                            <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                Step Name
+                            </label>
                             <input
                                 type="text"
                                 value={getStepLabel(editedStep)}
                                 onChange={(e) => handlePayloadChange({ title: e.target.value })}
                                 disabled={readonly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Step Type</label>
+                            <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                Step Type
+                            </label>
                             <select
                                 value={editedStep.type || 'INFORMATION'}
                                 onChange={(e) => handleChange({ type: e.target.value as any })}
                                 disabled={readonly}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             >
                                 <option value="INFORMATION">Information</option>
                                 <option value="SINGLE_CHOICE">Single Choice</option>
@@ -104,14 +112,14 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                         </div>
 
                         <div>
-                            <label className="flex items-center gap-2">
+                            <label className="vis:flex vis:items-center vis:gap-2">
                                 <input
                                     type="checkbox"
                                     checked={editedStep.isSkippable || false}
                                     onChange={(e) => handleChange({ isSkippable: e.target.checked } as any)}
                                     disabled={readonly}
                                 />
-                                <span className="text-sm font-medium text-gray-700">Skippable</span>
+                                <span className="vis:text-sm vis:font-medium vis:text-gray-700">Skippable</span>
                             </label>
                         </div>
                     </div>
@@ -120,7 +128,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                 {/* Payload */}
                 {editedStep.type && editedStep.type !== 'INFORMATION' && (
                     <div>
-                        <h3 className="font-medium text-gray-900 mb-3">Payload</h3>
+                        <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Payload</h3>
                         <PayloadEditor
                             stepType={editedStep.type}
                             payload={editedStep.payload || {}}
@@ -132,10 +140,12 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
 
                 {/* Navigation */}
                 <div>
-                    <h3 className="font-medium text-gray-900 mb-3">Navigation</h3>
-                    <div className="space-y-3">
+                    <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Navigation</h3>
+                    <div className="vis:space-y-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Next Step ID</label>
+                            <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                Next Step ID
+                            </label>
                             <input
                                 type="text"
                                 value={
@@ -146,12 +156,14 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 onChange={(e) => handleChange({ nextStep: e.target.value || undefined } as any)}
                                 disabled={readonly || typeof editedStep.nextStep === 'function'}
                                 placeholder="Auto (next in sequence)"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Previous Step ID</label>
+                            <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                Previous Step ID
+                            </label>
                             <input
                                 type="text"
                                 value={
@@ -166,13 +178,15 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 }
                                 disabled={readonly || typeof editedStep.previousStep === 'function'}
                                 placeholder="Auto (previous in sequence)"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
                         </div>
 
                         {editedStep.isSkippable && (
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Skip To Step ID</label>
+                                <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                                    Skip To Step ID
+                                </label>
                                 <input
                                     type="text"
                                     value={
@@ -187,7 +201,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                     }
                                     disabled={readonly || typeof editedStep.skipToStep === 'function'}
                                     placeholder="Auto (next step)"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                                    className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                                 />
                             </div>
                         )}
@@ -197,11 +211,11 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
 
             {/* Footer */}
             {!readonly && hasChanges && (
-                <div className="border-t border-gray-200 p-4">
-                    <div className="flex gap-2">
+                <div className="vis:border-t vis:border-gray-200 vis:p-4">
+                    <div className="vis:flex vis:gap-2">
                         <button
                             onClick={handleSave}
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                            className="vis:flex-1 vis:px-4 vis:py-2 vis:bg-blue-500 vis:text-white vis:rounded-md vis:hover:bg-blue-600 vis:transition-colors"
                         >
                             Save Changes
                         </button>
@@ -210,7 +224,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 setEditedStep(step)
                                 setHasChanges(false)
                             }}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                            className="vis:px-4 vis:py-2 vis:border vis:border-gray-300 vis:text-gray-700 vis:rounded-md vis:hover:bg-gray-50 vis:transition-colors"
                         >
                             Cancel
                         </button>
@@ -237,15 +251,17 @@ function PayloadEditor({
         case 'SINGLE_CHOICE':
         case 'MULTIPLE_CHOICE':
             return (
-                <div className="space-y-4">
+                <div className="vis:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data Key</label>
+                        <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                            Data Key
+                        </label>
                         <input
                             type="text"
                             value={payload.dataKey || ''}
                             onChange={(e) => onChange({ dataKey: e.target.value })}
                             disabled={readonly}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                            className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                         />
                     </div>
                     <OptionsListEditor
@@ -258,19 +274,23 @@ function PayloadEditor({
 
         case 'CHECKLIST':
             return (
-                <div className="space-y-4">
+                <div className="vis:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data Key</label>
+                        <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                            Data Key
+                        </label>
                         <input
                             type="text"
                             value={payload.dataKey || ''}
                             onChange={(e) => onChange({ dataKey: e.target.value })}
                             disabled={readonly}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                            className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Min Items to Complete</label>
+                        <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                            Min Items to Complete
+                        </label>
                         <input
                             type="number"
                             value={payload.minItemsToComplete || ''}
@@ -280,7 +300,7 @@ function PayloadEditor({
                                 })
                             }
                             disabled={readonly}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                            className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                         />
                     </div>
                     <ChecklistItemsEditor
@@ -294,18 +314,24 @@ function PayloadEditor({
         case 'CUSTOM_COMPONENT':
             return (
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Component Key</label>
+                    <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
+                        Component Key
+                    </label>
                     <input
                         type="text"
                         value={payload.componentKey || ''}
                         onChange={(e) => onChange({ componentKey: e.target.value })}
                         disabled={readonly}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm disabled:bg-gray-50"
+                        className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                     />
                 </div>
             )
 
         default:
-            return <div className="text-sm text-gray-500">No specific payload configuration for this step type</div>
+            return (
+                <div className="vis:text-sm vis:text-gray-500">
+                    No specific payload configuration for this step type
+                </div>
+            )
     }
 }

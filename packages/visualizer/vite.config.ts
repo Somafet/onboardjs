@@ -2,9 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
+import preserveUseClientDirective from 'rollup-plugin-preserve-use-client'
 
 export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), preserveUseClientDirective()],
     // Development server configuration for better HMR
     server: {
         port: 3000,

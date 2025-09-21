@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import * as acorn from 'acorn'
 import type { OnboardingStep } from '@onboardjs/core'
 
@@ -18,21 +19,18 @@ export class OnboardJSParser {
 
         try {
             // Extract condition functions first
-            const conditionFunctions = this.extractConditionFunctions(code)
+            const conditionFunctions = this._extractConditionFunctions(code)
 
             // Try regex extraction first - it works better for our standard format
-            const regexSteps = this.extractStepsWithFallbackRegex(code, conditionFunctions)
+            const regexSteps = this._extractStepsWithFallbackRegex(code, conditionFunctions)
             if (regexSteps.length > 0) {
                 return regexSteps
             }
 
-            // Fall back to AST parsing if regex fails
-            console.info('Using AST parser for OnboardJS steps')
-            const astSteps = this.simplifiedASTExtraction(code, conditionFunctions)
+            const astSteps = this._simplifiedASTExtraction(code, conditionFunctions)
 
             return astSteps
-        } catch (error) {
-            console.error('Failed to parse onboarding steps:', error)
+        } catch {
             return []
         }
     }
@@ -42,7 +40,7 @@ export class OnboardJSParser {
      * @param code - The source code
      * @returns Map of function names to function bodies
      */
-    private static extractConditionFunctions(code: string): Map<string, string> {
+    private static _extractConditionFunctions(code: string): Map<string, string> {
         const functionMap = new Map<string, string>()
 
         // Extract function declarations in format: const funcName = (params) => body
@@ -64,7 +62,7 @@ export class OnboardJSParser {
      * Alternative regex extraction that's more lenient with the input format
      * Used as a fallback when the main regex extraction fails
      */
-    private static extractStepsWithFallbackRegex(
+    private static _extractStepsWithFallbackRegex(
         code: string,
         conditionFunctions: Map<string, string>
     ): OnboardingStep[] {
@@ -97,7 +95,7 @@ export class OnboardJSParser {
                 }
 
                 const objectStr = code.substring(startPos, endPos)
-                const step = this.parseStepObjectFromString(objectStr, conditionFunctions)
+                const step = this._parseStepObjectFromString(objectStr, conditionFunctions)
 
                 if (step && step.id) {
                     // Check if we already have this step (avoid duplicates)
@@ -107,9 +105,8 @@ export class OnboardJSParser {
                 }
             }
 
-            return this.validateSteps(steps)
-        } catch (error) {
-            console.warn('Fallback regex extraction failed:', error)
+            return this._validateSteps(steps)
+        } catch {
             return []
         }
     }
@@ -117,7 +114,7 @@ export class OnboardJSParser {
     /**
      * Parse a step object from its string representation
      */
-    private static parseStepObjectFromString(
+    private static _parseStepObjectFromString(
         objectStr: string,
         conditionFunctions: Map<string, string>
     ): OnboardingStep | null {
@@ -205,10 +202,10 @@ export class OnboardJSParser {
     /**
      * Simplified AST-based extraction as a fallback
      */
-    private static simplifiedASTExtraction(code: string, conditionFunctions: Map<string, string>): OnboardingStep[] {
+    private static _simplifiedASTExtraction(code: string, conditionFunctions: Map<string, string>): OnboardingStep[] {
         try {
             // Preprocess code to remove TypeScript-specific syntax
-            const preprocessedCode = this.preprocessTypeScript(code)
+            const preprocessedCode = this._preprocessTypeScript(code)
 
             try {
                 // Try parsing as module first (which supports import/export)
@@ -221,7 +218,7 @@ export class OnboardJSParser {
                     })
 
                     // Extract steps array from AST
-                    const moduleSteps = this.extractStepsFromAST(moduleAst, conditionFunctions)
+                    const moduleSteps = this._extractStepsFromAST(moduleAst, conditionFunctions)
                     if (moduleSteps.length > 0) {
                         return moduleSteps
                     }
@@ -237,7 +234,7 @@ export class OnboardJSParser {
                 })
 
                 // Extract steps array from AST
-                const scriptSteps = this.extractStepsFromAST(scriptAst, conditionFunctions)
+                const scriptSteps = this._extractStepsFromAST(scriptAst, conditionFunctions)
                 if (scriptSteps.length > 0) {
                     return scriptSteps
                 }
@@ -257,7 +254,7 @@ export class OnboardJSParser {
                             locations: true,
                         })
 
-                        return this.extractStepsFromAST(ast, conditionFunctions)
+                        return this._extractStepsFromAST(ast, conditionFunctions)
                     }
                 } catch (finalError) {
                     console.warn('Final extraction attempt failed:', finalError)
@@ -277,7 +274,7 @@ export class OnboardJSParser {
      * Preprocesses TypeScript code to make it compatible with JavaScript parsers
      * Removes imports, exports, type annotations, and other TypeScript-specific syntax
      */
-    private static preprocessTypeScript(code: string): string {
+    private static _preprocessTypeScript(code: string): string {
         let processedCode = code
             // Remove import statements
             .replace(/^\s*import\s+.*?[;\n]/gm, '')
@@ -308,7 +305,7 @@ export class OnboardJSParser {
     } /**
      * Extract steps from the AST
      */
-    private static extractStepsFromAST(ast: any, conditionFunctions: Map<string, string>): OnboardingStep[] {
+    private static _extractStepsFromAST(ast: any, conditionFunctions: Map<string, string>): OnboardingStep[] {
         const allSteps: OnboardingStep[] = []
 
         // Special case: if we used the fragment parsing as a last resort
@@ -328,19 +325,19 @@ export class OnboardJSParser {
 
                 for (const stepObj of stepObjects) {
                     if (stepObj && stepObj.type === 'ObjectExpression') {
-                        const step = this.parseStepObject(stepObj, conditionFunctions)
+                        const step = this._parseStepObject(stepObj, conditionFunctions)
                         if (step) {
                             allSteps.push(step)
                         }
                     }
                 }
 
-                return this.validateSteps(allSteps)
+                return this._validateSteps(allSteps)
             }
         }
 
         // Look for arrays in the AST
-        this.traverseAST(ast, (node) => {
+        this._traverseAST(ast, (node) => {
             // Look for variable declarations with array initializers
             if (node.type === 'VariableDeclaration' && node.declarations && node.declarations.length > 0) {
                 for (const declaration of node.declarations) {
@@ -357,7 +354,7 @@ export class OnboardJSParser {
 
                             for (const stepObj of stepObjects) {
                                 if (stepObj && stepObj.type === 'ObjectExpression') {
-                                    const step = this.parseStepObject(stepObj, conditionFunctions)
+                                    const step = this._parseStepObject(stepObj, conditionFunctions)
                                     if (step) {
                                         allSteps.push(step)
                                     }
@@ -400,7 +397,7 @@ export class OnboardJSParser {
                 if (stepLikeCount > 0 && stepLikeCount >= node.elements.length / 2) {
                     for (const stepObj of node.elements) {
                         if (stepObj && stepObj.type === 'ObjectExpression') {
-                            const step = this.parseStepObject(stepObj, conditionFunctions)
+                            const step = this._parseStepObject(stepObj, conditionFunctions)
                             if (step) {
                                 allSteps.push(step)
                             }
@@ -410,13 +407,13 @@ export class OnboardJSParser {
             }
         })
 
-        return this.validateSteps(allSteps)
+        return this._validateSteps(allSteps)
     }
 
     /**
      * Traverses an AST and calls the callback for each node
      */
-    private static traverseAST(node: any, callback: (node: any) => void) {
+    private static _traverseAST(node: any, callback: (node: any) => void) {
         if (!node || typeof node !== 'object') return
 
         callback(node)
@@ -429,11 +426,11 @@ export class OnboardJSParser {
                 if (Array.isArray(child)) {
                     for (const item of child) {
                         if (item && typeof item === 'object') {
-                            this.traverseAST(item, callback)
+                            this._traverseAST(item, callback)
                         }
                     }
                 } else if (child && typeof child === 'object') {
-                    this.traverseAST(child, callback)
+                    this._traverseAST(child, callback)
                 }
             }
         }
@@ -442,7 +439,7 @@ export class OnboardJSParser {
     /**
      * Parses a step object from an AST node
      */
-    private static parseStepObject(node: any, conditionFunctions: Map<string, string>): OnboardingStep | null {
+    private static _parseStepObject(node: any, conditionFunctions: Map<string, string>): OnboardingStep | null {
         if (!node || node.type !== 'ObjectExpression') return null
 
         const properties = node.properties || []
@@ -451,48 +448,49 @@ export class OnboardJSParser {
         for (const prop of properties) {
             if (!prop.key || !prop.value) continue
 
-            const keyName = this.getPropertyKeyName(prop.key)
+            const keyName = this._getPropertyKeyName(prop.key)
             if (!keyName) continue
 
             switch (keyName) {
-                case 'id':
-                    const id = this.extractStringValue(prop.value)
+                case 'id': {
+                    const id = this._extractStringValue(prop.value)
                     if (id !== null) {
                         step.id = id
                     }
                     break
-
+                }
                 case 'nextStep':
-                    step.nextStep = this.extractNavigationValue(prop.value)
+                    step.nextStep = this._extractNavigationValue(prop.value)
                     // Convert 'null' to null
                     if (step.nextStep === 'null') step.nextStep = null
                     break
 
                 case 'previousStep':
-                    step.previousStep = this.extractNavigationValue(prop.value)
+                    step.previousStep = this._extractNavigationValue(prop.value)
                     // Convert 'null' to null
                     if (step.previousStep === 'null') step.previousStep = null
                     break
 
                 case 'skipToStep':
-                    step.skipToStep = this.extractNavigationValue(prop.value)
+                    step.skipToStep = this._extractNavigationValue(prop.value)
                     // Convert 'null' to null
                     if (step.skipToStep === 'null') step.skipToStep = null
                     break
 
                 case 'isSkippable':
-                    step.isSkippable = this.extractBooleanValue(prop.value)
+                    step.isSkippable = this._extractBooleanValue(prop.value)
                     break
 
-                case 'condition':
-                    const conditionValue = this.extractConditionValue(prop.value, conditionFunctions)
+                case 'condition': {
+                    const conditionValue = this._extractConditionValue(prop.value, conditionFunctions)
                     if (conditionValue) {
                         step.condition = conditionValue as any
                     }
                     break
+                }
 
-                case 'type':
-                    const typeValue = this.extractStringValue(prop.value)
+                case 'type': {
+                    const typeValue = this._extractStringValue(prop.value)
                     if (typeValue) {
                         const validTypes = [
                             'INFORMATION',
@@ -504,19 +502,20 @@ export class OnboardJSParser {
                         ] as const
 
                         if ((validTypes as readonly string[]).includes(typeValue)) {
-                            ;(step as any).type = typeValue
+                            step.type = typeValue as any
                         }
                     }
                     break
-
+                }
                 case 'title':
-                case 'description':
+                case 'description': {
                     if (!step.meta) step.meta = {}
-                    const textValue = this.extractStringValue(prop.value)
+                    const textValue = this._extractStringValue(prop.value)
                     if (textValue !== null) {
                         step.meta[keyName] = textValue
                     }
                     break
+                }
             }
         }
 
@@ -531,7 +530,7 @@ export class OnboardJSParser {
     /**
      * Gets the name of a property key
      */
-    private static getPropertyKeyName(key: any): string | null {
+    private static _getPropertyKeyName(key: any): string | null {
         if (!key) return null
 
         if (key.type === 'Identifier') {
@@ -546,7 +545,7 @@ export class OnboardJSParser {
     /**
      * Extracts a string value from an AST node
      */
-    private static extractStringValue(node: any): string | null {
+    private static _extractStringValue(node: any): string | null {
         if (!node) return null
 
         if (node.type === 'Literal' && typeof node.value === 'string') {
@@ -562,7 +561,7 @@ export class OnboardJSParser {
     /**
      * Extracts a boolean value from an AST node
      */
-    private static extractBooleanValue(node: any): boolean | undefined {
+    private static _extractBooleanValue(node: any): boolean | undefined {
         if (!node) return undefined
 
         if (node.type === 'Literal' && typeof node.value === 'boolean') {
@@ -575,7 +574,7 @@ export class OnboardJSParser {
     /**
      * Extracts a navigation value (string or null) from an AST node
      */
-    private static extractNavigationValue(node: any): string | null | undefined {
+    private static _extractNavigationValue(node: any): string | null | undefined {
         if (!node) return undefined
 
         if (node.type === 'Literal') {
@@ -597,7 +596,7 @@ export class OnboardJSParser {
     /**
      * Extracts a condition value from an AST node
      */
-    private static extractConditionValue(node: any, conditionFunctions: Map<string, string>): string | null {
+    private static _extractConditionValue(node: any, conditionFunctions: Map<string, string>): string | null {
         if (!node) return null
 
         if (node.type === 'ArrowFunctionExpression' || node.type === 'FunctionExpression') {
@@ -610,19 +609,19 @@ export class OnboardJSParser {
                     return `(${params}) => { /* Complex function body */ }`
                 } else if (node.body.type === 'BinaryExpression') {
                     // Binary expression like context.flowData?.userRole === 'value'
-                    const left = this.extractExpressionString(node.body.left)
+                    const left = this._extractExpressionString(node.body.left)
                     const operator = node.body.operator
-                    const right = this.extractExpressionString(node.body.right)
+                    const right = this._extractExpressionString(node.body.right)
                     return `(${params}) => ${left} ${operator} ${right}`
                 } else if (node.body.type === 'MemberExpression') {
                     // Member expression like context.someProperty
-                    const memberExpr = this.extractExpressionString(node.body)
+                    const memberExpr = this._extractExpressionString(node.body)
                     return `(${params}) => ${memberExpr}`
                 } else {
                     // Other expression types
                     return `(${params}) => { /* Expression body */ }`
                 }
-            } catch (error) {
+            } catch {
                 return '(context) => { /* Inline function */ }'
             }
         } else if (node.type === 'Identifier') {
@@ -641,7 +640,7 @@ export class OnboardJSParser {
     /**
      * Helper to extract string representation from AST expressions
      */
-    private static extractExpressionString(node: any): string {
+    private static _extractExpressionString(node: any): string {
         if (!node) return 'undefined'
 
         switch (node.type) {
@@ -649,17 +648,19 @@ export class OnboardJSParser {
                 return node.name
             case 'Literal':
                 return typeof node.value === 'string' ? `'${node.value}'` : String(node.value)
-            case 'MemberExpression':
-                const object = this.extractExpressionString(node.object)
+            case 'MemberExpression': {
+                const object = this._extractExpressionString(node.object)
                 const property = node.computed
-                    ? `[${this.extractExpressionString(node.property)}]`
+                    ? `[${this._extractExpressionString(node.property)}]`
                     : `.${node.property.name}`
                 const optional = node.optional ? '?' : ''
                 return `${object}${optional}${property}`
-            case 'CallExpression':
-                const callee = this.extractExpressionString(node.callee)
-                const args = node.arguments.map((arg: any) => this.extractExpressionString(arg)).join(', ')
+            }
+            case 'CallExpression': {
+                const callee = this._extractExpressionString(node.callee)
+                const args = node.arguments.map((arg: any) => this._extractExpressionString(arg)).join(', ')
                 return `${callee}(${args})`
+            }
             default:
                 return '/* complex expression */'
         }
@@ -669,7 +670,7 @@ export class OnboardJSParser {
      * Validates and filters the parsed steps
      * Also deduplicates steps by ID
      */
-    private static validateSteps(steps: OnboardingStep[]): OnboardingStep[] {
+    private static _validateSteps(steps: OnboardingStep[]): OnboardingStep[] {
         // First, filter out invalid steps
         const validSteps = steps.filter((step) => {
             // Must have an id

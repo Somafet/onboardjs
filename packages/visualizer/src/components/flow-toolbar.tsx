@@ -46,67 +46,67 @@ export function FlowToolbar({
     const [selectedExportFormat, setSelectedExportFormat] = useState<ExportFormat>('json')
 
     return (
-        <div className="flow-toolbar bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+        <div className="flow-toolbar vis:bg-white vis:border-b vis:border-gray-200 vis:px-4 vis:py-2 vis:flex vis:items-center vis:justify-between">
             {/* Left section */}
-            <div className="flex items-center gap-2">
+            <div className="vis:flex vis:items-center vis:gap-2">
                 <button
                     onClick={onToggleSidebar}
-                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                    className="vis:p-2 vis:hover:bg-gray-100 vis:rounded-md vis:transition-colors"
                     title="Toggle Sidebar"
                 >
-                    <WaypointsIcon className="w-5 h-5" />
+                    <WaypointsIcon className="vis:w-5 vis:h-5" />
                 </button>
 
-                <div className="h-6 w-px bg-gray-300" />
+                <div className="vis:h-6 vis:w-px vis:bg-gray-300" />
 
-                <div className="flex gap-1">
+                <div className="vis:flex vis:gap-1">
                     <button
                         onClick={() => onLayout('TB')}
-                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                        className="vis:p-2 vis:hover:bg-gray-100 vis:rounded-md vis:transition-colors"
                         title="Layout Vertically"
                     >
-                        <GalleryHorizontalIcon className="w-5 h-5 rotate-0" />
+                        <GalleryHorizontalIcon className="vis:w-5 vis:h-5 vis:rotate-0" />
                     </button>
                     <button
                         onClick={() => onLayout('LR')}
-                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                        className="vis:p-2 vis:hover:bg-gray-100 vis:rounded-md vis:transition-colors"
                         title="Layout Horizontally"
                     >
-                        <GalleryVerticalIcon className="w-5 h-5" />
+                        <GalleryVerticalIcon className="vis:w-5 vis:h-5" />
                     </button>
                 </div>
             </div>
 
             {/* Center section */}
-            <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600">
+            <div className="vis:flex vis:items-center vis:gap-4">
+                <span className="vis:text-sm vis:text-gray-600">
                     {stepCount} step{stepCount !== 1 ? 's' : ''}
                 </span>
             </div>
 
             {/* Right section */}
-            <div className="flex items-center gap-2">
+            <div className="vis:flex vis:items-center vis:gap-2">
                 <div className="relative">
                     <button
                         onClick={() => setShowExportOptions(!showExportOptions)}
-                        className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                        className="vis:p-2 vis:hover:bg-gray-100 vis:rounded-md vis:transition-colors"
                         title="Export Options"
                     >
-                        <CogIcon className="w-5 h-5" />
+                        <CogIcon className="vis:w-5 vis:h-5" />
                     </button>
 
                     {showExportOptions && (
-                        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 p-4 min-w-[320px]">
-                            <h3 className="font-medium text-sm mb-3">Export Options</h3>
+                        <div className="vis:absolute vis:top-full vis:right-0 vis:mt-1 vis:bg-white vis:border vis:border-gray-200 vis:rounded-md vis:shadow-lg vis:z-50 vis:p-4 vis:min-w-[320px]">
+                            <h3 className="vis:font-medium vis:text-sm vis:mb-3">Export Options</h3>
 
                             {/* Format Selection */}
-                            <div className="space-y-3 mb-4">
+                            <div className="vis:space-y-3 vis:mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-2">
                                         Export Format
                                     </label>
-                                    <div className="flex gap-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                    <div className="vis:flex vis:gap-2">
+                                        <label className="vis:flex vis:items-center vis:gap-2 vis:cursor-pointer">
                                             <input
                                                 type="radio"
                                                 value="json"
@@ -115,10 +115,10 @@ export function FlowToolbar({
                                                     setSelectedExportFormat(e.target.value as ExportFormat)
                                                 }
                                             />
-                                            <FileJsonIcon className="w-4 h-4" />
-                                            <span className="text-sm">JSON</span>
+                                            <FileJsonIcon className="vis:w-4 vis:h-4" />
+                                            <span className="vis:text-sm">JSON</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="vis:flex vis:items-center vis:gap-2 vis:cursor-pointer">
                                             <input
                                                 type="radio"
                                                 value="typescript"
@@ -127,8 +127,8 @@ export function FlowToolbar({
                                                     setSelectedExportFormat(e.target.value as ExportFormat)
                                                 }
                                             />
-                                            <CodeIcon className="w-4 h-4" />
-                                            <span className="text-sm">TypeScript</span>
+                                            <CodeIcon className="vis:w-4 vis:h-4" />
+                                            <span className="vis:text-sm">TypeScript</span>
                                         </label>
                                     </div>
                                 </div>
@@ -136,10 +136,10 @@ export function FlowToolbar({
 
                             {/* JSON Options */}
                             {selectedExportFormat === 'json' && (
-                                <div className="space-y-3 border-t pt-3">
-                                    <h4 className="text-sm font-medium text-gray-700">JSON Options</h4>
+                                <div className="vis:space-y-3 vis:border-t vis:pt-3">
+                                    <h4 className="vis:text-sm vis:font-medium vis:text-gray-700">JSON Options</h4>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={exportOptions.prettyPrint}
@@ -150,10 +150,10 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Pretty print JSON</span>
+                                        <span className="vis:text-sm">Pretty print JSON</span>
                                     </label>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={exportOptions.includeMeta}
@@ -164,11 +164,11 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Include metadata</span>
+                                        <span className="vis:text-sm">Include metadata</span>
                                     </label>
 
                                     <div>
-                                        <label className="block text-sm mb-1">Function handling:</label>
+                                        <label className="vis:block vis:text-sm vis:mb-1">Function handling:</label>
                                         <select
                                             value={exportOptions.functionHandling}
                                             onChange={(e) =>
@@ -180,7 +180,7 @@ export function FlowToolbar({
                                                         | 'placeholder',
                                                 })
                                             }
-                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                            className="vis:w-full vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-sm"
                                         >
                                             <option value="serialize">Serialize</option>
                                             <option value="omit">Omit</option>
@@ -192,11 +192,13 @@ export function FlowToolbar({
 
                             {/* TypeScript Options */}
                             {selectedExportFormat === 'typescript' && (
-                                <div className="space-y-3 border-t pt-3">
-                                    <h4 className="text-sm font-medium text-gray-700">TypeScript Options</h4>
+                                <div className="vis:space-y-3 vis:border-t vis:pt-3">
+                                    <h4 className="vis:text-sm vis:font-medium vis:text-gray-700">
+                                        TypeScript Options
+                                    </h4>
 
                                     <div>
-                                        <label className="block text-sm mb-1">Variable name:</label>
+                                        <label className="vis:block vis:text-sm vis:mb-1">Variable name:</label>
                                         <input
                                             type="text"
                                             value={typeScriptExportOptions.variableName || 'onboardingSteps'}
@@ -206,11 +208,11 @@ export function FlowToolbar({
                                                     variableName: e.target.value,
                                                 })
                                             }
-                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                            className="vis:w-full vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-sm"
                                         />
                                     </div>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={typeScriptExportOptions.includeImports !== false}
@@ -221,10 +223,10 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Include imports</span>
+                                        <span className="vis:text-sm">Include imports</span>
                                     </label>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={typeScriptExportOptions.includeTypes !== false}
@@ -235,10 +237,10 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Include type annotations</span>
+                                        <span className="vis:text-sm">Include type annotations</span>
                                     </label>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={typeScriptExportOptions.includeComments !== false}
@@ -249,10 +251,10 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Include comments</span>
+                                        <span className="vis:text-sm">Include comments</span>
                                     </label>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={typeScriptExportOptions.inlineFunctions === true}
@@ -263,10 +265,10 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Inline functions</span>
+                                        <span className="vis:text-sm">Inline functions</span>
                                     </label>
 
-                                    <label className="flex items-center gap-2">
+                                    <label className="vis:flex vis:items-center vis:gap-2">
                                         <input
                                             type="checkbox"
                                             checked={typeScriptExportOptions.includeValidation === true}
@@ -277,11 +279,11 @@ export function FlowToolbar({
                                                 })
                                             }
                                         />
-                                        <span className="text-sm">Include validation helpers</span>
+                                        <span className="vis:text-sm">Include validation helpers</span>
                                     </label>
 
                                     <div>
-                                        <label className="block text-sm mb-1">Indentation:</label>
+                                        <label className="vis:block vis:text-sm vis:mb-1">Indentation:</label>
                                         <select
                                             value={`${typeScriptExportOptions.indentation || 'spaces'}-${typeScriptExportOptions.spacesCount || 2}`}
                                             onChange={(e) => {
@@ -292,7 +294,7 @@ export function FlowToolbar({
                                                     spacesCount: parseInt(spacesCount) as 2 | 4,
                                                 })
                                             }}
-                                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                            className="vis:w-full vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-sm"
                                         >
                                             <option value="spaces-2">2 Spaces</option>
                                             <option value="spaces-4">4 Spaces</option>
@@ -307,43 +309,43 @@ export function FlowToolbar({
 
                 <button
                     onClick={onImport}
-                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    className="vis:flex vis:items-center vis:gap-2 vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:hover:bg-gray-50 vis:transition-colors"
                     title="Import Flow"
                 >
-                    <ImportIcon className="w-4 h-4" />
+                    <ImportIcon className="vis:w-4 vis:h-4" />
                     Import
                 </button>
 
-                <div className="flex gap-1">
+                <div className="vis:flex vis:gap-1">
                     <button
                         onClick={() => onExport('json')}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        className="vis:flex vis:items-center vis:gap-2 vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:hover:bg-gray-50 vis:transition-colors"
                         title="Export as JSON"
                     >
-                        <FileJsonIcon className="w-4 h-4" />
+                        <FileJsonIcon className="vis:w-4 vis:h-4" />
                         JSON
                     </button>
 
                     <button
                         onClick={() => onExport('typescript')}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        className="vis:flex vis:items-center vis:gap-2 vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:hover:bg-gray-50 vis:transition-colors"
                         title="Export as TypeScript"
                     >
-                        <CodeIcon className="w-4 h-4" />
+                        <CodeIcon className="vis:w-4 vis:h-4" />
                         TS
                     </button>
                 </div>
 
                 {!readonly && (
                     <>
-                        <div className="h-6 w-px bg-gray-300" />
+                        <div className="vis:h-6 vis:w-px vis:bg-gray-300" />
 
                         <button
                             onClick={onClear}
-                            className="flex items-center gap-2 px-3 py-2 text-red-600 border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+                            className="vis:flex vis:items-center vis:gap-2 vis:px-3 vis:py-2 vis:text-red-600 vis:border vis:border-red-300 vis:rounded-md vis:hover:bg-red-50 vis:transition-colors"
                             title="Clear Flow"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <TrashIcon className="vis:w-4 vis:h-4" />
                             Clear
                         </button>
                     </>

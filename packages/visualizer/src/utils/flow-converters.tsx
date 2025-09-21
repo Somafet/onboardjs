@@ -180,7 +180,7 @@ export function exportFlowAsSteps<TContext extends OnboardingContext = Onboardin
     const stepNodes = nodes.filter((node): node is EnhancedStepNode => node.type === 'stepNode')
 
     stepNodes.forEach((node) => {
-        const { id, data } = node
+        const { data } = node
 
         const step: OnboardingStep<TContext> = {
             id: data.stepId,

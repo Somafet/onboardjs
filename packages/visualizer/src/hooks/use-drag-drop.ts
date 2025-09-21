@@ -2,8 +2,9 @@ import { useCallback } from 'react'
 import { useReactFlow } from '@xyflow/react'
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { FlowState, EnhancedStepNode } from '../types/flow-types'
-import { generateId } from '../utils/flow-utils'
 import { getDefaultPayload, getStepLabel, getStepDescription } from '../utils/step.utils'
+import { generateId } from '../utils/step.utils'
+import { DragEvent } from 'react'
 
 export function useDragAndDrop<TContext extends OnboardingContext = OnboardingContext>(
     flowState: FlowState,
@@ -14,13 +15,13 @@ export function useDragAndDrop<TContext extends OnboardingContext = OnboardingCo
     const { screenToFlowPosition } = useReactFlow()
 
     // Drag and drop handlers
-    const onDragOver = useCallback((event: React.DragEvent) => {
+    const onDragOver = useCallback((event: DragEvent) => {
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
     }, [])
 
     const onDrop = useCallback(
-        (event: React.DragEvent) => {
+        (event: DragEvent) => {
             event.preventDefault()
 
             if (readonly) return
@@ -37,8 +38,7 @@ export function useDragAndDrop<TContext extends OnboardingContext = OnboardingCo
                 'CUSTOM_COMPONENT',
             ]
             if (!stepType || !validStepTypes.includes(stepType)) {
-                console.warn('Invalid step type dropped:', stepType)
-                return
+                throw new Error(`Invalid step type: ${stepType}`)
             }
 
             const position = screenToFlowPosition({

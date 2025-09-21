@@ -28,8 +28,6 @@ export function ConditionDetailsPanel({
                 },
             }
 
-            console.log('Updated Condition Node:', updatedNode)
-
             onUpdate(updatedNode)
         },
         [conditionNode, onUpdate, readonly]
@@ -38,31 +36,36 @@ export function ConditionDetailsPanel({
     if (!conditionNode) return null
 
     return (
-        <div className="condition-details-panel bg-white border-l border-gray-200 w-108 h-full overflow-y-auto flex flex-col">
+        <div className="condition-details-panel vis:bg-white vis:border-l vis:border-gray-200 vis:vis:w-108 vis:h-full vis:overflow-y-auto vis:flex vis:flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                    <GitBranchIcon className="w-5 h-5 text-indigo-600" />
-                    <h2 className="font-semibold text-gray-900">Condition Details</h2>
+            <div className="vis:flex vis:items-center vis:justify-between vis:p-4 vis:border-b vis:border-gray-200">
+                <div className="vis:flex vis:items-center vis:gap-2">
+                    <GitBranchIcon className="vis:w-5 vis:h-5 vis:text-indigo-600" />
+                    <h2 className="vis:font-semibold vis:text-gray-900">Condition Details</h2>
                 </div>
-                <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-md transition-colors">
-                    <XIcon className="w-5 h-5" />
+                <button
+                    onClick={onClose}
+                    className="vis:p-1 hover:vis:bg-gray-100 vis:rounded-md vis:transition-colors"
+                >
+                    <XIcon className="vis:w-5 vis:h-5" />
                 </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-4 space-y-6">
+            <div className="vis:flex-1 vis:p-4 vis:space-y-6">
                 {/* Basic Info */}
-                <div className="space-y-4">
+                <div className="vis:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-2">
+                            Description
+                        </label>
                         <textarea
                             value={conditionNode.data.description}
                             onChange={(e) => handleSave({ description: e.target.value })}
                             disabled={readonly}
                             placeholder="Enter condition description"
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                            className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:focus:outline-none vis:focus:ring-2 vis:focus:ring-indigo-500 vis:focus:border-indigo-500 vis:disabled:bg-gray-100"
                         />
                     </div>
                 </div>
@@ -74,18 +77,18 @@ export function ConditionDetailsPanel({
                 />
 
                 {/* Branch Info */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-medium text-gray-900 mb-3">Branch Information</h3>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 bg-green-500 rounded"></div>
-                            <span className="text-sm text-gray-700">
+                <div className="vis:bg-gray-50 vis:p-4 vis:rounded-lg">
+                    <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Branch Information</h3>
+                    <div className="vis:space-y-3">
+                        <div className="vis:flex vis:items-center vis:gap-3">
+                            <div className="vis:w-4 vis:h-4 vis:bg-green-500 vis:rounded"></div>
+                            <span className="vis:text-sm vis:text-gray-700">
                                 <strong>Then branch:</strong> Path when condition is true
                             </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 bg-red-500 rounded"></div>
-                            <span className="text-sm text-gray-700">
+                        <div className="vis:flex vis:items-center vis:gap-3">
+                            <div className="vis:w-4 vis:h-4 vis:bg-red-500 vis:rounded"></div>
+                            <span className="vis:text-sm vis:text-gray-700">
                                 <strong>Else branch:</strong> Path when condition is false
                             </span>
                         </div>

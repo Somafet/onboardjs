@@ -1,31 +1,21 @@
 import { memo } from 'react'
-import { Handle, Position, NodeProps, Node } from '@xyflow/react'
-import { CheckCircleIcon } from 'lucide-react'
+import { Handle, Position, NodeProps } from '@xyflow/react'
+import { EndNodeType } from '../types/node-types'
 
-export type EndNode = Node<
-    {
-        label: string
-        description?: string
-    },
-    'endNode'
->
-
-export const EndNode = memo(({ data, selected }: NodeProps<EndNode>) => {
-    const { label, description } = data
-
+export const EndNode = memo(({ selected }: NodeProps<EndNodeType>) => {
     return (
         <div
             className={`
-        end-node px-4 py-3 shadow-lg rounded-lg border-2 min-w-[200px] max-w-[300px]
-        border-amber-500 bg-amber-50
-        ${selected ? 'ring-2 ring-amber-800 ring-opacity-50' : ''}
+        end-node vis:px-4 vis:py-3 vis:shadow-lg vis:rounded-lg vis:border-2 vis:min-w-[200px] vis:max-w-[300px]
+        vis:border-amber-500 vis:bg-amber-50
+        ${selected ? 'vis:ring-2 vis:ring-amber-800 vis:ring-opacity-50' : ''}
       `}
         >
             {/* Input Handle */}
             <Handle type="target" position={Position.Top} />
 
-            <div className="text-center">
-                <p className="font-semibold text-sm text-amber-700"> End of Flow</p>
+            <div className="vis:text-center">
+                <p className="vis:font-semibold vis:text-sm vis:text-amber-700"> End of Flow</p>
             </div>
         </div>
     )

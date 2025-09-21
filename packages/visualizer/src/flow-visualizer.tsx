@@ -24,24 +24,24 @@ import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { StepJSONParser, StepJSONParserOptions } from '@onboardjs/core'
 import { TypeScriptExportOptions } from './utils/typescript-exporter'
 import { StepNode } from './nodes/step-node'
-import { EndNode } from './nodes/end-node'
-import { ConditionNode } from './nodes/condition-node'
 import { ConditionalEdge, ConditionalFlowEdge } from './edges/conditional-edge'
 import { FlowToolbar } from './components/flow-toolbar'
 import { FlowSidebar } from './components/flow-sidebar'
 import { NodePalette } from './components/node-palette'
 import { StepDetailsPanel } from './components/step-details-panel'
 import { ConditionDetailsPanel } from './components/condition-details-panel'
-import { ConditionalFlowMode } from './components/conditional-flow-mode'
 
 // Import from new modular structure
 import { FlowState, EnhancedStepNode, EnhancedConditionNode, ExportFormat } from './types'
 import { stepsToFlowState, exportFlowAsSteps, exportFlowAsCode } from './converters'
 import { layoutNodes, generateId, getDefaultPayload, getStepLabel, getStepDescription } from './utils'
+import { getStepTypeColor } from './utils/colors.utils'
+import { EndNode } from './nodes/end-node'
+import { ConditionNode } from './nodes/condition-node'
+import { EndNodeType, StepNodeType } from './types/node-types'
 
 import './flow-visualizer.css'
 import '../styles.css'
-import { getStepTypeColor } from './utils/colors.utils'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
@@ -98,7 +98,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [detailsPanelOpen, setDetailsPanelOpen] = useState(false)
-    const [conditionalModeOpen, setConditionalModeOpen] = useState(false)
     const [edgeVisibility, setEdgeVisibility] = useState({
         next: true,
         conditional: true,
@@ -148,7 +147,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const [edges, setEdges, onEdgesChangeBase] = useEdgesState(visibleEdges)
 
     const { fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow<
-        EnhancedStepNode | EndNode | EnhancedConditionNode,
+        EnhancedStepNode | EndNodeType | EnhancedConditionNode,
         ConditionalFlowEdge
     >()
 
@@ -159,7 +158,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             // Sync back to flowState after React Flow processes the changes
             setTimeout(() => {
-                const currentNodes = getNodes() as (EnhancedStepNode | EndNode | EnhancedConditionNode)[]
+                const currentNodes = getNodes() as (EnhancedStepNode | EndNodeType | EnhancedConditionNode)[]
                 const currentEdges = getEdges() as ConditionalFlowEdge[]
 
                 setFlowState({
@@ -177,7 +176,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
 
             // Sync back to flowState after React Flow processes the changes
             setTimeout(() => {
-                const currentNodes = getNodes() as (EnhancedStepNode | EndNode | EnhancedConditionNode)[]
+                const currentNodes = getNodes() as (EnhancedStepNode | EndNodeType | EnhancedConditionNode)[]
                 const currentEdges = getEdges() as ConditionalFlowEdge[]
 
                 setFlowState({
@@ -236,7 +235,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     }, [initialSteps, updateFlowState])
 
     const updateStepsFromFlow = useCallback(
-        (newNodes?: (EnhancedStepNode | EndNode | EnhancedConditionNode)[], newEdges?: ConditionalFlowEdge[]) => {
+        (newNodes?: (EnhancedStepNode | EndNodeType | EnhancedConditionNode)[], newEdges?: ConditionalFlowEdge[]) => {
             if (readonly) {
                 return { updatedSteps: steps, updatedNodes: flowNodes, updatedEdges: flowEdges }
             }
@@ -370,13 +369,16 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         return steps.find((step) => step.id === selectedStepNode.data.stepId) || null
     }, [selectedStepNode, steps])
 
-    const onNodeClick = useCallback((_: React.MouseEvent, node: EnhancedStepNode | EndNode | EnhancedConditionNode) => {
-        if (node.type === 'stepNode') {
-            setDetailsPanelOpen(true)
-        } else if (node.type === 'conditionNode') {
-            setDetailsPanelOpen(true)
-        }
-    }, [])
+    const onNodeClick = useCallback(
+        (_: React.MouseEvent, node: EnhancedStepNode | EndNodeType | EnhancedConditionNode) => {
+            if (node.type === 'stepNode') {
+                setDetailsPanelOpen(true)
+            } else if (node.type === 'conditionNode') {
+                setDetailsPanelOpen(true)
+            }
+        },
+        []
+    )
 
     const onNodesDelete = useCallback(
         (nodesToDelete: Node[]) => {
@@ -657,7 +659,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const layoutFlow = useCallback(
         (direction: 'TB' | 'LR' = 'TB') => {
             const layoutedElements = layoutNodes<
-                EnhancedStepNode | EndNode | EnhancedConditionNode,
+                EnhancedStepNode | EndNodeType | EnhancedConditionNode,
                 ConditionalFlowEdge
             >(flowState.nodes, flowState.edges, direction)
 
@@ -766,7 +768,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     }, [readonly, updateFlowState])
 
     return (
-        <div className={`flow-visualizer ${className}`}>
+        <div id="flow-visualizer" className={`flow-visualizer ${className}`}>
             {/* Updated Toolbar */}
             <FlowToolbar
                 onExport={exportFlow}
@@ -785,21 +787,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             {/* Main flow area */}
             <div className="flow-container">
                 <NodePalette />
-                {/* Conditional Flow Mode */}
-                {conditionalModeOpen && (
-                    <div className="absolute top-4 left-4 z-10 max-w-md">
-                        <ConditionalFlowMode
-                            steps={steps}
-                            onStepsChange={(newSteps) => {
-                                const newFlowState = stepsToFlowState(newSteps)
-                                updateFlowState(newFlowState)
-                            }}
-                            isActive={conditionalModeOpen}
-                            onToggle={() => setConditionalModeOpen(!conditionalModeOpen)}
-                            readonly={readonly}
-                        />
-                    </div>
-                )}
 
                 <ReactFlow
                     nodes={nodes}
@@ -832,7 +819,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                     <Background />
                     <Controls />
                     <MiniMap
-                        nodeColor={(node) => getStepTypeColor((node as StepNode).data.stepType || 'endNode')}
+                        nodeColor={(node) => getStepTypeColor((node as StepNodeType).data.stepType || 'endNode')}
                         nodeStrokeWidth={3}
                         zoomable
                         pannable
@@ -950,23 +937,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
                         onClose={() => setDetailsPanelOpen(false)}
                         readonly={readonly}
                     />
-                )}
-
-                {/* Conditional Flow Mode */}
-                {conditionalModeOpen && (
-                    <div className="absolute top-4 left-4 z-40">
-                        <ConditionalFlowMode
-                            steps={steps}
-                            onStepsChange={(newSteps) => {
-                                const newFlowState = stepsToFlowState(newSteps)
-                                updateFlowState(newFlowState)
-                            }}
-                            isActive={conditionalModeOpen}
-                            onToggle={() => setConditionalModeOpen(false)}
-                            defaultCondition={(context) => context.flowData?.userRole === 'admin'}
-                            readonly={readonly}
-                        />
-                    </div>
                 )}
             </div>
 

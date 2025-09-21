@@ -11,7 +11,7 @@
         "esModuleInterop": true,
         "skipLibCheck": false,
         "strict": true,
-        "types": ["node", "react", "react-dom"],
+        "types": ["react", "react-dom"],
         "declarationMap": true,
         "emitDeclarationOnly": true
     },

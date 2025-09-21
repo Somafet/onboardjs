@@ -29,7 +29,7 @@ export interface TypeScriptExportResult {
 }
 
 export class TypeScriptExporter {
-    private static readonly DEFAULT_OPTIONS: TypeScriptExportOptions = {
+    private static readonly _DEFAULT_OPTIONS: TypeScriptExportOptions = {
         includeImports: false,
         includeTypes: false,
         useConstAssertion: false,
@@ -45,7 +45,7 @@ export class TypeScriptExporter {
         steps: OnboardingStep<TContext>[],
         options: Partial<TypeScriptExportOptions> = {}
     ): TypeScriptExportResult {
-        const opts = { ...this.DEFAULT_OPTIONS, ...options }
+        const opts = { ...this._DEFAULT_OPTIONS, ...options }
         const errors: string[] = []
         const warnings: string[] = []
 
@@ -60,13 +60,13 @@ export class TypeScriptExporter {
 
             // Add imports
             if (opts.includeImports) {
-                codeLines.push(...this.generateImports(steps, opts))
+                codeLines.push(...this._generateImports(steps, opts))
                 codeLines.push('')
             }
 
             // Add function definitions (if not inline)
             if (!opts.inlineFunctions) {
-                const functionDefs = this.generateFunctionDefinitions(steps, opts, indent)
+                const functionDefs = this._generateFunctionDefinitions(steps, opts)
                 if (functionDefs.length > 0) {
                     codeLines.push(...functionDefs)
                     codeLines.push('')
@@ -74,12 +74,12 @@ export class TypeScriptExporter {
             }
 
             // Add main steps array
-            codeLines.push(...this.generateStepsArray(steps, opts, indent, errors, warnings))
+            codeLines.push(...this._generateStepsArray(steps, opts, indent, errors))
 
             // Add validation helpers
             if (opts.includeValidation) {
                 codeLines.push('')
-                codeLines.push(...this.generateValidationHelpers(opts, indent))
+                codeLines.push(...this._generateValidationHelpers(opts, indent))
             }
 
             const code = codeLines.join('\n')
@@ -100,7 +100,7 @@ export class TypeScriptExporter {
         }
     }
 
-    private static generateImports<TContext extends OnboardingContext>(
+    private static _generateImports<TContext extends OnboardingContext>(
         steps: OnboardingStep<TContext>[],
         options: TypeScriptExportOptions
     ): string[] {
@@ -151,10 +151,9 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static generateFunctionDefinitions<TContext extends OnboardingContext>(
+    private static _generateFunctionDefinitions<TContext extends OnboardingContext>(
         steps: OnboardingStep<TContext>[],
-        options: TypeScriptExportOptions,
-        indent: string
+        options: TypeScriptExportOptions
     ): string[] {
         const lines: string[] = []
         const functionNames = new Set<string>()
@@ -173,7 +172,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// Condition function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction(step.condition, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction(step.condition)};`)
                 }
             }
 
@@ -186,7 +185,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// OnStepActive function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction(step.onStepActive, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction(step.onStepActive)};`)
                 }
             }
 
@@ -199,7 +198,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// OnStepComplete function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction(step.onStepComplete, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction(step.onStepComplete)};`)
                 }
             }
 
@@ -212,7 +211,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// NextStep function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction(step.nextStep, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction(step.nextStep)};`)
                 }
             }
 
@@ -225,7 +224,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// PreviousStep function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction(step.previousStep, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction(step.previousStep)};`)
                 }
             }
 
@@ -238,7 +237,7 @@ export class TypeScriptExporter {
                     if (options.includeComments) {
                         lines.push(`// SkipToStep function for step '${step.id}'`)
                     }
-                    lines.push(`const ${functionName} = ${this.formatFunction((step as any).skipToStep, indent)};`)
+                    lines.push(`const ${functionName} = ${this._formatFunction((step as any).skipToStep)};`)
                 }
             }
 
@@ -257,7 +256,7 @@ export class TypeScriptExporter {
                                         `// Condition function for checklist item '${item.id}' in step '${step.id}'`
                                     )
                                 }
-                                lines.push(`const ${functionName} = ${this.formatFunction(item.condition, indent)};`)
+                                lines.push(`const ${functionName} = ${this._formatFunction(item.condition)};`)
                             }
                         }
                     })
@@ -268,12 +267,11 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static generateStepsArray<TContext extends OnboardingContext>(
+    private static _generateStepsArray<TContext extends OnboardingContext>(
         steps: OnboardingStep<TContext>[],
         options: TypeScriptExportOptions,
         indent: string,
-        errors: string[],
-        warnings: string[]
+        errors: string[]
     ): string[] {
         const lines: string[] = []
 
@@ -297,7 +295,7 @@ export class TypeScriptExporter {
 
         steps.forEach((step, stepIndex) => {
             try {
-                const stepLines = this.generateStepObject(step, stepIndex, options, indent, errors, warnings)
+                const stepLines = this._generateStepObject(step, stepIndex, options, indent)
                 lines.push(...stepLines)
 
                 // Add comma except for the last item
@@ -316,13 +314,11 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static generateStepObject<TContext extends OnboardingContext>(
+    private static _generateStepObject<TContext extends OnboardingContext>(
         step: OnboardingStep<TContext>,
         stepIndex: number,
         options: TypeScriptExportOptions,
-        indent: string,
-        errors: string[],
-        warnings: string[]
+        indent: string
     ): string[] {
         const lines: string[] = []
         const stepIndent = indent
@@ -342,7 +338,7 @@ export class TypeScriptExporter {
         lines.push(`${stepIndent}{`)
 
         // ID
-        lines.push(`${propIndent}id: ${this.formatValue(step.id, propIndent)},`)
+        lines.push(`${propIndent}id: ${this._formatValue(step.id, propIndent)},`)
 
         // Type
         if (step.type) {
@@ -353,28 +349,28 @@ export class TypeScriptExporter {
         if (step.nextStep !== undefined) {
             if (typeof step.nextStep === 'function') {
                 if (options.inlineFunctions) {
-                    lines.push(`${propIndent}nextStep: ${this.formatFunction(step.nextStep, propIndent)},`)
+                    lines.push(`${propIndent}nextStep: ${this._formatFunction(step.nextStep)},`)
                 } else {
                     lines.push(`${propIndent}nextStep: step${stepIndex}NextStep,`)
                 }
             } else {
                 // Convert 'null' to null for nextStep
                 const nextStepValue = step.nextStep === 'null' ? null : step.nextStep
-                lines.push(`${propIndent}nextStep: ${this.formatValue(nextStepValue, propIndent)},`)
+                lines.push(`${propIndent}nextStep: ${this._formatValue(nextStepValue, propIndent)},`)
             }
         }
 
         if (step.previousStep !== undefined) {
             if (typeof step.previousStep === 'function') {
                 if (options.inlineFunctions) {
-                    lines.push(`${propIndent}previousStep: ${this.formatFunction(step.previousStep, propIndent)},`)
+                    lines.push(`${propIndent}previousStep: ${this._formatFunction(step.previousStep)},`)
                 } else {
                     lines.push(`${propIndent}previousStep: step${stepIndex}PreviousStep,`)
                 }
             } else {
                 // Convert 'null' to null for previousStep
                 const previousStepValue = step.previousStep === 'null' ? null : step.previousStep
-                lines.push(`${propIndent}previousStep: ${this.formatValue(previousStepValue, propIndent)},`)
+                lines.push(`${propIndent}previousStep: ${this._formatValue(previousStepValue, propIndent)},`)
             }
         }
 
@@ -386,14 +382,14 @@ export class TypeScriptExporter {
             if (skipToStep !== undefined) {
                 if (typeof skipToStep === 'function') {
                     if (options.inlineFunctions) {
-                        lines.push(`${propIndent}skipToStep: ${this.formatFunction(skipToStep, propIndent)},`)
+                        lines.push(`${propIndent}skipToStep: ${this._formatFunction(skipToStep)},`)
                     } else {
                         lines.push(`${propIndent}skipToStep: step${stepIndex}SkipToStep,`)
                     }
                 } else {
                     // Convert 'null' to null for skipToStep
                     const skipToStepValue = skipToStep === 'null' ? null : skipToStep
-                    lines.push(`${propIndent}skipToStep: ${this.formatValue(skipToStepValue, propIndent)},`)
+                    lines.push(`${propIndent}skipToStep: ${this._formatValue(skipToStepValue, propIndent)},`)
                 }
             }
         }
@@ -401,7 +397,7 @@ export class TypeScriptExporter {
         // Function properties
         if (step.condition) {
             if (options.inlineFunctions) {
-                lines.push(`${propIndent}condition: ${this.formatFunction(step.condition, propIndent)},`)
+                lines.push(`${propIndent}condition: ${this._formatFunction(step.condition)},`)
             } else {
                 lines.push(`${propIndent}condition: step${stepIndex}Condition,`)
             }
@@ -409,7 +405,7 @@ export class TypeScriptExporter {
 
         if (step.onStepActive) {
             if (options.inlineFunctions) {
-                lines.push(`${propIndent}onStepActive: ${this.formatFunction(step.onStepActive, propIndent)},`)
+                lines.push(`${propIndent}onStepActive: ${this._formatFunction(step.onStepActive)},`)
             } else {
                 lines.push(`${propIndent}onStepActive: step${stepIndex}OnActive,`)
             }
@@ -417,7 +413,7 @@ export class TypeScriptExporter {
 
         if (step.onStepComplete) {
             if (options.inlineFunctions) {
-                lines.push(`${propIndent}onStepComplete: ${this.formatFunction(step.onStepComplete, propIndent)},`)
+                lines.push(`${propIndent}onStepComplete: ${this._formatFunction(step.onStepComplete)},`)
             } else {
                 lines.push(`${propIndent}onStepComplete: step${stepIndex}OnComplete,`)
             }
@@ -425,7 +421,7 @@ export class TypeScriptExporter {
 
         // Payload
         if (step.payload && Object.keys(step.payload).length > 0) {
-            const payloadLines = this.generatePayload(step, stepIndex, options, propIndent, errors, warnings)
+            const payloadLines = this._generatePayload(step, stepIndex, options, propIndent)
             lines.push(`${propIndent}payload: {`)
             lines.push(...payloadLines)
             lines.push(`${propIndent}},`)
@@ -433,7 +429,7 @@ export class TypeScriptExporter {
 
         // Meta
         if (step.meta && Object.keys(step.meta).length > 0) {
-            lines.push(`${propIndent}meta: ${this.formatObject(step.meta, propIndent)},`)
+            lines.push(`${propIndent}meta: ${this._formatObject(step.meta, propIndent)},`)
         }
 
         lines.push(`${stepIndent}}`)
@@ -441,13 +437,11 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static generatePayload<TContext extends OnboardingContext>(
+    private static _generatePayload<TContext extends OnboardingContext>(
         step: OnboardingStep<TContext>,
         stepIndex: number,
         options: TypeScriptExportOptions,
-        indent: string,
-        errors: string[],
-        warnings: string[]
+        indent: string
     ): string[] {
         const lines: string[] = []
         const propIndent = indent + (options.indentation === 'spaces' ? ' '.repeat(options.spacesCount) : '\t')
@@ -464,7 +458,7 @@ export class TypeScriptExporter {
                 if (payload.options && Array.isArray(payload.options)) {
                     lines.push(`${propIndent}options: [`)
                     payload.options.forEach((option: any, index: number) => {
-                        const optionLines = this.formatChoiceOption(
+                        const optionLines = this._formatChoiceOption(
                             option,
                             propIndent + (options.indentation === 'spaces' ? ' '.repeat(options.spacesCount) : '\t')
                         )
@@ -495,7 +489,7 @@ export class TypeScriptExporter {
                 if (payload.items && Array.isArray(payload.items)) {
                     lines.push(`${propIndent}items: [`)
                     payload.items.forEach((item: any, index: number) => {
-                        const itemLines = this.formatChecklistItem(
+                        const itemLines = this._formatChecklistItem(
                             item,
                             stepIndex,
                             index,
@@ -521,7 +515,7 @@ export class TypeScriptExporter {
                 // Handle generic payload properties
                 Object.entries(payload).forEach(([key, value]) => {
                     if (key !== '__payloadType') {
-                        lines.push(`${propIndent}${key}: ${this.formatValue(value, propIndent)},`)
+                        lines.push(`${propIndent}${key}: ${this._formatValue(value, propIndent)},`)
                     }
                 })
                 break
@@ -530,12 +524,12 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static formatChoiceOption(option: any, indent: string): string[] {
+    private static _formatChoiceOption(option: any, indent: string): string[] {
         const lines: string[] = []
         lines.push(`${indent}{`)
         lines.push(`${indent}  id: '${option.id}',`)
         lines.push(`${indent}  label: '${option.label}',`)
-        lines.push(`${indent}  value: ${this.formatValue(option.value, indent + '  ')},`)
+        lines.push(`${indent}  value: ${this._formatValue(option.value, indent + '  ')},`)
         if (option.description) {
             lines.push(`${indent}  description: '${option.description}',`)
         }
@@ -546,7 +540,7 @@ export class TypeScriptExporter {
         return lines
     }
 
-    private static formatChecklistItem(
+    private static _formatChecklistItem(
         item: any,
         stepIndex: number,
         itemIndex: number,
@@ -568,21 +562,21 @@ export class TypeScriptExporter {
 
         if (item.condition && typeof item.condition === 'function') {
             if (options.inlineFunctions) {
-                lines.push(`${indent}  condition: ${this.formatFunction(item.condition, indent + '  ')},`)
+                lines.push(`${indent}  condition: ${this._formatFunction(item.condition)},`)
             } else {
                 lines.push(`${indent}  condition: step${stepIndex}Item${itemIndex}Condition,`)
             }
         }
 
         if (item.meta && Object.keys(item.meta).length > 0) {
-            lines.push(`${indent}  meta: ${this.formatObject(item.meta, indent + '  ')},`)
+            lines.push(`${indent}  meta: ${this._formatObject(item.meta, indent + '  ')},`)
         }
 
         lines.push(`${indent}}`)
         return lines
     }
 
-    private static formatFunction(fn: Function, indent: string): string {
+    private static _formatFunction(fn: Function): string {
         const functionString = fn.toString()
 
         // Handle arrow functions vs regular functions
@@ -601,32 +595,32 @@ export class TypeScriptExporter {
         return functionString
     }
 
-    private static formatValue(value: any, indent: string): string {
+    private static _formatValue(value: any, indent: string): string {
         if (value === null) return 'null'
         if (value === undefined) return 'undefined'
         if (typeof value === 'string') {
             return `'${value.replace(/'/g, "\\'")}'`
         }
         if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-        if (typeof value === 'object') return this.formatObject(value, indent)
+        if (typeof value === 'object') return this._formatObject(value, indent)
         return String(value)
     }
 
-    private static formatObject(obj: any, indent: string): string {
+    private static _formatObject(obj: any, indent: string): string {
         if (Array.isArray(obj)) {
             if (obj.length === 0) return '[]'
-            const items = obj.map((item) => this.formatValue(item, indent + '  '))
+            const items = obj.map((item) => this._formatValue(item, indent + '  '))
             return `[\n${indent}  ${items.join(`,\n${indent}  `)}\n${indent}]`
         }
 
         const entries = Object.entries(obj)
         if (entries.length === 0) return '{}'
 
-        const props = entries.map(([key, value]) => `${indent}  ${key}: ${this.formatValue(value, indent + '  ')}`)
+        const props = entries.map(([key, value]) => `${indent}  ${key}: ${this._formatValue(value, indent + '  ')}`)
         return `{\n${props.join(',\n')}\n${indent}}`
     }
 
-    private static generateValidationHelpers(options: TypeScriptExportOptions, indent: string): string[] {
+    private static _generateValidationHelpers(options: TypeScriptExportOptions, indent: string): string[] {
         const lines: string[] = []
 
         if (options.includeComments) {

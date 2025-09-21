@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { OnboardingContext } from '@onboardjs/core'
-import { PlusIcon, TrashIcon, CodeIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
+import { PlusIcon, TrashIcon, CodeIcon, EyeIcon } from 'lucide-react'
 import { ConditionGroup, ConditionRule, conditionToCode } from '../utils/conditon'
 
 interface ConditionBuilderProps {
@@ -127,25 +126,25 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
     }, [readonly, onConditionChange])
 
     return (
-        <div className="condition-builder border border-gray-200 rounded-lg p-4 space-y-4">
+        <div className="condition-builder vis:border vis:border-gray-200 vis:rounded-lg vis:p-4 vis:space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-900">Condition</h4>
-                <div className="flex items-center gap-2">
+            <div className="vis:flex vis:items-center vis:justify-between">
+                <h4 className="vis:font-medium vis:text-gray-900">Condition</h4>
+                <div className="vis:flex vis:items-center vis:gap-2">
                     <button
                         onClick={() => setIsVisualMode(!isVisualMode)}
-                        className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                        className="vis:p-1 vis:text-gray-500 hover:vis:text-gray-700 vis:transition-colors"
                         title={isVisualMode ? 'Switch to Code Mode' : 'Switch to Visual Mode'}
                     >
-                        {isVisualMode ? <CodeIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                        {isVisualMode ? <CodeIcon className="vis:size-4" /> : <EyeIcon className="vis:w-4 vis:h-4" />}
                     </button>
                     {!readonly && (
                         <button
                             onClick={clearCondition}
-                            className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                            className="vis:p-1 vis:text-red-500 hover:vis:text-red-700 vis:transition-colors"
                             title="Clear Condition"
                         >
-                            <TrashIcon className="w-4 h-4" />
+                            <TrashIcon className="vis:w-4 vis:h-4" />
                         </button>
                     )}
                 </div>
@@ -155,11 +154,16 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
             {isVisualMode ? (
                 <div className="space-y-3">
                     {conditionGroups.map((group, groupIndex) => (
-                        <div key={group.id} className="border border-gray-100 rounded-md p-3 bg-gray-50">
+                        <div
+                            key={group.id}
+                            className="vis:border vis:border-gray-100 vis:rounded-md vis:p-3 vis:bg-gray-50"
+                        >
                             {/* Group Header */}
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-gray-700">Group {groupIndex + 1}</span>
+                            <div className="vis:flex vis:items-center vis:justify-between vis:mb-3">
+                                <div className="vis:flex vis:items-center vis:gap-2">
+                                    <span className="vis:text-sm vis:font-medium vis:text-gray-700">
+                                        Group {groupIndex + 1}
+                                    </span>
                                     {!readonly && (
                                         <select
                                             value={group.logic}
@@ -172,7 +176,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                                     )
                                                 )
                                             }}
-                                            className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                            className="vis:text-xs vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded"
                                         >
                                             <option value="AND">AND</option>
                                             <option value="OR">OR</option>
@@ -182,18 +186,20 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                 {!readonly && conditionGroups.length > 1 && (
                                     <button
                                         onClick={() => removeGroup(group.id)}
-                                        className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                                        className="vis:p-1 vis:text-red-500 hover:vis:text-red-700 vis:transition-colors"
                                     >
-                                        <TrashIcon className="w-3 h-3" />
+                                        <TrashIcon className="vis:w-3 vis:h-3" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Rules */}
-                            <div className="space-y-2">
+                            <div className="vis:space-y-2">
                                 {group.rules.map((rule, ruleIndex) => (
-                                    <div key={rule.id} className="flex flex-col gap-2 text-sm">
-                                        {ruleIndex > 0 && <span className="text-gray-500 text-xs">{group.logic}</span>}
+                                    <div key={rule.id} className="vis:flex vis:flex-col vis:gap-2 vis:text-sm">
+                                        {ruleIndex > 0 && (
+                                            <span className="vis:text-gray-500 vis:text-xs">{group.logic}</span>
+                                        )}
 
                                         {/* Field */}
                                         <input
@@ -202,7 +208,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                             value={rule.field}
                                             onChange={(e) => updateRule(group.id, rule.id, { field: e.target.value })}
                                             disabled={readonly}
-                                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs disabled:bg-gray-100"
+                                            className="vis:flex-1 vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
                                         />
 
                                         {/* Operator */}
@@ -212,7 +218,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                                 updateRule(group.id, rule.id, { operator: e.target.value as any })
                                             }
                                             disabled={readonly}
-                                            className="px-2 py-1 border border-gray-300 rounded text-xs disabled:bg-gray-100"
+                                            className="vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
                                         >
                                             <option value="equals">equals</option>
                                             <option value="not_equals">not equals</option>
@@ -235,7 +241,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                                         updateRule(group.id, rule.id, { value: e.target.value })
                                                     }
                                                     disabled={readonly}
-                                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs disabled:bg-gray-100"
+                                                    className="vis:flex-1 vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
                                                 />
                                                 <select
                                                     value={rule.valueType}
@@ -245,7 +251,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                                         })
                                                     }
                                                     disabled={readonly}
-                                                    className="px-2 py-1 border border-gray-300 rounded text-xs disabled:bg-gray-100"
+                                                    className="vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
                                                 >
                                                     <option value="string">string</option>
                                                     <option value="number">number</option>
@@ -258,9 +264,9 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                         {!readonly && (
                                             <button
                                                 onClick={() => removeRule(group.id, rule.id)}
-                                                className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                                                className="vis:p-1 vis:text-red-500 hover:vis:text-red-700 vis:transition-colors"
                                             >
-                                                <TrashIcon className="w-3 h-3" />
+                                                <TrashIcon className="vis:w-3 vis:h-3" />
                                             </button>
                                         )}
                                     </div>
@@ -270,9 +276,9 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                 {!readonly && (
                                     <button
                                         onClick={() => addRule(group.id)}
-                                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                                        className="vis:flex vis:items-center vis:gap-1 vis:text-xs vis:text-blue-600 hover:vis:text-blue-800 vis:transition-colors"
                                     >
-                                        <PlusIcon className="w-3 h-3" />
+                                        <PlusIcon className="vis:w-3 vis:h-3" />
                                         Add Rule
                                     </button>
                                 )}
@@ -284,9 +290,9 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                     {!readonly && (
                         <button
                             onClick={addGroup}
-                            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                            className="vis:flex vis:items-center vis:gap-1 vis:text-sm vis:text-blue-600 hover:vis:text-blue-800 vis:transition-colors"
                         >
-                            <PlusIcon className="w-4 h-4" />
+                            <PlusIcon className="vis:w-4 vis:h-4" />
                             Add Group
                         </button>
                     )}
@@ -295,7 +301,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                     {!readonly && (
                         <button
                             onClick={() => onConditionChange(conditionGroups)}
-                            className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                            className="vis:w-full vis:px-3 vis:py-2 vis:bg-blue-500 vis:text-white vis:rounded-md hover:vis:bg-blue-600 vis:transition-colors vis:text-sm"
                         >
                             Apply Condition
                         </button>
@@ -303,23 +309,25 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                 </div>
             ) : (
                 /* Code Mode */
-                <div className="space-y-3">
+                <div className="vis:space-y-3">
                     <textarea
                         readOnly
                         value={conditionCode}
                         disabled={readonly}
                         placeholder="(context) => context.flowData?.userRole === 'admin'"
                         rows={6}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono disabled:bg-gray-100"
+                        className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:font-mono vis:disabled:bg-gray-100"
                     />
                 </div>
             )}
 
             {/* Current Condition Display */}
             {condition && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <label className="block text-md font-medium text-blue-700 mb-1">Current Condition:</label>
-                    <pre className="text-xs text-blue-800 whitespace-pre-wrap font-mono overflow-x-auto">
+                <div className="vis:mt-3 p-3 vis:bg-blue-50 border vis:border-blue-200 rounded-md">
+                    <label className="vis:block vis:text-md vis:font-medium vis:text-blue-700 vis:mb-1">
+                        Current Condition:
+                    </label>
+                    <pre className="vis:text-xs vis:text-blue-800 vis:whitespace-pre-wrap vis:font-mono vis:overflow-x-auto">
                         <code>{conditionCode}</code>
                     </pre>
                 </div>

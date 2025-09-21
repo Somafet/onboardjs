@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { OnboardJSParser } from './parser'
-import type { OnboardingStep } from '@onboardjs/core'
 
 describe('OnboardJSParser', () => {
     beforeEach(() => {
