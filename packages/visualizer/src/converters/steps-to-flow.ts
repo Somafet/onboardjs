@@ -1,5 +1,12 @@
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import { FlowState, EnhancedStepNode, EnhancedConditionNode, EndNode, ConditionNode } from '../types/flow-types'
+import {
+    FlowState,
+    EnhancedStepNode,
+    EnhancedConditionNode,
+    EndNode,
+    ConditionNode,
+    ConditionalFlowEdge,
+} from '../types/flow-types'
 import { getStepLabel, getStepDescription } from '../utils/step.utils'
 
 /**
@@ -11,7 +18,7 @@ export function stepsToFlowState<TContext extends OnboardingContext = Onboarding
     conditionNodes: ConditionNode[] = []
 ): FlowState {
     const nodes: (EnhancedStepNode | EndNode | EnhancedConditionNode)[] = []
-    const edges: any[] = [] // ConditionalFlowEdge[] - imported later to avoid circular deps
+    const edges: ConditionalFlowEdge[] = []
 
     // Convert steps to enhanced step nodes
     steps.forEach((step, index) => {
@@ -37,21 +44,7 @@ export function stepsToFlowState<TContext extends OnboardingContext = Onboarding
         nodes.push(enhancedNode)
     })
 
-    // Convert condition nodes to enhanced condition nodes
-    conditionNodes.forEach((conditionNode) => {
-        const enhancedNode: EnhancedConditionNode = {
-            id: conditionNode.id,
-            type: 'conditionNode',
-            data: {
-                conditionId: conditionNode.data.conditionId,
-                description: conditionNode.data.description,
-                errors: conditionNode.data.errors,
-                condition: conditionNode.data.condition as any, // Handle ConditionGroup[] conversion
-            },
-            position: conditionNode.position,
-        }
-        nodes.push(enhancedNode)
-    })
+    nodes.push(...conditionNodes)
 
     // Add end node
     const endNode: EndNode = {

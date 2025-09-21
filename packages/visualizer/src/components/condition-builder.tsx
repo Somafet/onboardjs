@@ -2,7 +2,11 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { PlusIcon, TrashIcon, CodeIcon, EyeIcon } from 'lucide-react'
-import { ConditionGroup, ConditionRule, conditionToCode } from '../utils/conditon'
+import { ConditionParser } from '../parser/condition-parser/condition-parser'
+import type { ConditionGroup, ConditionRule } from '../parser/condition-parser/types'
+import { generateId } from '../utils'
+
+const conditionParser = new ConditionParser()
 
 interface ConditionBuilderProps {
     condition?: ConditionGroup[]
@@ -17,13 +21,13 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
             ? condition
             : [
                   {
-                      id: 'group_1',
+                      id: generateId('group'),
                       logic: 'AND',
                       rules: [],
                   },
               ]
     )
-    const conditionCode = useMemo(() => conditionToCode(conditionGroups), [conditionGroups])
+    const conditionCode = useMemo(() => conditionParser.generateCode(conditionGroups), [conditionGroups])
 
     const addRule = useCallback(
         (groupId: string) => {
@@ -37,7 +41,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                               rules: [
                                   ...group.rules,
                                   {
-                                      id: `rule_${Date.now()}`,
+                                      id: generateId('rule'),
                                       field: '',
                                       operator: 'equals',
                                       value: '',
@@ -94,7 +98,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
         setConditionGroups((prev) => [
             ...prev,
             {
-                id: `group_${Date.now()}`,
+                id: generateId('group'),
                 logic: 'AND',
                 rules: [],
             },
@@ -118,7 +122,7 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
         onConditionChange(undefined)
         setConditionGroups([
             {
-                id: 'group_1',
+                id: generateId('group'),
                 logic: 'AND',
                 rules: [],
             },
@@ -226,39 +230,32 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
                                             <option value="not_contains">not contains</option>
                                             <option value="greater_than">greater than</option>
                                             <option value="less_than">less than</option>
-                                            <option value="exists">exists</option>
-                                            <option value="not_exists">not exists</option>
                                         </select>
 
                                         {/* Value (if operator needs it) */}
-                                        {!['exists', 'not_exists'].includes(rule.operator) && (
-                                            <>
-                                                <input
-                                                    type="text"
-                                                    placeholder="value"
-                                                    value={rule.value}
-                                                    onChange={(e) =>
-                                                        updateRule(group.id, rule.id, { value: e.target.value })
-                                                    }
-                                                    disabled={readonly}
-                                                    className="vis:flex-1 vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
-                                                />
-                                                <select
-                                                    value={rule.valueType}
-                                                    onChange={(e) =>
-                                                        updateRule(group.id, rule.id, {
-                                                            valueType: e.target.value as any,
-                                                        })
-                                                    }
-                                                    disabled={readonly}
-                                                    className="vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
-                                                >
-                                                    <option value="string">string</option>
-                                                    <option value="number">number</option>
-                                                    <option value="boolean">boolean</option>
-                                                </select>
-                                            </>
-                                        )}
+
+                                        <input
+                                            type="text"
+                                            placeholder="value"
+                                            value={String(rule.value)}
+                                            onChange={(e) => updateRule(group.id, rule.id, { value: e.target.value })}
+                                            disabled={readonly}
+                                            className="vis:flex-1 vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
+                                        />
+                                        <select
+                                            value={rule.valueType}
+                                            onChange={(e) =>
+                                                updateRule(group.id, rule.id, {
+                                                    valueType: e.target.value as any,
+                                                })
+                                            }
+                                            disabled={readonly}
+                                            className="vis:px-2 vis:py-1 vis:border vis:border-gray-300 vis:rounded vis:text-xs vis:disabled:bg-gray-100"
+                                        >
+                                            <option value="string">string</option>
+                                            <option value="number">number</option>
+                                            <option value="boolean">boolean</option>
+                                        </select>
 
                                         {/* Remove Rule */}
                                         {!readonly && (

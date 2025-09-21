@@ -24,7 +24,7 @@ const rules = {
     '@typescript-eslint/no-unused-expressions': 'off',
     'no-prototype-builtins': 'off',
     'no-empty': 'off',
-    'no-console': 'error',
+    'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
     '@typescript-eslint/naming-convention': [
         'error',
         {

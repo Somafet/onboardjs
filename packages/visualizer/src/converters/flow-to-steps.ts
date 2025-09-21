@@ -1,7 +1,9 @@
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { FlowState, EnhancedStepNode, EnhancedConditionNode } from '../types/flow-types'
 import { getDefaultPayload } from '../utils/step.utils'
-import { conditionToCode } from '../utils/conditon'
+import { ConditionParser } from '../parser/condition-parser/condition-parser'
+
+const conditionParser = new ConditionParser()
 
 /**
  * Helper: build a conditional function string
@@ -11,7 +13,9 @@ function buildConditionalFunction(
     thenTarget: string | null,
     elseTarget: string | null
 ): string {
-    const conditionCode = conditionNode.data.condition ? conditionToCode(conditionNode.data.condition) : '() => true'
+    const conditionCode = conditionNode.data.condition
+        ? conditionParser.generateCode(conditionNode.data.condition)
+        : '() => true'
 
     return `(context) => {
         const condition = ${conditionCode}
