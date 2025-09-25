@@ -1,16 +1,26 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useNodesState, useEdgesState, useReactFlow } from '@xyflow/react'
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import { FlowState, EnhancedStepNode, EndNode, EnhancedConditionNode, ConditionalFlowEdge } from '../types/flow-types'
+import { FlowState, EnhancedStepNode, EndNode, EnhancedConditionNode } from '../types/flow-types'
 import { stepsToFlowState } from '../converters/steps-to-flow'
+import { layoutNodes } from '../utils/flow-converters'
 import { exportFlowAsSteps } from '../converters/flow-to-steps'
+import { ConditionalFlowEdge } from '../edges/conditional-edge'
 
 export function useFlowState<TContext extends OnboardingContext = OnboardingContext>(
     initialSteps: OnboardingStep<TContext>[],
     onStepsChange?: (steps: OnboardingStep<TContext>[]) => void
 ) {
     // State - Use FlowState as single source of truth
-    const [flowState, setFlowState] = useState<FlowState>(() => stepsToFlowState(initialSteps))
+    const [flowState, setFlowState] = useState<FlowState>(() => {
+        const base = stepsToFlowState(initialSteps)
+        try {
+            const layouted = layoutNodes(base.nodes as any, base.edges as any, 'TB')
+            return { nodes: layouted.nodes as any, edges: layouted.edges as any }
+        } catch {
+            return base
+        }
+    })
 
     // Derive steps from flow state for backwards compatibility
     const steps = useMemo(() => exportFlowAsSteps<TContext>(flowState), [flowState])
@@ -98,8 +108,14 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
             })
 
         if (hasRealChange) {
-            const newFlowState = stepsToFlowState(initialSteps)
-            updateFlowState(newFlowState)
+            const base = stepsToFlowState(initialSteps)
+            try {
+                const layouted = layoutNodes(base.nodes as any, base.edges as any, 'TB')
+                updateFlowState({ nodes: layouted.nodes as any, edges: layouted.edges as any })
+            } catch {
+                updateFlowState(base)
+            }
+
             lastInitialSteps.current = initialSteps
         }
     }, [initialSteps, updateFlowState])
@@ -109,8 +125,49 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
             const currentNodes = newNodes ?? flowState.nodes
             const currentEdges = newEdges ?? flowState.edges
 
+            // Ensure node.data navigation fields (nextStep/previousStep/skipToStep/isSkippable)
+            // are in sync with the provided edges. This keeps the UI (StepDetailsPanel)
+            // consistent when edges are created via drag/connect.
+            const syncedNodes = currentNodes.map((node) => {
+                if (node.type !== 'stepNode') return node
+
+                const stepNode = node as EnhancedStepNode
+
+                // Outgoing edges from this node
+                const outgoing = currentEdges.filter((e) => e.source === stepNode.id)
+
+                const nextEdge = outgoing.find(
+                    (e) =>
+                        e.data?.edgeType === 'next' ||
+                        e.data?.edgeType === 'conditional' ||
+                        e.data?.edgeType === undefined
+                )
+                const skipEdge = outgoing.find((e) => e.data?.edgeType === 'skip')
+                const prevEdge = outgoing.find((e) => e.data?.edgeType === 'previous')
+
+                const updatedData = { ...stepNode.data }
+
+                // Helper to resolve edge target to a stepId when target is a step node
+                const resolveStepTarget = (targetId?: string | number | null) => {
+                    if (!targetId) return undefined
+                    const targetNode = currentNodes.find((n) => n.id === String(targetId))
+                    if (!targetNode || targetNode.type !== 'stepNode') return undefined
+                    return (targetNode as EnhancedStepNode).data.stepId
+                }
+
+                updatedData.nextStep = nextEdge ? resolveStepTarget(nextEdge.target) : undefined
+                updatedData.skipToStep = skipEdge ? resolveStepTarget(skipEdge.target) : undefined
+                updatedData.previousStep = prevEdge ? resolveStepTarget(prevEdge.target) : undefined
+                updatedData.isSkippable = Boolean(skipEdge)
+
+                return {
+                    ...stepNode,
+                    data: updatedData,
+                } as EnhancedStepNode
+            })
+
             const newFlowState: FlowState = {
-                nodes: currentNodes,
+                nodes: syncedNodes,
                 edges: currentEdges,
             }
 

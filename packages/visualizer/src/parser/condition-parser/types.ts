@@ -18,6 +18,12 @@ export type ConditionToCodeOptions = {
 
 export type ParseInput = string | ((context: any) => any) | number
 
+export interface ParseResult {
+    conditions: ConditionGroup[]
+    thenTarget?: string | null | undefined
+    elseTarget?: string | null | undefined
+}
+
 export const FIELD_ACCESS_PREFIX = 'context.flowData?.'
 
 export const LOGIC_OPERATOR_MAP = {

@@ -1,13 +1,10 @@
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import {
-    FlowState,
-    EnhancedStepNode,
-    EnhancedConditionNode,
-    EndNode,
-    ConditionNode,
-    ConditionalFlowEdge,
-} from '../types/flow-types'
-import { getStepLabel, getStepDescription } from '../utils/step.utils'
+import { FlowState, EnhancedStepNode, EnhancedConditionNode, EndNode, ConditionNode } from '../types/flow-types'
+import { getStepLabel, getStepDescription, generateId } from '../utils/step.utils'
+import { ConditionalFlowEdge } from '../edges/conditional-edge'
+import { ConditionParser } from '../parser/condition-parser/condition-parser'
+
+const conditionParser = new ConditionParser()
 
 /**
  * Convert legacy steps to enhanced flow state
@@ -34,7 +31,7 @@ export function stepsToFlowState<TContext extends OnboardingContext = Onboarding
                 hasCondition: typeof step.condition === 'function',
                 payload: step.payload,
                 condition: step.condition,
-                metadata: (step as any).metadata || {},
+                metadata: step.meta || {},
                 nextStep: step.nextStep,
                 previousStep: step.previousStep,
                 skipToStep: step.skipToStep,
@@ -80,18 +77,103 @@ export function stepsToFlowState<TContext extends OnboardingContext = Onboarding
 
         // Handle next step edges
         if (step.nextStep !== undefined) {
-            const targetId = step.nextStep === null ? 'null' : String(step.nextStep)
-            edges.push({
-                id: `${sourceId}-next-${targetId}`,
-                source: sourceId,
-                target: targetId,
-                sourceHandle: 'next',
-                type: 'conditional',
-                data: {
-                    edgeType: 'next',
-                    label: 'Next',
-                },
-            })
+            // If nextStep is a function, create a condition node and connect it
+            if (typeof step.nextStep === 'function') {
+                try {
+                    const condId = generateId('condition')
+
+                    // Parse condition groups and destination targets from the function
+                    const conditionResult = conditionParser.parseConditions(step.nextStep as any)
+                    const conditionGroups = conditionResult.conditions
+
+                    const conditionNode: EnhancedConditionNode = {
+                        id: condId,
+                        type: 'conditionNode',
+                        data: {
+                            conditionId: condId,
+                            description: 'Condition',
+                            condition: conditionGroups,
+                        },
+                        position: { x: 0, y: 0 },
+                    }
+
+                    nodes.push(conditionNode)
+
+                    // Connect step -> condition node (as conditional)
+                    edges.push({
+                        id: `${sourceId}-next-${condId}`,
+                        source: sourceId,
+                        target: condId,
+                        sourceHandle: 'next',
+                        type: 'conditional',
+                        data: {
+                            edgeType: 'conditional',
+                            label: 'Next',
+                        },
+                    })
+
+                    // Add then/else targets if the parser extracted them
+                    const { thenTarget, elseTarget } = conditionResult
+
+                    if (thenTarget !== undefined) {
+                        const targetId = thenTarget === null ? 'null' : String(thenTarget)
+                        edges.push({
+                            id: `${condId}-then-${targetId}`,
+                            source: condId,
+                            target: targetId,
+                            sourceHandle: 'then',
+                            type: 'conditional',
+                            data: {
+                                edgeType: 'then',
+                                label: 'Then',
+                            },
+                        })
+                    }
+
+                    if (elseTarget !== undefined) {
+                        const targetId = elseTarget === null ? 'null' : String(elseTarget)
+                        edges.push({
+                            id: `${condId}-else-${targetId}`,
+                            source: condId,
+                            target: targetId,
+                            sourceHandle: 'else',
+                            type: 'conditional',
+                            data: {
+                                edgeType: 'else',
+                                label: 'Else',
+                            },
+                        })
+                    }
+                } catch {
+                    // If anything fails, fall back to default behavior
+                    const targetId = 'null'
+                    edges.push({
+                        id: `${sourceId}-next-${targetId}`,
+                        source: sourceId,
+                        target: targetId,
+                        sourceHandle: 'next',
+                        type: 'conditional',
+                        data: {
+                            edgeType: 'next',
+                            label: 'Next',
+                        },
+                    })
+                }
+            } else {
+                const targetId = step.nextStep === null ? 'null' : String(step.nextStep)
+
+                edges.push({
+                    id: `${sourceId}-next-${targetId}`,
+                    source: sourceId,
+                    target: targetId,
+                    sourceHandle: 'next',
+                    type: 'conditional',
+                    data: {
+                        edgeType: 'next',
+                        label: 'Next',
+                    },
+                })
+            }
         }
 
         // Handle previous step edges

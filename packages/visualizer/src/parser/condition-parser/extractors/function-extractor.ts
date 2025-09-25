@@ -75,12 +75,74 @@ export class FunctionExtractor {
         const allReturns = block.body.filter(isReturnStatement)
 
         // Strategy 1: Analyze if statements for routing patterns
-        const routingConditions = this._extractRoutingConditions(allIfStatements)
-        if (routingConditions.length > 1) {
-            return this._combineConditionsWithOr(routingConditions)
+        const routingTests: any[] = []
+        for (const ifStmt of allIfStatements) {
+            const hasReturnInConsequent = this._hasReturnInBlock(ifStmt.consequent)
+            const hasReturnInAlternate = this._hasReturnInAlternate(ifStmt.alternate)
+
+            if (hasReturnInConsequent || hasReturnInAlternate) {
+                routingTests.push(ifStmt)
+            }
         }
-        if (routingConditions.length === 1) {
-            return routingConditions[0]
+
+        if (routingTests.length > 0) {
+            // Build combined test expression
+            const tests = routingTests.map((s) => s.test)
+            const combined = tests.length === 1 ? tests[0] : this._combineConditionsWithOr(tests)
+
+            // Attempt to extract consequent/alternate return arguments
+            let thenNode: any = undefined
+            let elseNode: any = undefined
+
+            const getReturnArg = (node: any): any => {
+                if (!node) return undefined
+                if (node.type === 'ReturnStatement') return node.argument
+                if (node.type === 'BlockStatement') {
+                    const ret = node.body.find((stmt: any) => stmt.type === 'ReturnStatement')
+                    return ret ? ret.argument : undefined
+                }
+                if (node.type === 'IfStatement') {
+                    return getReturnArg(node.consequent) || getReturnArg(node.alternate)
+                }
+                return undefined
+            }
+
+            // Prefer the first if-statement that has return in consequent or alternate
+            const primaryIf = routingTests.find(
+                (s) => this._hasReturnInBlock(s.consequent) || this._hasReturnInAlternate(s.alternate)
+            )
+            if (primaryIf) {
+                thenNode = getReturnArg(primaryIf.consequent)
+                elseNode = getReturnArg(primaryIf.alternate)
+
+                // If elseNode is undefined, look for a top-level return after the if statement in the block body
+                const idx = block.body.findIndex((stmt) => stmt === primaryIf)
+                if (elseNode === undefined && idx >= 0) {
+                    for (let i = idx + 1; i < block.body.length; i++) {
+                        const stmt = block.body[i]
+                        if (stmt.type === 'ReturnStatement') {
+                            elseNode = stmt.argument
+                            break
+                        }
+                    }
+                }
+            }
+
+            if (thenNode || elseNode) {
+                // Synthesize a ConditionalExpression so callers can read consequent/alternate
+                return {
+                    type: 'ConditionalExpression' as const,
+                    test: combined,
+                    consequent: thenNode || { type: 'Identifier', name: 'undefined' },
+                    alternate: elseNode || { type: 'Identifier', name: 'undefined' },
+                    start: combined.start || 0,
+                    end: combined.end || 0,
+                    loc: {
+                        start: { line: 0, column: 0 },
+                        end: { line: 0, column: 0 },
+                    },
+                }
+            }
         }
 
         // Strategy 2: Look for direct return with condition

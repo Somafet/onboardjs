@@ -1,49 +1,57 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 import { XIcon } from 'lucide-react'
 import { OptionsListEditor } from './option-list-editor'
 import { ChecklistItemsEditor } from './checklist-item-editor'
-import { getStepLabel } from '../utils/step.utils'
+import type { EnhancedStepNode, DeepPartial } from '../types'
 
-interface StepDetailsPanelProps<TContext extends OnboardingContext = OnboardingContext> {
-    step: OnboardingStep<TContext>
-    onStepUpdate: (step: OnboardingStep<TContext>) => void
+interface StepDetailsPanelProps {
+    node: EnhancedStepNode
+    onNodeUpdate: (node: EnhancedStepNode) => void
     onClose: () => void
     readonly?: boolean
 }
 
-export function StepDetailsPanel<TContext extends OnboardingContext = OnboardingContext>({
-    step,
-    onStepUpdate,
-    onClose,
-    readonly = false,
-}: StepDetailsPanelProps<TContext>) {
-    const [editedStep, setEditedStep] = useState<OnboardingStep<TContext>>(step)
+export function StepDetailsPanel({ node, onNodeUpdate, onClose, readonly = false }: StepDetailsPanelProps) {
+    const [editedStep, setEditedStep] = useState<EnhancedStepNode>(node)
     const [hasChanges, setHasChanges] = useState(false)
 
     useEffect(() => {
-        setEditedStep(step)
+        setEditedStep(node)
         setHasChanges(false)
-    }, [step])
+    }, [node])
 
-    const handleChange = (updates: Partial<OnboardingStep<TContext>>) => {
-        const newStep = { ...editedStep, ...updates } as OnboardingStep<TContext>
+    const handleChange = (updates: DeepPartial<EnhancedStepNode>) => {
+        const newStep = {
+            ...editedStep,
+            ...updates,
+            data: {
+                ...editedStep.data,
+                ...updates.data,
+            },
+        } as EnhancedStepNode
         setEditedStep(newStep)
-        setHasChanges(JSON.stringify(newStep) !== JSON.stringify(step))
+        setHasChanges(JSON.stringify(newStep) !== JSON.stringify(node))
     }
 
     const handleSave = () => {
-        onStepUpdate(editedStep)
+        onNodeUpdate(editedStep)
         setHasChanges(false)
     }
 
     const handlePayloadChange = (payloadUpdates: any) => {
         handleChange({
-            payload: {
-                ...editedStep.payload,
-                ...payloadUpdates,
+            data: {
+                ...editedStep.data,
+                payload: {
+                    ...(editedStep.data &&
+                    typeof editedStep.data.payload === 'object' &&
+                    editedStep.data.payload !== null
+                        ? editedStep.data.payload
+                        : {}),
+                    ...payloadUpdates,
+                },
             },
         })
     }
@@ -85,8 +93,8 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                             </label>
                             <input
                                 type="text"
-                                value={getStepLabel(editedStep)}
-                                onChange={(e) => handlePayloadChange({ title: e.target.value })}
+                                value={node.id}
+                                onChange={(e) => handleChange({ id: e.target.value })}
                                 disabled={readonly}
                                 className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
@@ -115,8 +123,8 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                             <label className="vis:flex vis:items-center vis:gap-2">
                                 <input
                                     type="checkbox"
-                                    checked={editedStep.isSkippable || false}
-                                    onChange={(e) => handleChange({ isSkippable: e.target.checked } as any)}
+                                    checked={editedStep.data.isSkippable || false}
+                                    onChange={(e) => handleChange({ data: { isSkippable: e.target.checked } })}
                                     disabled={readonly}
                                 />
                                 <span className="vis:text-sm vis:font-medium vis:text-gray-700">Skippable</span>
@@ -126,12 +134,12 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                 </div>
 
                 {/* Payload */}
-                {editedStep.type && editedStep.type !== 'INFORMATION' && (
+                {editedStep.type && editedStep.data.type !== 'INFORMATION' && (
                     <div>
                         <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Payload</h3>
                         <PayloadEditor
                             stepType={editedStep.type}
-                            payload={editedStep.payload || {}}
+                            payload={editedStep.data.payload || {}}
                             onChange={handlePayloadChange}
                             readonly={readonly}
                         />
@@ -149,12 +157,12 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                             <input
                                 type="text"
                                 value={
-                                    typeof editedStep.nextStep === 'function'
+                                    typeof editedStep.data.nextStep === 'function'
                                         ? '[Function]'
-                                        : String(editedStep.nextStep || '')
+                                        : String(editedStep.data.nextStep || '')
                                 }
-                                onChange={(e) => handleChange({ nextStep: e.target.value || undefined } as any)}
-                                disabled={readonly || typeof editedStep.nextStep === 'function'}
+                                onChange={(e) => handleChange({ data: { nextStep: e.target.value || undefined } })}
+                                disabled={readonly || typeof editedStep.data.nextStep === 'function'}
                                 placeholder="Auto (next in sequence)"
                                 className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
@@ -167,22 +175,22 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                             <input
                                 type="text"
                                 value={
-                                    typeof editedStep.previousStep === 'function'
+                                    typeof editedStep.data.previousStep === 'function'
                                         ? '[Function]'
-                                        : String(editedStep.previousStep || '')
+                                        : String(editedStep.data.previousStep || '')
                                 }
                                 onChange={(e) =>
                                     handleChange({
-                                        previousStep: e.target.value || undefined,
+                                        data: { previousStep: e.target.value || undefined },
                                     })
                                 }
-                                disabled={readonly || typeof editedStep.previousStep === 'function'}
+                                disabled={readonly || typeof editedStep.data.previousStep === 'function'}
                                 placeholder="Auto (previous in sequence)"
                                 className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
                         </div>
 
-                        {editedStep.isSkippable && (
+                        {editedStep.data.isSkippable && (
                             <div>
                                 <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-1">
                                     Skip To Step ID
@@ -190,16 +198,16 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                                 <input
                                     type="text"
                                     value={
-                                        typeof editedStep.skipToStep === 'function'
+                                        typeof editedStep.data.skipToStep === 'function'
                                             ? '[Function]'
-                                            : String(editedStep.skipToStep)
+                                            : String(editedStep.data.skipToStep)
                                     }
                                     onChange={(e) =>
                                         handleChange({
-                                            skipToStep: e.target.value || undefined,
+                                            data: { skipToStep: e.target.value || undefined },
                                         })
                                     }
-                                    disabled={readonly || typeof editedStep.skipToStep === 'function'}
+                                    disabled={readonly || typeof editedStep.data.skipToStep === 'function'}
                                     placeholder="Auto (next step)"
                                     className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                                 />
@@ -221,7 +229,7 @@ export function StepDetailsPanel<TContext extends OnboardingContext = Onboarding
                         </button>
                         <button
                             onClick={() => {
-                                setEditedStep(step)
+                                setEditedStep(node)
                                 setHasChanges(false)
                             }}
                             className="vis:px-4 vis:py-2 vis:border vis:border-gray-300 vis:text-gray-700 vis:rounded-md vis:hover:bg-gray-50 vis:transition-colors"

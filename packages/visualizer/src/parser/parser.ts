@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import * as acorn from 'acorn'
 import type { OnboardingStep } from '@onboardjs/core'
 

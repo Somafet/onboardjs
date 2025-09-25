@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 import { Connection, MarkerType } from '@xyflow/react'
 import { OnboardingStep, OnboardingContext } from '@onboardjs/core'
-import { FlowState, EnhancedStepNode, EnhancedConditionNode, ConditionalFlowEdge } from '../types/flow-types'
+import { FlowState, EnhancedStepNode, EnhancedConditionNode } from '../types/flow-types'
 import { generateId } from '../utils/step.utils'
 import { getDefaultPayload, getStepLabel, getStepDescription } from '../utils/step.utils'
+import { ConditionalFlowEdge } from '../edges/conditional-edge'
 
 export function useFlowOperations<TContext extends OnboardingContext = OnboardingContext>(
     flowState: FlowState,
@@ -148,44 +149,77 @@ export function useFlowOperations<TContext extends OnboardingContext = Onboardin
         [readonly, flowState, updateFlowState]
     )
 
-    const updateStep = useCallback(
-        (updatedStep: OnboardingStep<TContext>) => {
-            if (readonly) return
+    const updateNode = (updatedNode: EnhancedStepNode) => {
+        // Find and update the corresponding step node
+        const updatedNodes = flowState.nodes.map((node) => {
+            if (node.type === 'stepNode' && node.id === updatedNode.id) {
+                return updatedNode
+            }
+            return node
+        })
 
-            // Find and update the corresponding node
-            const updatedNodes = flowState.nodes.map((node) => {
-                if (node.type === 'stepNode' && node.data.stepId === updatedStep.id) {
-                    const updatedNode: EnhancedStepNode = {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            stepId: updatedStep.id,
-                            stepType: updatedStep.type ?? 'INFORMATION',
-                            label: getStepLabel(updatedStep),
-                            description: getStepDescription(updatedStep),
-                            isSkippable: Boolean(updatedStep.isSkippable),
-                            hasCondition: typeof updatedStep.condition === 'function',
-                            payload: updatedStep.payload,
-                            condition: updatedStep.condition,
-                            nextStep: updatedStep.nextStep,
-                            previousStep: updatedStep.previousStep,
-                            skipToStep: updatedStep.skipToStep,
-                        },
-                    }
-                    return updatedNode
-                }
-                return node
-            })
+        // Rebuild navigation edges originating from this node (next/skip/previous)
+        // Remove any existing outgoing navigation edges from this source node
+        const nonNavEdges = flowState.edges.filter((e) => {
+            // Only treat edges as navigation edges when they have a string edgeType matching our list
+            const isNav = typeof e.data?.edgeType === 'string' && ['next', 'skip', 'previous'].includes(e.data.edgeType)
+            return !(e.source === updatedNode.id && isNav)
+        })
 
-            const newFlowState: FlowState = {
-                nodes: updatedNodes,
-                edges: flowState.edges,
+        const newEdges: ConditionalFlowEdge[] = [...nonNavEdges]
+
+        // Helper to add an edge for a navigation field when present
+        const addNavEdge = (edgeType: 'next' | 'skip' | 'previous', targetId?: any) => {
+            // Ignore undefined, null, or function targets
+            if (targetId === undefined || targetId === null) return
+            if (typeof targetId === 'function') return
+            // Only allow string/number targets to form edges
+            if (!(typeof targetId === 'string' || typeof targetId === 'number')) return
+
+            const target = String(targetId)
+            const id = `edge-${updatedNode.id}-${edgeType}-${target}`
+
+            let markerEnd: { type: MarkerType } | undefined = { type: MarkerType.ArrowClosed }
+            let markerStart: { type: MarkerType } | undefined = undefined
+
+            if (edgeType === 'previous') {
+                // previous edges show arrow at the start
+                markerStart = { type: MarkerType.ArrowClosed }
+                markerEnd = undefined
             }
 
-            updateFlowState(newFlowState)
-        },
-        [readonly, flowState, updateFlowState]
-    )
+            const edge: ConditionalFlowEdge = {
+                id,
+                source: String(updatedNode.id),
+                target,
+                sourceHandle: edgeType === 'skip' ? 'skip' : edgeType === 'previous' ? 'previous' : undefined,
+                targetHandle: undefined,
+                markerEnd,
+                markerStart,
+                type: 'conditional',
+                data: {
+                    edgeType,
+                    label: edgeType === 'next' ? 'Next' : edgeType === 'skip' ? 'Skip' : 'Back',
+                },
+            }
+
+            // Prevent duplicates: replace any existing edge with same id
+            const existingIndex = newEdges.findIndex((e) => e.id === id)
+            if (existingIndex !== -1) {
+                newEdges[existingIndex] = edge
+            } else {
+                newEdges.push(edge)
+            }
+        }
+
+        // Add edges based on updated node data
+        addNavEdge('next', updatedNode.data.nextStep)
+        addNavEdge('skip', updatedNode.data.skipToStep)
+        addNavEdge('previous', updatedNode.data.previousStep)
+
+        // Use updateStepsFromFlow so the rest of the system (steps list, serializers) stay in sync
+        updateStepsFromFlow(updatedNodes, newEdges)
+    }
 
     const deleteStep = useCallback(
         (stepId: string | number) => {
@@ -237,7 +271,7 @@ export function useFlowOperations<TContext extends OnboardingContext = Onboardin
         onConnect,
         isValidConnection,
         addStep,
-        updateStep,
+        updateNode,
         deleteStep,
         updateConditionNode,
     }

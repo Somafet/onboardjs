@@ -3,11 +3,7 @@ import { OnboardingStepType } from '@onboardjs/core'
 
 // Import the existing edge type first
 import type { ConditionalFlowEdge } from '../edges/conditional-edge'
-// Import the existing condition types
-import type { ConditionGroup } from '../utils/conditon'
-
-// Re-export for convenience
-export type { ConditionalFlowEdge, ConditionGroup }
+import { ConditionGroup } from '../parser/condition-parser/types'
 
 // New flow-first data interfaces
 export interface FlowState {

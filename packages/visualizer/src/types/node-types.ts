@@ -1,6 +1,6 @@
 import { Node } from '@xyflow/react'
 import { OnboardingStepType } from '@onboardjs/core'
-import { ConditionGroup } from './flow-types'
+import { ConditionGroup } from '../parser/condition-parser/types'
 
 // Step Node Type Definition
 export interface StepNodeData extends Record<string, unknown> {

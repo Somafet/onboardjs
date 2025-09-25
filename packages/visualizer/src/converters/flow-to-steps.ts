@@ -14,12 +14,12 @@ function buildConditionalFunction(
     elseTarget: string | null
 ): string {
     const conditionCode = conditionNode.data.condition
-        ? conditionParser.generateCode(conditionNode.data.condition)
+        ? conditionParser.generateCode(conditionNode.data.condition, { wrapInFunction: false })
         : '() => true'
 
     return `(context) => {
         const condition = ${conditionCode}
-        return condition(context) ? ${JSON.stringify(thenTarget)} : ${JSON.stringify(elseTarget)}
+        return condition ? ${JSON.stringify(thenTarget)} : ${JSON.stringify(elseTarget)}
     }`
 }
 
@@ -41,7 +41,7 @@ function resolveTarget(
     }
 
     if (targetNode.type === 'conditionNode') {
-        const conditionalNode = targetNode as EnhancedConditionNode
+        const conditionalNode = targetNode
 
         // find then/else edges
         const thenEdge = edges.find((e) => e.source === conditionalNode.id && e.data?.edgeType === 'then')
@@ -50,7 +50,7 @@ function resolveTarget(
         const thenTarget = thenEdge?.target ?? null
         const elseTarget = elseEdge?.target ?? null
 
-        return buildConditionalFunction(conditionalNode, thenTarget, elseTarget) as any
+        return buildConditionalFunction(conditionalNode, thenTarget, elseTarget)
     }
 
     return null
