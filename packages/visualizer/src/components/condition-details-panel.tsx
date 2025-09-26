@@ -53,23 +53,6 @@ export function ConditionDetailsPanel({
 
             {/* Content */}
             <div className="vis:flex-1 vis:p-4 vis:space-y-6">
-                {/* Basic Info */}
-                <div className="vis:space-y-4">
-                    <div>
-                        <label className="vis:block vis:text-sm vis:font-medium vis:text-gray-700 vis:mb-2">
-                            Description
-                        </label>
-                        <textarea
-                            value={conditionNode.data.description}
-                            onChange={(e) => handleSave({ description: e.target.value })}
-                            disabled={readonly}
-                            placeholder="Enter condition description"
-                            rows={3}
-                            className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:focus:outline-none vis:focus:ring-2 vis:focus:ring-indigo-500 vis:focus:border-indigo-500 vis:disabled:bg-gray-100"
-                        />
-                    </div>
-                </div>
-
                 <ConditionBuilder
                     condition={conditionNode.data.condition}
                     onConditionChange={(condition) => handleSave({ condition })}

@@ -15,8 +15,8 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
     const [flowState, setFlowState] = useState<FlowState>(() => {
         const base = stepsToFlowState(initialSteps)
         try {
-            const layouted = layoutNodes(base.nodes as any, base.edges as any, 'TB')
-            return { nodes: layouted.nodes as any, edges: layouted.edges as any }
+            const layouted = layoutNodes(base.nodes, base.edges, 'TB')
+            return { nodes: layouted.nodes, edges: layouted.edges }
         } catch {
             return base
         }
@@ -182,6 +182,19 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
         [flowState, updateFlowState]
     )
 
+    const updateFlowFromSteps = useCallback(
+        (newSteps: OnboardingStep<TContext>[]) => {
+            const newFlowState = stepsToFlowState(newSteps)
+            try {
+                const layouted = layoutNodes(newFlowState.nodes, newFlowState.edges, 'TB')
+                updateFlowState({ nodes: layouted.nodes, edges: layouted.edges })
+            } catch {
+                updateFlowState(newFlowState)
+            }
+        },
+        [updateFlowState]
+    )
+
     return {
         // State
         flowState,
@@ -195,6 +208,7 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
         onEdgesChange,
         updateFlowState,
         updateStepsFromFlow,
+        updateFlowFromSteps,
 
         // React Flow state setters
         setNodes,

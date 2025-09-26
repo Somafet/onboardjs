@@ -4,7 +4,7 @@ import { GitBranchIcon } from 'lucide-react'
 import { ConditionNodeType } from '../types/node-types'
 
 export const ConditionNode = memo(({ data, selected }: NodeProps<ConditionNodeType>) => {
-    const { description, errors = [] } = data
+    const { errors = [] } = data
 
     return (
         <div
@@ -18,18 +18,9 @@ export const ConditionNode = memo(({ data, selected }: NodeProps<ConditionNodeTy
             <Handle type="target" position={Position.Top} className="vis:size-3 vis:border-2 vis:bg-white" />
 
             {/* Header */}
-            <div className="vis:space-x-2 vis:pb-2 vis:border-b vis:border-indigo-200">
+            <div className="vis:space-x-2 vis:flex vis:items-center">
                 <GitBranchIcon className="vis:size-4 vis:text-indigo-600 vis:inline-block" />
                 <span className="vis:font-semibold vis:text-sm vis:text-indigo-700">Condition</span>
-            </div>
-
-            {/* Condition Details */}
-            <div className="vis:bg-indigo-100 vis:p-1 vis:rounded vis:my-2">
-                {description ? (
-                    <p className="vis:text-sm vis:text-indigo-700">{description}</p>
-                ) : (
-                    <p className="vis:text-sm vis:text-indigo-500">No description provided</p>
-                )}
             </div>
 
             {/* Branch Labels and Handles */}

@@ -320,14 +320,14 @@ export function ConditionBuilder({ condition, onConditionChange, readonly = fals
 
             {/* Current Condition Display */}
             {condition && (
-                <div className="vis:mt-3 p-3 vis:bg-blue-50 border vis:border-blue-200 rounded-md">
-                    <label className="vis:block vis:text-md vis:font-medium vis:text-blue-700 vis:mb-1">
-                        Current Condition:
-                    </label>
-                    <pre className="vis:text-xs vis:text-blue-800 vis:whitespace-pre-wrap vis:font-mono vis:overflow-x-auto">
-                        <code>{conditionCode}</code>
-                    </pre>
-                </div>
+                <>
+                    <label className="vis:block vis:text-md vis:font-semibold vis:mb-1">Current Condition:</label>
+                    <div className="vis:mt-3 vis:p-3 vis:bg-blue-50 vis:border vis:border-blue-200 vis:rounded-md">
+                        <pre className="vis:text-xs vis:text-blue-800 vis:whitespace-pre-wrap vis:font-mono vis:overflow-x-auto">
+                            <code>{conditionCode}</code>
+                        </pre>
+                    </div>
+                </>
             )}
         </div>
     )

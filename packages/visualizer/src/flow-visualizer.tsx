@@ -25,7 +25,7 @@ import { ConditionalEdge, ConditionalFlowEdge } from './edges/conditional-edge'
 import { FlowToolbar } from './components/flow-toolbar'
 import { FlowSidebar } from './components/flow-sidebar'
 import { NodePalette } from './components/node-palette'
-import { StepDetailsPanel } from './components/step-details-panel'
+import { StepDetailsPanel } from './components/node-details-panel'
 import { ConditionDetailsPanel } from './components/condition-details-panel'
 
 // Import from new modular structure
@@ -40,6 +40,7 @@ import { EndNodeType, StepNodeType } from './types/node-types'
 import './flow-visualizer.css'
 import '../styles.css'
 import { useFlowOperations, useFlowState } from './hooks'
+import { OnboardJSParser } from './parser/node-parser/onboardjs-parser'
 
 // Define custom node and edge types
 const nodeTypes: NodeTypes = {
@@ -102,6 +103,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
         onEdgesChange,
         steps,
         updateStepsFromFlow,
+        updateFlowFromSteps,
     } = useFlowState(initialSteps)
 
     const { addStep, deleteStep, updateNode, onConnect, updateConditionNode, isValidConnection } = useFlowOperations(
@@ -133,8 +135,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     })
 
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const isInitialMount = useRef(true)
-    const lastInitialSteps = useRef(initialSteps)
 
     const { fitView, screenToFlowPosition } = useReactFlow<
         EnhancedStepNode | EndNodeType | EnhancedConditionNode,
@@ -145,35 +145,6 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     useEffect(() => {
         onStepsChange?.(steps)
     }, [steps, onStepsChange])
-
-    // Update flow state when initialSteps change externally (not during hot-reload)
-    useEffect(() => {
-        // Skip on initial mount - flowState is already initialized
-        if (isInitialMount.current) {
-            isInitialMount.current = false
-            lastInitialSteps.current = initialSteps
-            return
-        }
-
-        // Deep comparison of initialSteps to detect real changes
-        const hasRealChange =
-            initialSteps.length !== lastInitialSteps.current.length ||
-            initialSteps.some((step, index) => {
-                const lastStep = lastInitialSteps.current[index]
-                return (
-                    !lastStep ||
-                    step.id !== lastStep.id ||
-                    step.type !== lastStep.type ||
-                    JSON.stringify(step.payload) !== JSON.stringify(lastStep.payload)
-                )
-            })
-
-        if (hasRealChange) {
-            lastInitialSteps.current = initialSteps
-            const newFlowState = stepsToFlowState(initialSteps)
-            updateFlowState(newFlowState)
-        }
-    }, [initialSteps, updateFlowState])
 
     // Get selected nodes from ReactFlow
     const selectedNodes = useMemo(() => {
@@ -404,19 +375,56 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
     const handleFileImport = useCallback(
         async (file: File) => {
             try {
-                const jsonString = await file.text()
-                const result = StepJSONParser.fromJSON<TContext>(jsonString, exportOptions as StepJSONParserOptions)
+                const fileExtension = file.name.toLowerCase().split('.').pop()
+                const fileContent = await file.text()
 
-                if (result.success && result.data) {
-                    const newFlowState = stepsToFlowState(result.data)
-                    updateFlowState(newFlowState)
-                    onImport?.(result.data)
+                let importedSteps: OnboardingStep<TContext>[] = []
 
-                    // Layout the imported flow
-                    setTimeout(() => layoutFlow(), 100)
+                if (fileExtension === 'json') {
+                    // Handle JSON files using existing StepJSONParser
+                    const result = StepJSONParser.fromJSON<TContext>(
+                        fileContent,
+                        exportOptions as StepJSONParserOptions
+                    )
+
+                    if (result.success && result.data) {
+                        importedSteps = result.data
+                    } else {
+                        alert(`JSON import failed: ${result.errors.join(', ')}`)
+                        return
+                    }
+                } else if (fileExtension === 'ts' || fileExtension === 'js') {
+                    // Handle TypeScript/JavaScript files using OnboardJSParser
+                    try {
+                        const parsedSteps = OnboardJSParser.parseSteps(fileContent)
+
+                        if (parsedSteps.length === 0) {
+                            alert(
+                                'No valid onboarding steps found in the file. Please ensure the file contains a properly formatted steps array.'
+                            )
+                            return
+                        }
+
+                        importedSteps = parsedSteps
+                    } catch (error) {
+                        alert(
+                            `TypeScript/JavaScript import failed: ${error instanceof Error ? error.message : String(error)}`
+                        )
+                        return
+                    }
                 } else {
-                    alert(`Import failed: ${result.errors.join(', ')}`)
+                    alert(`Unsupported file type: ${fileExtension}. Please use .json, .ts, or .js files.`)
+                    return
                 }
+
+                // Convert imported steps to flow state and update
+                updateFlowFromSteps(importedSteps)
+                onImport?.(importedSteps)
+
+                // Layout the imported flow
+                // setTimeout(() => {
+                //     layoutFlow()
+                // }, 100)
             } catch (error) {
                 alert(`Import failed: ${error instanceof Error ? error.message : String(error)}`)
             }
@@ -544,7 +552,7 @@ function FlowVisualizerInner<TContext extends OnboardingContext = OnboardingCont
             <input
                 ref={fileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.ts,.js,.tsx,.jsx"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                     const file = e.target.files?.[0]
