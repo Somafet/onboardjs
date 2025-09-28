@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/visualizer",
-    "version": "0.1.5",
+    "version": "0.2.5",
     "description": "A React component library to visually build and edit OnboardJS flows.",
     "author": "Soma Somorjai <soma@onboardjs.com>",
     "license": "MIT",
@@ -51,13 +51,13 @@
         "@testing-library/jest-dom": "^6.8.0",
         "@testing-library/react": "^16.3.0",
         "@types/dagre": "^0.7.53",
-        "@types/node": "^22.3.0",
         "@types/react": "^19.1.12",
         "@types/react-dom": "^19.1.9",
         "@vitejs/plugin-react": "^5.0.2",
         "acorn": "^8.15.0",
         "jsdom": "^26.1.0",
         "react": "^19.1.1",
-        "react-dom": "^19.1.1"
+        "react-dom": "^19.1.1",
+        "rollup-plugin-preserve-use-client": "^3.0.1"
     }
 }

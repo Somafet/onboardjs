@@ -1,6 +1,7 @@
 import globals from 'globals'
 
 import parser from '@typescript-eslint/parser'
+import { defineConfig, globalIgnores } from 'eslint/config'
 
 // Import plugins
 import prettierPlugin from 'prettier'
@@ -15,7 +16,6 @@ import js from '@eslint/js'
 import compat from 'eslint-plugin-compat'
 
 const rules = {
-    'eslint-plugin-prettier/prettier': 'error',
     'prefer-spread': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/no-this-alias': 'off',
@@ -24,7 +24,7 @@ const rules = {
     '@typescript-eslint/no-unused-expressions': 'off',
     'no-prototype-builtins': 'off',
     'no-empty': 'off',
-    'no-console': 'error',
+    'no-console': ['error', { allow: ['warn', 'error', 'info'] }],
     '@typescript-eslint/naming-convention': [
         'error',
         {
@@ -34,11 +34,19 @@ const rules = {
             leadingUnderscore: 'require',
         },
     ],
+    'eslint-plugin-prettier/prettier': [
+        'error',
+        {
+            endOfLine: 'auto',
+        },
+    ],
 }
 
-export default [
+export default defineConfig([
+    globalIgnores(['**/dist/**', '**/node_modules/**', '**/build/**', '**/coverage/**']),
     js.configs.recommended,
     {
+        files: ['**/*.js', '**/*.ts', '**/*.tsx'],
         languageOptions: {
             parser,
             ecmaVersion: 2022,
@@ -61,4 +69,4 @@ export default [
         },
         rules,
     },
-]
+])

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 'use client'
 
 import { createClient } from '@/lib/supabase'
@@ -7,13 +8,14 @@ import { createPostHogPlugin, saasConfig } from '@onboardjs/posthog-plugin'
 import { AppOnboardingContext, commonFlowSteps, commonRegistry } from './common-flow-config'
 import { type User } from '@supabase/auth-js'
 import posthog from 'posthog-js'
+import { ReactNode } from 'react'
 
 export default function OnboardingProviderWrapper({
     user,
     children,
 }: Readonly<{
     user: User | null
-    children: React.ReactNode
+    children: ReactNode
 }>) {
     const client = createClient()
 

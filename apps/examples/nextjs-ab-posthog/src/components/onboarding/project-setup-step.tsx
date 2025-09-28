@@ -36,8 +36,7 @@ export function ProjectSetupStep({ coreContext }: StepComponentProps) {
 
             updateContext({ flowData: { projectName: projectName.trim() } })
             next()
-        } catch (error) {
-            console.error('Failed to create project:', error)
+        } catch {
             setError('Failed to create project. Please try again.')
         } finally {
             setIsLoading(false)

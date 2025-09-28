@@ -13,7 +13,6 @@ export default function OnboardingDemoPage() {
     useOnboarding({
         onFlowCompleted: (event) => {
             const { context } = event
-            console.log('DEMO PAGE: Flow completed! Final data:', context.flowData)
             toast('Onboarding Complete!', {
                 description: `Welcome, ${context.flowData?.userName || 'friend'}! You're all set.`,
                 duration: 3000,

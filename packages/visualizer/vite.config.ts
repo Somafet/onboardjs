@@ -2,9 +2,23 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
+import preserveUseClientDirective from 'rollup-plugin-preserve-use-client'
 
 export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), preserveUseClientDirective()],
+    // Development server configuration for better HMR
+    server: {
+        port: 3000,
+        open: true, // Auto-open browser
+        hmr: {
+            overlay: true, // Show error overlay on HMR updates
+        },
+        // Watch additional files for changes
+        watch: {
+            usePolling: false, // Use native file system events
+            interval: 100,
+        },
+    },
     build: {
         lib: {
             entry: path.resolve(__dirname, 'src/index.ts'), // Entry point for library build

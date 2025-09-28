@@ -66,8 +66,8 @@ export default function PersonaStep() {
         try {
             updateContext({ flowData: { userRole: selectedRole, customRole } })
             next()
-        } catch (error) {
-            console.error('Failed to create user profile:', error)
+        } catch {
+            throw new Error('Failed to update context with persona selection')
         } finally {
             setIsLoading(false)
         }

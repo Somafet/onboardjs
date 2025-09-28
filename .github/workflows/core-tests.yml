@@ -1,56 +1,56 @@
 name: Core Package Tests
 
 on:
-  push:
-    paths:
-      - "packages/core/**"
-      - ".github/workflows/core-tests.yml"
-  pull_request:
-    paths:
-      - "packages/core/**"
-      - ".github/workflows/core-tests.yml"
+    push:
+        paths:
+            - 'packages/core/**'
+            - '.github/workflows/core-tests.yml'
+    pull_request:
+        paths:
+            - 'packages/core/**'
+            - '.github/workflows/core-tests.yml'
 
 jobs:
-  test-core:
-    runs-on: ubuntu-latest
+    test-core:
+        runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: packages/core
+        defaults:
+            run:
+                working-directory: packages/core
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.0
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 10.15.0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: .
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+              working-directory: .
 
-      - name: Run Vitest with coverage
-        run: pnpm test
+            - name: Run Vitest with coverage
+              run: pnpm test
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: core-coverage-report
-          path: packages/core/coverage
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v4
+              with:
+                  name: core-coverage-report
+                  path: packages/core/coverage
 
-      - name: Display coverage summary
-        if: always()
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            pnpm vitest coverage report --reporter=text-summary
-          else
-            echo "No coverage summary found."
-          fi
+            - name: Display coverage summary
+              if: always()
+              run: |
+                  if [ -f coverage/coverage-summary.json ]; then
+                    pnpm vitest coverage report --reporter=text-summary
+                  else
+                    echo "No coverage summary found."
+                  fi

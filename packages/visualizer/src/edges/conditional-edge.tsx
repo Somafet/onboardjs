@@ -4,7 +4,7 @@ export type ConditionalFlowEdge = Edge<
     {
         label?: string
         condition?: string
-        edgeType: 'next' | 'previous' | 'skip' | 'conditional'
+        edgeType: 'next' | 'previous' | 'skip' | 'conditional' | 'then' | 'else'
     },
     'conditional'
 >
