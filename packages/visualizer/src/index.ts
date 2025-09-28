@@ -1,5 +1,5 @@
 // Main exports
-export { FlowVisualizer } from './flow-visualizer'
+export * from './flow-visualizer'
 
 // Export types
 export type * from './types'
@@ -17,3 +17,5 @@ export * from './hooks'
 export { ConditionalEdge } from './edges/conditional-edge'
 export { ConditionDetailsPanel } from './components/condition-details-panel'
 export * from './components/index'
+
+export * from './parser'
