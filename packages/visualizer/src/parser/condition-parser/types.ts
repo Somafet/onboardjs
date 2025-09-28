@@ -1,7 +1,15 @@
 export type ConditionRule = {
     id: string
     field: string
-    operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than'
+    operator:
+        | 'equals'
+        | 'not_equals'
+        | 'contains'
+        | 'not_contains'
+        | 'greater_than'
+        | 'less_than'
+        | 'exists'
+        | 'not_exists'
     value: string | number | boolean
     valueType: 'string' | 'number' | 'boolean'
 }

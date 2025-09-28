@@ -57,6 +57,8 @@ export class ConditionVisitor extends BaseASTVisitor {
             id: this.generateId(),
             field,
             operator: 'exists',
+            value: true,
+            valueType: 'boolean',
         }
     }
 
@@ -85,6 +87,8 @@ export class ConditionVisitor extends BaseASTVisitor {
             id: this.generateId(),
             field: fieldName,
             operator: 'exists',
+            value: true,
+            valueType: 'boolean',
         }
     }
 

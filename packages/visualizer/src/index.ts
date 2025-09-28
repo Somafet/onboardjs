@@ -17,6 +17,3 @@ export * from './hooks'
 export { ConditionalEdge } from './edges/conditional-edge'
 export { ConditionDetailsPanel } from './components/condition-details-panel'
 export * from './components/index'
-
-// Export parser (legacy)
-export * from './parser'
