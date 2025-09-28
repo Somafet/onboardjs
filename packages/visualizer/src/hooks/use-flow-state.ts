@@ -139,26 +139,52 @@ export function useFlowState<TContext extends OnboardingContext = OnboardingCont
                 const nextEdge = outgoing.find(
                     (e) =>
                         e.data?.edgeType === 'next' ||
-                        e.data?.edgeType === 'conditional' ||
+                        (e.data?.edgeType === 'conditional' && e.sourceHandle !== 'previous') ||
                         e.data?.edgeType === undefined
                 )
                 const skipEdge = outgoing.find((e) => e.data?.edgeType === 'skip')
-                const prevEdge = outgoing.find((e) => e.data?.edgeType === 'previous')
+                const prevEdge = outgoing.find(
+                    (e) =>
+                        e.data?.edgeType === 'previous' ||
+                        (e.data?.edgeType === 'conditional' && e.sourceHandle === 'previous')
+                )
 
                 const updatedData = { ...stepNode.data }
 
-                // Helper to resolve edge target to a stepId when target is a step node
-                const resolveStepTarget = (targetId?: string | number | null) => {
-                    if (!targetId) return undefined
-                    const targetNode = currentNodes.find((n) => n.id === String(targetId))
-                    if (!targetNode || targetNode.type !== 'stepNode') return undefined
-                    return (targetNode as EnhancedStepNode).data.stepId
+                const resolveNavigationTarget = (edge?: ConditionalFlowEdge) => {
+                    if (!edge) return undefined
+
+                    const rawTargetId = edge.target
+                    const targetNode = currentNodes.find((n) => n.id === String(rawTargetId))
+
+                    if (!targetNode) {
+                        if (String(rawTargetId) === 'null') {
+                            return null
+                        }
+                        return rawTargetId as string | number | null | undefined
+                    }
+
+                    if (targetNode.type === 'stepNode') {
+                        const targetStep = targetNode as EnhancedStepNode
+                        return (targetStep.data.stepId ?? targetNode.id) as string | number
+                    }
+
+                    if (targetNode.type === 'conditionNode') {
+                        const targetCondition = targetNode as EnhancedConditionNode
+                        return (targetCondition.data.conditionId ?? targetNode.id) as string | number
+                    }
+
+                    if (targetNode.type === 'endNode') {
+                        return null
+                    }
+
+                    return rawTargetId as string | number | null | undefined
                 }
 
-                updatedData.nextStep = nextEdge ? resolveStepTarget(nextEdge.target) : undefined
-                updatedData.skipToStep = skipEdge ? resolveStepTarget(skipEdge.target) : undefined
-                updatedData.previousStep = prevEdge ? resolveStepTarget(prevEdge.target) : undefined
-                updatedData.isSkippable = Boolean(skipEdge)
+                updatedData.nextStep = resolveNavigationTarget(nextEdge)
+                updatedData.skipToStep = resolveNavigationTarget(skipEdge)
+                updatedData.previousStep = resolveNavigationTarget(prevEdge)
+                updatedData.isSkippable = Boolean(skipEdge) || Boolean(stepNode.data.isSkippable)
 
                 return {
                     ...stepNode,

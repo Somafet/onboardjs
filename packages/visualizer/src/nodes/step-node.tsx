@@ -102,14 +102,12 @@ export const StepNode = memo(({ data, selected }: NodeProps<StepNodeType>) => {
                 style={{ left: '50%' }}
             />
 
-            {isSkippable && (
-                <Handle
-                    type="source"
-                    position={Position.Right}
-                    id="skip"
-                    className="vis:size-3 vis:border-2 vis:bg-yellow-400"
-                />
-            )}
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="skip"
+                className="vis:size-3 vis:border-2 vis:bg-yellow-400"
+            />
 
             {/* Previous handle on left */}
             <Handle

@@ -56,6 +56,8 @@ export function StepDetailsPanel({ node, onNodeUpdate, onClose, readonly = false
         })
     }
 
+    const stepType = editedStep.data?.stepType || 'INFORMATION'
+
     return (
         <div className="step-details-panel vis:bg-white vis:border-l vis:border-gray-200 vis:w-108 vis:h-full vis:overflow-hidden vis:flex vis:flex-col">
             {/* Header */}
@@ -93,8 +95,8 @@ export function StepDetailsPanel({ node, onNodeUpdate, onClose, readonly = false
                             </label>
                             <input
                                 type="text"
-                                value={node.id}
-                                onChange={(e) => handleChange({ id: e.target.value })}
+                                value={editedStep.data?.label || ''}
+                                onChange={(e) => handleChange({ data: { label: e.target.value } })}
                                 disabled={readonly}
                                 className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             />
@@ -105,8 +107,8 @@ export function StepDetailsPanel({ node, onNodeUpdate, onClose, readonly = false
                                 Step Type
                             </label>
                             <select
-                                value={editedStep.type || 'INFORMATION'}
-                                onChange={(e) => handleChange({ type: e.target.value as any })}
+                                value={stepType}
+                                onChange={(e) => handleChange({ data: { stepType: e.target.value as any } })}
                                 disabled={readonly}
                                 className="vis:w-full vis:px-3 vis:py-2 vis:border vis:border-gray-300 vis:rounded-md vis:text-sm vis:disabled:bg-gray-50"
                             >
@@ -134,11 +136,11 @@ export function StepDetailsPanel({ node, onNodeUpdate, onClose, readonly = false
                 </div>
 
                 {/* Payload */}
-                {editedStep.type && editedStep.data.type !== 'INFORMATION' && (
+                {stepType !== 'INFORMATION' && (
                     <div>
                         <h3 className="vis:font-medium vis:text-gray-900 vis:mb-3">Payload</h3>
                         <PayloadEditor
-                            stepType={editedStep.type}
+                            stepType={stepType}
                             payload={editedStep.data.payload || {}}
                             onChange={handlePayloadChange}
                             readonly={readonly}

@@ -93,6 +93,12 @@ export class OnboardJSParser {
         // Extract 'payload' or default it
         step.payload = {} // Default to empty payload
 
+        // Extract 'isSkippable'
+        const isSkippableProp = getObjectProperty(node, 'isSkippable')
+        if (isSkippableProp && isSkippableProp.value.type === 'Literal') {
+            step.isSkippable = isSkippableProp.value.value as boolean
+        }
+
         // Extract step links ('nextStep', 'previousStep', 'skipToStep')
         try {
             step.nextStep = this._parseStepLink(getObjectProperty(node, 'nextStep'), code)

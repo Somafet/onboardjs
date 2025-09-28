@@ -71,11 +71,21 @@ export function useFlowOperations<TContext extends OnboardingContext = Onboardin
                 return false
             }
 
+            // Allow drag preview even before a target is chosen
+            if (!connection.target) {
+                return true
+            }
+
             // Allow connections from condition nodes (then/else handles) to any step node
             const sourceNode = flowState.nodes.find((n) => n.id === connection.source)
             const targetNode = flowState.nodes.find((n) => n.id === connection.target)
 
             if (!sourceNode || !targetNode) {
+                return false
+            }
+
+            // Don't allow connections from end nodes
+            if (sourceNode.type === 'endNode') {
                 return false
             }
 
@@ -87,21 +97,15 @@ export function useFlowOperations<TContext extends OnboardingContext = Onboardin
                 return targetNode.type === 'stepNode' || targetNode.type === 'endNode'
             }
 
-            // Step nodes can connect to other step nodes, end nodes, or condition nodes
-            if (sourceNode.type === 'stepNode') {
-                return (
-                    targetNode.type === 'stepNode' ||
-                    targetNode.type === 'endNode' ||
-                    targetNode.type === 'conditionNode'
-                )
+            // Skip and previous handles can only connect to step nodes or end nodes
+            if (connection.sourceHandle === 'skip' || connection.sourceHandle === 'previous') {
+                return targetNode.type === 'stepNode' || targetNode.type === 'endNode'
             }
 
-            // Don't allow connections from end nodes
-            if (sourceNode.type === 'endNode') {
-                return false
-            }
-
-            return true
+            // Next handles from step nodes can connect to step nodes, end nodes, or condition nodes
+            return (
+                targetNode.type === 'stepNode' || targetNode.type === 'endNode' || targetNode.type === 'conditionNode'
+            )
         },
         [flowState.nodes]
     )
@@ -170,13 +174,13 @@ export function useFlowOperations<TContext extends OnboardingContext = Onboardin
 
         // Helper to add an edge for a navigation field when present
         const addNavEdge = (edgeType: 'next' | 'skip' | 'previous', targetId?: any) => {
-            // Ignore undefined, null, or function targets
-            if (targetId === undefined || targetId === null) return
+            // Ignore undefined or function targets
+            if (targetId === undefined) return
             if (typeof targetId === 'function') return
             // Only allow string/number targets to form edges
-            if (!(typeof targetId === 'string' || typeof targetId === 'number')) return
+            if (!(typeof targetId === 'string' || typeof targetId === 'number' || targetId === null)) return
 
-            const target = String(targetId)
+            const target = targetId === null ? 'null' : String(targetId)
             const id = `edge-${updatedNode.id}-${edgeType}-${target}`
 
             let markerEnd: { type: MarkerType } | undefined = { type: MarkerType.ArrowClosed }
