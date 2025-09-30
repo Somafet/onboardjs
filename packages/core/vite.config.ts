@@ -11,9 +11,19 @@ export default defineConfig({
             formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            output: {
-                exports: 'named',
-            },
+            output: [
+                {
+                    format: 'es',
+                    exports: 'named',
+                    preserveModules: false,
+                },
+                {
+                    format: 'cjs',
+                    exports: 'named',
+                    preserveModules: false,
+                    interop: 'compat',
+                },
+            ],
         },
     },
 })
