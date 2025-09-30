@@ -16,6 +16,7 @@ export default defineConfig({
             // Externalize peer deps (like react, react-dom)
             external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', '@onboardjs/core'],
             output: {
+                exports: 'named',
                 globals: {
                     react: 'React',
                     'react-dom': 'ReactDOM',
