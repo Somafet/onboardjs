@@ -1,7 +1,7 @@
 // @onboardjs/react/src/context/OnboardingProvider.tsx
 'use client'
 
-import React, { createContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react'
+import React, { createContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react'
 import {
     OnboardingEngine,
     EngineState,
@@ -152,10 +152,25 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
 
     const stablePlugins = useMemo(() => plugins || [], [plugins])
 
+    // Store callback props in refs to always use the latest version without causing re-initialization
+    const customOnDataLoadRef = useRef(customOnDataLoad)
+    const customOnDataPersistRef = useRef(customOnDataPersist)
+    const customOnClearPersistedDataRef = useRef(customOnClearPersistedData)
+    const passedOnFlowCompleteRef = useRef(passedOnFlowComplete)
+    const onStepChangeRef = useRef(onStepChange)
+
+    // Update refs whenever the props change
+    useEffect(() => {
+        customOnDataLoadRef.current = customOnDataLoad
+        customOnDataPersistRef.current = customOnDataPersist
+        customOnClearPersistedDataRef.current = customOnClearPersistedData
+        passedOnFlowCompleteRef.current = passedOnFlowComplete
+        onStepChangeRef.current = onStepChange
+    })
+
     const onDataLoadHandler = useCallback(async (): Promise<LoadedData<TContext> | null | undefined> => {
-        if (customOnDataLoad) {
-            const result = await customOnDataLoad()
-            console.log('Result from customOnDataLoad:', result)
+        if (customOnDataLoadRef.current) {
+            const result = await customOnDataLoadRef.current()
 
             return result
         }
@@ -171,11 +186,9 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
                     data: LoadedData<TContext>
                 }
                 if (ttl && savedState.timestamp && Date.now() - savedState.timestamp > ttl) {
-                    console.log(`[OnboardJS] localStorage data for key "${key}" expired. Ignoring.`)
                     window.localStorage.removeItem(key)
                     return null
                 }
-                console.log(`[OnboardJS] Loaded from localStorage (key: "${key}"):`, savedState.data)
                 return savedState.data
             }
         } catch (error) {
@@ -183,12 +196,12 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             window.localStorage.removeItem(key) // Clear corrupted data
         }
         return null
-    }, [customOnDataLoad, localStoragePersistence])
+    }, [localStoragePersistence])
 
     const onDataPersistHandler = useCallback(
         async (context: TContext, currentStepId: string | number | null): Promise<void> => {
-            if (customOnDataPersist) {
-                await customOnDataPersist(context, currentStepId)
+            if (customOnDataPersistRef.current) {
+                await customOnDataPersistRef.current(context, currentStepId)
                 return
             }
             if (!localStoragePersistence || typeof window === 'undefined') {
@@ -211,12 +224,12 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
                 console.error(`[OnboardJS] Error persisting to localStorage (key: "${key}"):`, error)
             }
         },
-        [customOnDataPersist, localStoragePersistence]
+        [localStoragePersistence]
     )
 
     const onClearPersistedDataHandler = useCallback(async () => {
-        if (customOnClearPersistedData) {
-            await customOnClearPersistedData()
+        if (customOnClearPersistedDataRef.current) {
+            await customOnClearPersistedDataRef.current()
             return
         }
         if (!localStoragePersistence || typeof window === 'undefined') {
@@ -225,23 +238,19 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         const { key } = localStoragePersistence
         try {
             window.localStorage.removeItem(key)
-            console.log(`[OnboardJS] Cleared localStorage (key: "${key}") on clear request.`)
         } catch (error) {
             console.error(`[OnboardJS] Error clearing localStorage (key: "${key}"):`, error)
         }
-    }, [customOnClearPersistedData, localStoragePersistence])
+    }, [localStoragePersistence])
 
     const onFlowCompleteHandler = useCallback(
         async (context: TContext) => {
-            if (passedOnFlowComplete) {
-                await passedOnFlowComplete(context)
+            if (passedOnFlowCompleteRef.current) {
+                await passedOnFlowCompleteRef.current(context)
             }
             if (localStoragePersistence && typeof window !== 'undefined') {
                 try {
                     window.localStorage.removeItem(localStoragePersistence.key)
-                    console.log(
-                        `[OnboardJS] Cleared localStorage (key: "${localStoragePersistence.key}") on flow completion.`
-                    )
                 } catch (error) {
                     console.error(
                         `[OnboardJS] Error clearing localStorage on flow completion (key: "${localStoragePersistence.key}"):`,
@@ -250,7 +259,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
                 }
             }
         },
-        [passedOnFlowComplete, localStoragePersistence]
+        [localStoragePersistence]
     )
 
     const renderStep = useCallback((): React.ReactNode => {
@@ -297,7 +306,6 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     }, [engineState, componentRegistry])
 
     useEffect(() => {
-        console.log('[OnboardingProvider] useEffect triggered to re-initialize engine.')
         setIsEngineReadyAndInitialized(false) // Mark as not ready when config changes
         setEngine(null) // Clear old engine instance
         setEngineState(null) // Reset state when re-initializing
@@ -308,7 +316,11 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             initialStepId,
             initialContext,
             onFlowComplete: onFlowCompleteHandler,
-            onStepChange,
+            onStepChange: (newStep, oldStep, context) => {
+                if (onStepChangeRef.current) {
+                    onStepChangeRef.current(newStep, oldStep, context)
+                }
+            },
             loadData: onDataLoadHandler,
             persistData: onDataPersistHandler,
             clearPersistedData: onClearPersistedDataHandler,
@@ -336,16 +348,10 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
                 .then(() => {
                     if (currentEngine) {
                         // Check if component is still mounted / engine is current
-                        console.log('[OnboardingProvider] Engine is ready.')
                         setEngineState(currentEngine.getState())
                         setIsEngineReadyAndInitialized(true)
 
                         unsubscribeStateChange = currentEngine.addEventListener('stateChange', (event) => {
-                            console.log(
-                                '[OnboardingProvider] stateChange event received:',
-                                event.state.currentStep?.id,
-                                event.state.isLoading
-                            )
                             setEngineState(event.state)
                         })
                     }
@@ -360,7 +366,6 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         }
 
         return () => {
-            console.log('[OnboardingProvider] useEffect cleanup.')
             if (unsubscribeStateChange) {
                 unsubscribeStateChange()
             }
@@ -370,7 +375,6 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         initialStepId,
         initialContext,
         onFlowCompleteHandler,
-        onStepChange,
         onDataLoadHandler,
         onDataPersistHandler,
         onClearPersistedDataHandler,
