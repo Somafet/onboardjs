@@ -8,5 +8,6 @@ export * from './utils/step-utils'
 export * from './utils/flow-utils'
 export * from './plugins'
 export * from './parser'
+export * from './analytics/aha-tracker'
 
 export { validateFlow, type ValidationIssue } from './utils/flow-validator'

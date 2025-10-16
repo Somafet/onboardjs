@@ -39,3 +39,6 @@ yarn-error.log*
 
 # ESLint
 .eslintcache
+
+# Ignore Copilot instructions file
+.github/copilot-instructions.md
