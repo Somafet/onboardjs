@@ -366,11 +366,11 @@ importers:
         specifier: '*'
         version: 0.3.8
       '@onboardjs/posthog-plugin':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/posthog
+        specifier: '*'
+        version: 1.0.2(@onboardjs/core@0.3.8)(posthog-js@1.261.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@onboardjs/react':
-        specifier: workspace:*
-        version: link:../../../packages/react
+        specifier: '*'
+        version: 0.4.5(@onboardjs/core@0.3.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tailwindcss/forms':
         specifier: ^0.5.10
         version: 0.5.10(tailwindcss@4.1.12)
@@ -6559,6 +6559,13 @@ snapshots:
 
   '@onboardjs/core@0.3.8': {}
 
+  '@onboardjs/posthog-plugin@1.0.2(@onboardjs/core@0.3.8)(posthog-js@1.261.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@onboardjs/core': 0.3.8
+      posthog-js: 1.261.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   '@onboardjs/posthog-plugin@1.0.2(@onboardjs/core@0.3.8)(posthog-js@1.261.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
       '@onboardjs/core': 0.3.8
@@ -6571,6 +6578,12 @@ snapshots:
       '@onboardjs/core': 0.3.8
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
+
+  '@onboardjs/react@0.4.5(@onboardjs/core@0.3.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@onboardjs/core': 0.3.8
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
 
   '@onboardjs/react@0.4.5(@onboardjs/core@0.3.8)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
