@@ -1,5 +1,6 @@
 export { OnboardingProvider } from './context/OnboardingProvider'
 export { useOnboarding } from './hooks/useOnboarding'
+export { useOnboardingAnalytics } from './hooks/useOnboardingAnalytics'
 
 // Re-export plugin system from core for convenience
 export {
