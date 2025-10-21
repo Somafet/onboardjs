@@ -4,7 +4,7 @@ export default function EndStep() {
     const { currentStep, next } = useOnboarding()
 
     const onSubmit = (data: unknown) => {
-        console.log('Form submitted:', data)
+        console.info('Form submitted:', data)
         // Perform any additional actions here
 
         // Finishing the onboarding flow

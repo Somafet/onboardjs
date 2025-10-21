@@ -458,8 +458,8 @@ importers:
         version: 19.1.1(react@19.1.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: '*'
-        version: 0.3.8
+        specifier: ^0.3.12
+        version: 0.3.12
       '@types/node':
         specifier: ^24.3.0
         version: 24.3.0
@@ -486,8 +486,8 @@ importers:
         version: 19.1.1(react@19.1.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: '*'
-        version: 0.3.8
+        specifier: ^0.3.12
+        version: 0.3.12
       '@types/node':
         specifier: ^24.3.0
         version: 24.3.0
@@ -534,8 +534,8 @@ importers:
   packages/react:
     devDependencies:
       '@onboardjs/core':
-        specifier: ^0.3.0-alpha.1
-        version: 0.3.8
+        specifier: ^0.3.12
+        version: 0.3.12
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.1
@@ -1595,6 +1595,9 @@ packages:
   '@nolyfill/is-core-module@1.0.39':
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
+
+  '@onboardjs/core@0.3.12':
+    resolution: {integrity: sha512-DRO0ozxXWq7lt+obpOe5GJUxVBcgBDq0+ahjPycCYDwShqojdGpBChzJSV4T/ugKOsi3a8dJEZ4rvUdTmq0pVQ==}
 
   '@onboardjs/core@0.3.8':
     resolution: {integrity: sha512-oyi51wpFRRMruMNHFnRMQ2EgzLRwAkG84A3jBYRxhUoFxhruQ0qapaol99lRLugRi9wdMS+8cPZF/i/TknWZiA==}
@@ -6552,6 +6555,8 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
+  '@onboardjs/core@0.3.12': {}
+
   '@onboardjs/core@0.3.8': {}
 
   '@onboardjs/posthog-plugin@1.0.2(@onboardjs/core@0.3.8)(posthog-js@1.261.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
@@ -6593,7 +6598,7 @@ snapshots:
 
   '@onboardjs/visualizer@0.1.3(@types/react@19.1.12)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(vite@7.1.4(@types/node@20.19.11)(jiti@2.5.1)(lightningcss@1.30.1)(yaml@2.8.1))':
     dependencies:
-      '@onboardjs/core': 0.3.8
+      '@onboardjs/core': 0.3.12
       '@tailwindcss/vite': 4.1.12(vite@7.1.4(@types/node@20.19.11)(jiti@2.5.1)(lightningcss@1.30.1)(yaml@2.8.1))
       '@xyflow/react': 12.8.4(@types/react@19.1.12)(immer@10.1.3)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       dagre: 0.8.5
