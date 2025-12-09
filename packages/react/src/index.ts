@@ -26,5 +26,3 @@ export type {
     LocalStoragePersistenceOptions,
     OnboardingProviderProps,
 } from './context/OnboardingProvider'
-
-export * from './OnboardingFlow'
