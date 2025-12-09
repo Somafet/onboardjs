@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/visualizer",
-    "version": "0.2.6",
+    "version": "0.2.7",
     "description": "A React component library to visually build and edit OnboardJS flows.",
     "author": "Soma Somorjai <soma@onboardjs.com>",
     "license": "MIT",
@@ -35,10 +35,10 @@
     },
     "peerDependencies": {
         "react": "^18.0.0 || ^19.0.0",
-        "react-dom": "^18.0.0 || ^19.0.0"
+        "react-dom": "^18.0.0 || ^19.0.0",
+        "@onboardjs/core": ">=0.3.12"
     },
     "dependencies": {
-        "@onboardjs/core": "*",
         "@tailwindcss/vite": "^4.1.11",
         "@vitest/coverage-v8": "^3.1.4",
         "@xyflow/react": "^12.8.2",
@@ -48,7 +48,6 @@
         "vitest": "^3.1.4"
     },
     "devDependencies": {
-        "@testing-library/jest-dom": "^6.8.0",
         "@testing-library/react": "^16.3.0",
         "@types/dagre": "^0.7.53",
         "@types/react": "^19.1.12",
