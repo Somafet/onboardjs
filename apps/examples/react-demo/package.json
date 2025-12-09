@@ -10,17 +10,17 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@onboardjs/core": "*",
-        "@onboardjs/posthog-plugin": "*",
-        "@onboardjs/react": "*",
+        "@onboardjs/core": "workspace:*",
+        "@onboardjs/posthog-plugin": "workspace:*",
+        "@onboardjs/react": "workspace:*",
         "@tailwindcss/forms": "^0.5.10",
         "@tailwindcss/vite": "^4.1.11",
         "clsx": "^2.1.1",
         "lucide-react": "^0.525.0",
         "posthog-js": "^1.257.0",
         "prism-react-renderer": "^2.4.1",
-        "react": "^18.1.0",
-        "react-dom": "^18.1.0",
+        "react": "^19.0.1",
+        "react-dom": "^19.0.1",
         "recharts": "^3.1.0",
         "tailwindcss": "^4.1.11"
     },

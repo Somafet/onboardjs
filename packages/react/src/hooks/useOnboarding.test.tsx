@@ -246,12 +246,6 @@ describe('useOnboarding', () => {
         // Wait for the reset to complete and state to propagate
         await waitFor(
             () => {
-                console.log(
-                    'After reset - currentStep:',
-                    result.current.state?.currentStep?.id,
-                    'isLoading:',
-                    result.current.isLoading
-                )
                 // The engine might go into a loading state during reset and re-initialization
                 // So, first wait for it to finish loading, then check the step.
                 expect(result.current.isLoading).toBe(false)

@@ -1,8 +1,9 @@
-import type { SingleChoiceStepPayload } from '@onboardjs/core'
 import { useOnboarding, type StepComponentProps } from '@onboardjs/react'
 import clsx from 'clsx'
 import { Code2Icon, RocketIcon, ServerIcon } from 'lucide-react'
-const devTypeOptions: Record<string, { icon: React.ElementType; colors: { icon: string; iconBg: string } }> = {
+import type { ElementType } from 'react'
+
+const devTypeOptions: Record<string, { icon: ElementType; colors: { icon: string; iconBg: string } }> = {
     frontend: {
         icon: Code2Icon,
         colors: {
@@ -32,7 +33,7 @@ const devTypeTextMap: Record<string, string> = {
     fullstack: 'Perfect! Build end-to-end with full control.',
 }
 
-export default function DevTypeSelector(props: StepComponentProps<SingleChoiceStepPayload>) {
+export default function DevTypeSelector(props: StepComponentProps) {
     const { updateContext, next, previous, state } = useOnboarding()
 
     const handleSelect = (id: string) => {
@@ -45,7 +46,7 @@ export default function DevTypeSelector(props: StepComponentProps<SingleChoiceSt
         <>
             <fieldset aria-label="Developer Role type">
                 <div className="space-y-4">
-                    {options.map((option) => {
+                    {options.map((option: { id: string; label: string }) => {
                         const devType = devTypeOptions[option.id]!
                         return (
                             <label

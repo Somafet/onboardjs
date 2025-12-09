@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, act, waitFor } from '@testing-library/react'
-import React from 'react'
 import { OnboardingProvider } from './OnboardingProvider'
 import { useOnboarding } from '../hooks/useOnboarding'
 import { OnboardingEngineConfig } from '@onboardjs/core'
 import { mockStepComponents, mockSteps, mockStepsWithoutCriteria } from '../test-utils'
-import { StepComponentRegistry } from '../types'
+import type { StepComponentRegistry } from '../types'
+import type { FC } from 'react'
 
 // Test component that uses the context
-const TestConsumer: React.FC = () => {
+const TestConsumer: FC = () => {
     const { state, isLoading, next, previous, goToStep } = useOnboarding()
 
     return (
@@ -52,8 +52,8 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
-            expect(screen.getByTestId('is-completed')).toHaveTextContent('false')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+            expect(screen.getByTestId('is-completed').textContent).toContain('false')
         })
     })
 
@@ -70,7 +70,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step2')
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
         })
     })
 
@@ -82,7 +82,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
         })
 
         // Navigate to next step
@@ -91,7 +91,7 @@ describe('OnboardingProvider', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step2')
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
         })
 
         // Navigate back
@@ -100,7 +100,7 @@ describe('OnboardingProvider', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
         })
     })
 
@@ -112,7 +112,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
         })
 
         // Navigate directly to step 4
@@ -121,7 +121,7 @@ describe('OnboardingProvider', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step4')
+            expect(screen.getByTestId('current-step').textContent).toContain('step4')
         })
     })
 
@@ -140,7 +140,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
         })
 
         // Navigate directly to step 4
@@ -149,7 +149,7 @@ describe('OnboardingProvider', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step4')
+            expect(screen.getByTestId('current-step').textContent).toContain('step4')
         })
 
         await act(async () => {
@@ -158,7 +158,7 @@ describe('OnboardingProvider', () => {
 
         await waitFor(() => {
             expect(onFlowComplete).toHaveBeenCalled()
-            expect(screen.getByTestId('is-completed')).toHaveTextContent('true')
+            expect(screen.getByTestId('is-completed').textContent).toContain('true')
         })
     })
 
@@ -176,7 +176,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
         })
 
         // Navigate to step2
@@ -185,7 +185,7 @@ describe('OnboardingProvider', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step2')
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
         })
 
         // Unmount component
@@ -199,7 +199,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step2')
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
         })
     })
 
@@ -224,7 +224,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step1')
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
             expect(consoleErrorSpy).toHaveBeenCalled()
         })
 
@@ -252,7 +252,7 @@ describe('OnboardingProvider', () => {
 
         await waitFor(() => {
             expect(customOnDataLoad).toHaveBeenCalled()
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step2')
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
         })
 
         // Navigate to trigger persistence
@@ -290,12 +290,12 @@ describe('OnboardingProvider', () => {
 
         await waitFor(() => {
             expect(customOnDataLoad).toHaveBeenCalled()
-            expect(screen.getByTestId('current-step')).toHaveTextContent('step3')
+            expect(screen.getByTestId('current-step').textContent).toContain('step3')
         })
     })
 
     it('should handle component loading state', async () => {
-        const TestConsumerWithLoading: React.FC = () => {
+        const TestConsumerWithLoading: FC = () => {
             const { isLoading, setComponentLoading } = useOnboarding()
 
             return (
@@ -318,7 +318,7 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('is-loading')).toHaveTextContent('false')
+            expect(screen.getByTestId('is-loading').textContent).toContain('false')
         })
 
         // Set component loading to true
@@ -326,14 +326,14 @@ describe('OnboardingProvider', () => {
             screen.getByTestId('set-loading-true-btn').click()
         })
 
-        expect(screen.getByTestId('is-loading')).toHaveTextContent('true')
+        expect(screen.getByTestId('is-loading').textContent).toContain('true')
 
         // Set component loading to false
         act(() => {
             screen.getByTestId('set-loading-false-btn').click()
         })
 
-        expect(screen.getByTestId('is-loading')).toHaveTextContent('false')
+        expect(screen.getByTestId('is-loading').textContent).toContain('false')
     })
 
     it('should handle empty steps array', async () => {
@@ -349,8 +349,8 @@ describe('OnboardingProvider', () => {
         )
 
         await waitFor(() => {
-            expect(screen.getByTestId('current-step')).toHaveTextContent('no-step')
-            expect(screen.getByTestId('is-completed')).toHaveTextContent('true')
+            expect(screen.getByTestId('current-step').textContent).toContain('no-step')
+            expect(screen.getByTestId('is-completed').textContent).toContain('true')
         })
     })
 })

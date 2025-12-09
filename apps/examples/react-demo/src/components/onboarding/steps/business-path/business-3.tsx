@@ -1,9 +1,9 @@
-import type { SingleChoiceStepPayload } from '@onboardjs/core'
 import { useOnboarding, type StepComponentProps } from '@onboardjs/react'
 import clsx from 'clsx'
 import { CheckCircleIcon, FileTextIcon, Users2Icon } from 'lucide-react'
+import type { ElementType } from 'react'
 
-const painPointOptions: Record<string, { icon: React.ElementType; colors: { icon: string; iconBg: string } }> = {
+const painPointOptions: Record<string, { icon: ElementType; colors: { icon: string; iconBg: string } }> = {
     completion: {
         icon: CheckCircleIcon,
         colors: {
@@ -27,7 +27,7 @@ const painPointOptions: Record<string, { icon: React.ElementType; colors: { icon
     },
 }
 
-export default function BusinessStep3(props: StepComponentProps<SingleChoiceStepPayload>) {
+export default function BusinessStep3(props: StepComponentProps) {
     const { next, updateContext } = useOnboarding()
     const { options } = props.payload
 
@@ -44,7 +44,7 @@ export default function BusinessStep3(props: StepComponentProps<SingleChoiceStep
         <>
             <fieldset aria-label="Biggest pain points" className="mt-6">
                 <div className="space-y-4">
-                    {options.map((option) => {
+                    {options.map((option: { id: string; label: string }) => {
                         const painPoint = painPointOptions[option.id]!
                         return (
                             <label

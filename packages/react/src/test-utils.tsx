@@ -16,7 +16,7 @@ import { StepComponentRegistry, StepComponentProps } from './types'
 
 // Helper function to create mock step components
 export const createMockStepComponent = (name: string) => {
-    const Component = ({ payload, onDataChange }: StepComponentProps) => (
+    const Component = ({ onDataChange }: StepComponentProps) => (
         <div data-testid={`${name.toLowerCase()}-step`}>
             <h2>{name} Component</h2>
             <p>Step content for {name}</p>
