@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import StepLayout from '../StepLayout'
-import 'basecoat-css'
 import { YoutubeIcon } from 'lucide-react'
 import Slider from '@/components/slider'
 import { BudgetChart } from '@/components/charts/budget-chart'

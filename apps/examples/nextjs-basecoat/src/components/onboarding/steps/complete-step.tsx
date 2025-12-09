@@ -32,7 +32,7 @@ export default function CompleteStep() {
                         start managing your projects effectively.
                     </p>
 
-                    <Link href="https://onboardjs.com/docs" className="btn mt-8 animate-fade-up animate-delay-600">
+                    <Link href="https://docs.onboardjs.com" className="btn mt-8 animate-fade-up animate-delay-600">
                         Go to Dashboard
                     </Link>
                 </div>
