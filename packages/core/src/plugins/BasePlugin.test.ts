@@ -56,7 +56,7 @@ class TestableBasePlugin extends BasePlugin<OnboardingContext, TestConfig> {
     // Helper to access private unsubscribeFunctions for assertions
     public getUnsubscribeFunctions(): (() => void)[] {
         // @ts-expect-error Accessing private member for testing
-        return this.unsubscribeFunctions
+        return this._unsubscribeFunctions
     }
 
     public getConfig(): TestConfig {
@@ -165,7 +165,7 @@ describe('BasePlugin', () => {
                 savedUnsubscribeFunctions = [unsubscribeSpy, vi.fn()]
 
                 // @ts-expect-error Accessing private member for testing
-                plugin.unsubscribeFunctions = savedUnsubscribeFunctions
+                plugin._unsubscribeFunctions = savedUnsubscribeFunctions
 
                 await cleanupFn()
             })
@@ -330,7 +330,7 @@ describe('BasePlugin', () => {
             expect(mockEngine.addBeforeStepChangeListener).not.toHaveBeenCalled()
             // ... (check other listeners not called)
             // @ts-expect-error Accessing private member for testing
-            expect(defaultPlugin.unsubscribeFunctions).toHaveLength(0)
+            expect(defaultPlugin._unsubscribeFunctions).toHaveLength(0)
         })
     })
 })
