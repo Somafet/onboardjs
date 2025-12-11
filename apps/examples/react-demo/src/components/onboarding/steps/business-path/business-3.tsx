@@ -29,7 +29,7 @@ const painPointOptions: Record<string, { icon: ElementType; colors: { icon: stri
 
 export default function BusinessStep3(props: StepComponentProps) {
     const { next, updateContext } = useOnboarding()
-    const { options } = props.payload
+    const { options } = props.payload as { options: Array<{ id: string; label: string }> }
 
     const handleSelect = (id: string) => {
         updateContext(() => ({

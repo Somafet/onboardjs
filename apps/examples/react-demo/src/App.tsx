@@ -24,7 +24,7 @@ function App() {
                 <OnboardingLayout />
 
                 <div className="mt-6 w-full text-center">
-                    <a href="https://onboardjs.com/docs" target="_blank" className="text-blue-400 hover:underline">
+                    <a href="https://docs.onboardjs.com" target="_blank" className="text-blue-400 hover:underline">
                         Read the Docs 📖
                     </a>
 
