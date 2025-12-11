@@ -16,7 +16,7 @@ This core library is designed to be integrated into any JavaScript/TypeScript ap
 OnboardJS aims to enable developers to quickly and easily build highly customizable, dynamic, and effective onboarding flows for their web applications. We provide an open-source engine, comprehensive resources, and foster a supportive community.
 
 ➡️ **Looking for React integration? Check out [`@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)!**
-➡️ **Explore our [Documentation](https://onboardjs.com/docs)!**
+➡️ **Explore our [Documentation](https://docs.onboardjs.com)!**
 ➡️ **Join our [Discord Community](https://discord.gg/RnG5AdZjyR)!**
 
 ## Why OnboardJS Core?

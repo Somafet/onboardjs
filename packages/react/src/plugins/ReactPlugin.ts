@@ -9,8 +9,9 @@ export interface ReactPluginConfig extends PluginConfig {
     autoInstall?: boolean
 }
 
-export interface ReactPluginHooks<TContext extends OnboardingContext = OnboardingContext>
-    extends PluginHooks<TContext> {
+export interface ReactPluginHooks<
+    TContext extends OnboardingContext = OnboardingContext,
+> extends PluginHooks<TContext> {
     /**
      * Called when the React component tree mounts
      */

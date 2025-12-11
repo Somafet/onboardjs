@@ -2,7 +2,6 @@
 import React from 'react'
 import {
     OnboardingStep as CoreOnboardingStep,
-    OnboardingStepType, // Ensure this is imported from @onboardjs/core
     OnboardingContext,
     // Import specific payload types if needed for prop definitions
     // e.g., CustomComponentStepPayload from @onboardjs/core if you want to be more specific
@@ -12,15 +11,11 @@ import {
 /**
  * Props that will be passed to every registered step component.
  * @template P The type of the step's payload.
+ * @template TContext The type of the onboarding context.
  */
-export interface StepComponentProps<P = any, TContext = OnboardingContext> {
+export interface StepComponentProps<P = unknown, TContext extends OnboardingContext = OnboardingContext> {
     /** The payload object from the current step's definition. */
     payload: P
-    /**
-     * The full, current context from the OnboardingEngine.
-     * @deprecated Use `context` instead.
-     */
-    coreContext: TContext
 
     /** The full, current context from the OnboardingEngine. */
     context: TContext
@@ -31,13 +26,22 @@ export interface StepComponentProps<P = any, TContext = OnboardingContext> {
      * @param data The data collected by the step.
      * @param isValid Whether the step is currently in a valid state to proceed.
      */
-    onDataChange?: (data: any, isValid: boolean) => void
+    onDataChange?: (data: unknown, isValid: boolean) => void
+
     /**
      * Initial data for this step, pulled from the engine's `flowData`.
      * Useful for re-hydrating forms or selections.
      */
-    initialData?: Record<string, any>
+    initialData?: Record<string, unknown>
 
+    /**
+     * @deprecated Use `context` instead. This will be removed in v3.0.
+     */
+    coreContext: TContext
+
+    /**
+     * @deprecated This prop is not used by the engine. This will be removed in v3.0.
+     */
     setStepValid?: (isValid: boolean) => void
 }
 
@@ -51,27 +55,29 @@ export type OnboardingStep<TContext extends OnboardingContext = OnboardingContex
      * It can be a component that accepts `StepComponentProps` to interact with the onboarding engine,
      * or a simple presentational component that takes no props.
      */
-    component?: StepComponent
+    component?: StepComponent<any, TContext>
 }
 
 /**
  * A React component for rendering a step. It can be a component that accepts
  * `StepComponentProps` to interact with the onboarding engine, or a simple
  * presentational component that takes no props.
+ *
  * @template P The type of the step's payload.
+ * @template TContext The type of the onboarding context.
  */
-export type StepComponent<P = any, TContext = OnboardingContext> =
-    | React.ComponentType<StepComponentProps<P, TContext>>
-    | React.ComponentType<{}>
+export type StepComponent<P = any, TContext extends OnboardingContext = OnboardingContext> = React.ComponentType<
+    StepComponentProps<P, TContext>
+>
 
 /**
  * Defines the mapping from a step type (or a custom key)
  * to a React component for rendering that step.
  *
  * This advanced type provides payload type inference for standard step types.
+ * Uses `any` for the value type to allow components with specific payload types
+ * to be assigned without strict type checking issues.
  */
 export type StepComponentRegistry<TContext extends OnboardingContext = OnboardingContext> = {
-    [Key in string]?: Key extends OnboardingStepType
-        ? StepComponent<Extract<CoreOnboardingStep<TContext>, { type: Key }>['payload'], TContext>
-        : StepComponent<any, TContext>
+    [Key in string]?: StepComponent<any, TContext>
 }

@@ -40,7 +40,7 @@ export default function DevTypeSelector(props: StepComponentProps) {
         updateContext({ flowData: { devType: id } })
     }
 
-    const { options } = props.payload
+    const { options } = props.payload as { options: Array<{ id: string; label: string }> }
 
     return (
         <>

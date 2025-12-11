@@ -148,7 +148,7 @@ export default function OnboardingUI({ stepsConfig, stepComponentRegistry }) {
 ## 📚 Documentation & Community
 
 - **[@onboardjs/core README](https://github.com/Somafet/onboardjs/tree/main/packages/core)**
-- **Main Documentation Site**@ [onboardjs.com/docs](https://onboardjs.com/docs)
+- **Main Documentation Site**@ [onboardjs.com/docs](https://docs.onboardjs.com)
 - **Discord Discussions**: [Join the community](https://discord.gg/RnG5AdZjyR)
 
 ---

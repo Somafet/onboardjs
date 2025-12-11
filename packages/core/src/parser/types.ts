@@ -126,8 +126,10 @@ export interface SerializedCustomComponentPayload extends CustomComponentStepPay
     __payloadType: 'CUSTOM_COMPONENT'
 }
 
-export interface SerializedChecklistPayload<TContext extends OnboardingContext = OnboardingContext>
-    extends Omit<ChecklistStepPayload<TContext>, 'items'> {
+export interface SerializedChecklistPayload<TContext extends OnboardingContext = OnboardingContext> extends Omit<
+    ChecklistStepPayload<TContext>,
+    'items'
+> {
     __payloadType: 'CHECKLIST'
     items: SerializedChecklistItem[]
 }

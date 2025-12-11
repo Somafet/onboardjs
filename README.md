@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/discord/1380449826663301182?label=discord)](https://discord.gg/RnG5AdZjyR)
 
-[![Documentation](https://img.shields.io/badge/docs-onboardjs.com-blue)](https://onboardjs.com/docs)
+[![Documentation](https://img.shields.io/badge/docs-onboardjs.com-blue)](https://docs.onboardjs.com)
 
 ---
 
@@ -124,7 +124,7 @@ See [CONTRIBUTING.md](https://github.com/Somafet/onboardjs/blob/main/CODE_OF_CON
 
 ## 📚 Documentation
 
-- **[Main Documentation Site](https://onboardjs.com/docs)**
+- **[Main Documentation Site](https://docs.onboardjs.com)**
 - **[@onboardjs/core README](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md)**
 - **[@onboardjs/react README](https://github.com/Somafet/onboardjs/blob/main/packages/react/README.md)**
 

@@ -612,7 +612,7 @@ describe('OnboardingEngine', () => {
             await engine.ready()
             await engine.goToStep('step2')
             // @ts-expect-error: access private property for test
-            expect(engine.history).toContain('step1')
+            expect(engine._history).toContain('step1')
         })
 
         it('should not update history when navigating previous', async () => {
@@ -620,7 +620,7 @@ describe('OnboardingEngine', () => {
             await engine.next()
             await engine.previous()
             // @ts-expect-error: access private property for test
-            expect(engine.history).not.toContain('step2')
+            expect(engine._history).not.toContain('step2')
         })
 
         it('should handle circular navigation patterns', async () => {
@@ -1126,7 +1126,7 @@ describe('OnboardingEngine', () => {
         })
 
         it('should handle beforeStepChange listeners', async () => {
-            const listener = vi.fn().mockImplementation((event: BeforeStepChangeEvent) => {
+            const listener = vi.fn().mockImplementation(() => {
                 // Allow navigation
             })
 
@@ -1307,8 +1307,6 @@ describe('OnboardingEngine', () => {
                 fakeStorage.items = {}
             })
             const persistData = vi.fn((data, stepId) => {
-                console.log(`Persisting data for step ${stepId}:`, data)
-
                 if (stepId) {
                     fakeStorage.set(stepId, data)
                 }
@@ -1772,7 +1770,7 @@ describe('OnboardingEngine', () => {
                     throw new Error('Sync listener error')
                 })
 
-                const unsubscribe = engine.addEventListener('flowCompleted', errorListener)
+                engine.addEventListener('flowCompleted', errorListener)
 
                 // Complete the flow
                 await engine.goToStep('step3')
@@ -1791,7 +1789,7 @@ describe('OnboardingEngine', () => {
                     throw new Error('Error in async flowComplete listener:')
                 })
 
-                const unsubscribe = engine.addEventListener('flowCompleted', asyncErrorListener)
+                engine.addEventListener('flowCompleted', asyncErrorListener)
 
                 // Complete the flow
                 await engine.goToStep('step3')
@@ -1898,7 +1896,7 @@ describe('OnboardingEngine', () => {
             })
 
             it('should handle async before step change listeners', async () => {
-                const asyncListener = vi.fn(async (event: BeforeStepChangeEvent) => {
+                const asyncListener = vi.fn(async () => {
                     await new Promise((resolve) => setTimeout(resolve, 10))
                     // Allow navigation
                 })
@@ -2276,7 +2274,7 @@ describe('OnboardingEngine', () => {
                 await engine.ready()
 
                 // Replace the analytics manager with our mock
-                ;(engine as any).analyticsManager = mockAnalyticsManager
+                ;(engine as any)._analyticsManager = mockAnalyticsManager
 
                 engine.trackEvent('custom_button_click', {
                     buttonId: 'cta',
@@ -2292,7 +2290,7 @@ describe('OnboardingEngine', () => {
             it('should handle empty properties', async () => {
                 engine = new OnboardingEngine(basicConfig)
                 await engine.ready()
-                ;(engine as any).analyticsManager = mockAnalyticsManager
+                ;(engine as any)._analyticsManager = mockAnalyticsManager
 
                 engine.trackEvent('simple_event')
 
@@ -2304,7 +2302,7 @@ describe('OnboardingEngine', () => {
             beforeEach(async () => {
                 engine = new OnboardingEngine(basicConfig)
                 await engine.ready()
-                ;(engine as any).analyticsManager = mockAnalyticsManager
+                ;(engine as any)._analyticsManager = mockAnalyticsManager
             })
 
             it('should track custom event with default options and step context', async () => {
@@ -2482,7 +2480,7 @@ describe('OnboardingEngine', () => {
                 }
 
                 // Access the private method using type assertion
-                const sanitized = (engine as any).sanitizeContextForAnalytics(contextWithSensitiveData)
+                const sanitized = (engine as any)._sanitizeContextForAnalytics(contextWithSensitiveData)
 
                 // Should keep normal data and currentUser
                 expect(sanitized.normalData).toBe('should-remain')
@@ -2510,7 +2508,7 @@ describe('OnboardingEngine', () => {
                     normalData: 'test',
                 }
 
-                const sanitized = (engine as any).sanitizeContextForAnalytics(contextWithoutFlowData)
+                const sanitized = (engine as any)._sanitizeContextForAnalytics(contextWithoutFlowData)
 
                 expect(sanitized.normalData).toBe('test')
                 expect(sanitized.currentUser).toEqual({ id: '123' })
@@ -2526,7 +2524,7 @@ describe('OnboardingEngine', () => {
                     secret: 'should-be-removed',
                 }
 
-                const sanitized = (engine as any).sanitizeContextForAnalytics(contextWithFlowData)
+                const sanitized = (engine as any)._sanitizeContextForAnalytics(contextWithFlowData)
 
                 expect(sanitized.flowData).toEqual({
                     userName: 'John',
@@ -2545,7 +2543,7 @@ describe('OnboardingEngine', () => {
                 }
 
                 const originalContextCopy = JSON.parse(JSON.stringify(originalContext))
-                ;(engine as any).sanitizeContextForAnalytics(originalContext)
+                ;(engine as any)._sanitizeContextForAnalytics(originalContext)
 
                 // Original context should remain unchanged
                 expect(originalContext).toEqual(originalContextCopy)
@@ -2556,7 +2554,7 @@ describe('OnboardingEngine', () => {
             beforeEach(async () => {
                 engine = new OnboardingEngine(basicConfig)
                 await engine.ready()
-                ;(engine as any).analyticsManager = mockAnalyticsManager
+                ;(engine as any)._analyticsManager = mockAnalyticsManager
             })
 
             it('should register analytics provider', () => {
@@ -2590,7 +2588,7 @@ describe('OnboardingEngine', () => {
                 engine = new OnboardingEngine(configWithCloud)
 
                 // Analytics should be automatically enabled when cloud config is provided
-                const analyticsManager = (engine as any).analyticsManager
+                const analyticsManager = (engine as any)._analyticsManager
                 expect(analyticsManager).toBeDefined()
             })
 
