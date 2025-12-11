@@ -1,19 +1,23 @@
 // @onboardjs/react/src/context/OnboardingProvider.tsx
 'use client'
 
-import React, { createContext, useState, useEffect, useMemo, useCallback, useRef, ReactNode } from 'react'
+import React, { createContext, useState, useMemo, useCallback, ReactNode } from 'react'
 import {
     OnboardingEngine,
     EngineState,
     OnboardingEngineConfig,
-    DataLoadFn,
-    DataPersistFn,
-    LoadedData,
-    UnsubscribeFunction,
     OnboardingContext as OnboardingContextType,
-    ConfigurationBuilder,
 } from '@onboardjs/core'
-import { OnboardingStep, StepComponentProps, StepComponentRegistry } from '../types'
+import { OnboardingStep, StepComponentRegistry } from '../types'
+import {
+    useEngineLifecycle,
+    useEngineState,
+    usePersistence,
+    useEngineActions,
+    useStepRenderer,
+    type LocalStoragePersistenceOptions,
+    type UsePersistenceConfig,
+} from '../hooks/internal'
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<TContext extends OnboardingContextType = OnboardingContextType> {
@@ -48,21 +52,14 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
      */
     analytics: {
         /**
-         * Track a simple custom event
+         * Track a custom event
          * @param eventName The name of the event
          * @param properties Additional properties to include
-         */
-        trackEvent: (eventName: string, properties?: Record<string, any>) => void
-
-        /**
-         * Track a custom business event with enhanced context information
-         * @param eventName The name of the custom event
-         * @param properties Additional properties to include with the event
          * @param options Optional configuration for the event
          */
-        trackCustomEvent: (
+        trackEvent: (
             eventName: string,
-            properties?: Record<string, any>,
+            properties?: Record<string, unknown>,
             options?: {
                 includeStepContext?: boolean
                 includeFlowProgress?: boolean
@@ -84,32 +81,42 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
     }
 }
 
-// Default context for backward compatibility
-export const OnboardingContext = createContext<OnboardingContextValue<OnboardingContextType> | undefined>(undefined)
-
-export interface LocalStoragePersistenceOptions {
-    key: string
-    ttl?: number // Time to live in milliseconds
+/**
+ * Generic context factory function.
+ * This approach avoids variance issues by creating a new context for each generic instantiation.
+ * @internal This is internal API, use OnboardingContext for the default context.
+ */
+function createOnboardingContext<TContext extends OnboardingContextType = OnboardingContextType>(): React.Context<
+    OnboardingContextValue<TContext> | undefined
+> {
+    return createContext<OnboardingContextValue<TContext> | undefined>(undefined)
 }
 
-export interface OnboardingProviderProps<TContext extends OnboardingContextType>
-    extends Omit<
-        OnboardingEngineConfig<TContext>,
-        'loadData' | 'persistData' | 'clearPersistedData' | 'onFlowComplete' | 'steps'
-    > {
+/**
+ * Default onboarding context for the base OnboardingContextType.
+ * This is used by providers and consumers to manage state.
+ */
+export const OnboardingContext = createOnboardingContext<OnboardingContextType>()
+
+/**
+ * Create a typed onboarding context for a specific context type.
+ * Useful for cases where you need type-safe context with a custom context shape.
+ */
+export { createOnboardingContext }
+
+// Re-export for external use
+export type { LocalStoragePersistenceOptions }
+
+export interface OnboardingProviderProps<TContext extends OnboardingContextType> extends Omit<
+    OnboardingEngineConfig<TContext>,
+    'loadData' | 'persistData' | 'clearPersistedData' | 'onFlowComplete' | 'steps'
+> {
     children: ReactNode
     localStoragePersistence?: LocalStoragePersistenceOptions
-    customOnDataLoad?: DataLoadFn<TContext>
-    customOnDataPersist?: DataPersistFn<TContext>
-    customOnClearPersistedData?: () => Promise<any> | any // Ensure it can be async
-    onFlowComplete?: (context: TContext) => Promise<void> | void // Prop for flow complete
-    /**
-     * Whether to enable plugin management features.
-     * If true, allows installing/uninstalling plugins dynamically.
-     * Note: This prop is not currently used to configure the engine directly
-     * but can be used by consumers or future enhancements.
-     */
-    enablePluginManager?: boolean
+    customOnDataLoad?: UsePersistenceConfig<TContext>['customOnDataLoad']
+    customOnDataPersist?: UsePersistenceConfig<TContext>['customOnDataPersist']
+    customOnClearPersistedData?: UsePersistenceConfig<TContext>['customOnClearPersistedData']
+    onFlowComplete?: (context: TContext) => Promise<void> | void
 
     /**
      * A registry mapping step types and ids to their React components.
@@ -138,342 +145,108 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     customOnClearPersistedData,
     plugins,
     componentRegistry,
-    ...props
-    // enablePluginManager is not directly used in engineConfig in this version
+    debug,
 }: OnboardingProviderProps<TContext>) {
-    const [engine, setEngine] = useState<OnboardingEngine<TContext> | null>(null)
-    const [engineState, setEngineState] = useState<EngineState<TContext> | null>(null)
+    // Component loading state
     const [componentLoading, setComponentLoading] = useState(false)
-    const [isEngineReadyAndInitialized, setIsEngineReadyAndInitialized] = useState(false)
+
+    // Step-specific data tracking
     const [stepSpecificData, setStepSpecificData] = useState<{
-        data: any
+        data: unknown
         isValid: boolean
     }>({ data: null, isValid: true })
 
-    const stablePlugins = useMemo(() => plugins || [], [plugins])
-
-    // Store callback props in refs to always use the latest version without causing re-initialization
-    const customOnDataLoadRef = useRef(customOnDataLoad)
-    const customOnDataPersistRef = useRef(customOnDataPersist)
-    const customOnClearPersistedDataRef = useRef(customOnClearPersistedData)
-    const passedOnFlowCompleteRef = useRef(passedOnFlowComplete)
-    const onStepChangeRef = useRef(onStepChange)
-
-    // Update refs whenever the props change
-    useEffect(() => {
-        customOnDataLoadRef.current = customOnDataLoad
-        customOnDataPersistRef.current = customOnDataPersist
-        customOnClearPersistedDataRef.current = customOnClearPersistedData
-        passedOnFlowCompleteRef.current = passedOnFlowComplete
-        onStepChangeRef.current = onStepChange
+    // Setup persistence handlers - memoize config to prevent unnecessary re-initialization
+    const { onDataLoad, onDataPersist, onClearPersistedData } = usePersistence({
+        localStoragePersistence,
+        customOnDataLoad,
+        customOnDataPersist,
+        customOnClearPersistedData,
     })
 
-    const onDataLoadHandler = useCallback(async (): Promise<LoadedData<TContext> | null | undefined> => {
-        if (customOnDataLoadRef.current) {
-            const result = await customOnDataLoadRef.current()
-
-            return result
-        }
-        if (!localStoragePersistence || typeof window === 'undefined') {
-            return null
-        }
-        const { key, ttl } = localStoragePersistence
-        try {
-            const savedStateRaw = window.localStorage.getItem(key)
-            if (savedStateRaw) {
-                const savedState = JSON.parse(savedStateRaw) as {
-                    timestamp?: number
-                    data: LoadedData<TContext>
-                }
-                if (ttl && savedState.timestamp && Date.now() - savedState.timestamp > ttl) {
-                    window.localStorage.removeItem(key)
-                    return null
-                }
-                return savedState.data
-            }
-        } catch (error) {
-            console.error(`[OnboardJS] Error loading from localStorage (key: "${key}"):`, error)
-            window.localStorage.removeItem(key) // Clear corrupted data
-        }
-        return null
-    }, [localStoragePersistence])
-
-    const onDataPersistHandler = useCallback(
-        async (context: TContext, currentStepId: string | number | null): Promise<void> => {
-            if (customOnDataPersistRef.current) {
-                await customOnDataPersistRef.current(context, currentStepId)
-                return
-            }
-            if (!localStoragePersistence || typeof window === 'undefined') {
-                return
-            }
-            const { key } = localStoragePersistence
-            try {
-                const dataToSave: LoadedData = {
-                    flowData: context.flowData,
-                    currentStepId: currentStepId,
-                    // Persist other top-level context properties if needed, excluding functions or complex objects not suitable for JSON
-                    ...Object.fromEntries(Object.entries(context).filter(([k]) => k !== 'flowData')),
-                }
-                const stateToStore = {
-                    timestamp: Date.now(),
-                    data: dataToSave,
-                }
-                window.localStorage.setItem(key, JSON.stringify(stateToStore))
-            } catch (error) {
-                console.error(`[OnboardJS] Error persisting to localStorage (key: "${key}"):`, error)
-            }
-        },
-        [localStoragePersistence]
-    )
-
-    const onClearPersistedDataHandler = useCallback(async () => {
-        if (customOnClearPersistedDataRef.current) {
-            await customOnClearPersistedDataRef.current()
-            return
-        }
-        if (!localStoragePersistence || typeof window === 'undefined') {
-            return
-        }
-        const { key } = localStoragePersistence
-        try {
-            window.localStorage.removeItem(key)
-        } catch (error) {
-            console.error(`[OnboardJS] Error clearing localStorage (key: "${key}"):`, error)
-        }
-    }, [localStoragePersistence])
-
+    // Flow complete handler with persistence cleanup
     const onFlowCompleteHandler = useCallback(
         async (context: TContext) => {
-            if (passedOnFlowCompleteRef.current) {
-                await passedOnFlowCompleteRef.current(context)
-            }
-            if (localStoragePersistence && typeof window !== 'undefined') {
-                try {
-                    window.localStorage.removeItem(localStoragePersistence.key)
-                } catch (error) {
-                    console.error(
-                        `[OnboardJS] Error clearing localStorage on flow completion (key: "${localStoragePersistence.key}"):`,
-                        error
-                    )
+            try {
+                if (passedOnFlowComplete) {
+                    await passedOnFlowComplete(context)
                 }
+            } catch (error) {
+                console.error('[OnboardJS] Error in onFlowComplete callback:', error)
+            }
+
+            // Clear persisted data on completion
+            try {
+                await onClearPersistedData()
+            } catch (error) {
+                console.error('[OnboardJS] Error clearing persisted data on flow completion:', error)
             }
         },
-        [localStoragePersistence]
+        [passedOnFlowComplete, onClearPersistedData]
     )
 
-    const renderStep = useCallback((): React.ReactNode => {
-        if (!engineState?.currentStep) {
-            return null
-        }
-
-        const { currentStep, context } = engineState
-
-        // Look for a component by step ID first, then by type/componentKey.
-        let StepComponent = (currentStep as OnboardingStep).component ?? componentRegistry?.[currentStep.id]
-
-        const typeKey =
-            currentStep.type === 'CUSTOM_COMPONENT' ? (currentStep.payload as any)?.componentKey : currentStep.type
-
-        if (!StepComponent) {
-            if (typeKey) {
-                StepComponent = componentRegistry?.[typeKey]
-            }
-        }
-
-        if (!StepComponent) {
-            console.warn(
-                `[OnboardJS] No component found in registry for step ${currentStep.id}. Tried keys: "${currentStep.id}" (by ID) and "${typeKey}" (by type/componentKey).`
-            )
-            return <div>Component for step "{currentStep.id}" not found.</div> // Fallback UI
-        }
-
-        // Find initial data for the component if a dataKey is present
-        const dataKey = (currentStep.payload as any)?.dataKey
-        const initialData = dataKey ? context.flowData[dataKey] : undefined
-
-        const props: StepComponentProps<typeof currentStep.payload, TContext> = {
-            payload: currentStep.payload,
-            coreContext: context,
-            context,
-            onDataChange: (data, isValid) => {
-                setStepSpecificData({ data, isValid })
-            },
-            initialData,
-        }
-
-        return <StepComponent {...props} />
-    }, [engineState, componentRegistry])
-
-    useEffect(() => {
-        setIsEngineReadyAndInitialized(false) // Mark as not ready when config changes
-        setEngine(null) // Clear old engine instance
-        setEngineState(null) // Reset state when re-initializing
-
-        const engineConfig: OnboardingEngineConfig<TContext> = {
+    // Build engine configuration
+    const engineConfig: OnboardingEngineConfig<TContext> = useMemo(
+        () => ({
             steps,
-            plugins: stablePlugins,
+            plugins: plugins || [],
             initialStepId,
             initialContext,
             onFlowComplete: onFlowCompleteHandler,
-            onStepChange: (newStep, oldStep, context) => {
-                if (onStepChangeRef.current) {
-                    onStepChangeRef.current(newStep, oldStep, context)
-                }
-            },
-            loadData: onDataLoadHandler,
-            persistData: onDataPersistHandler,
-            clearPersistedData: onClearPersistedDataHandler,
-            ...props, // Spread the rest of the props
-        }
-
-        const validation = ConfigurationBuilder.validateConfig(engineConfig)
-        if (!validation.isValid) {
-            const error = new Error(`Invalid Onboarding Configuration: ${validation.errors.join(', ')}`)
-            console.error(`[OnboardingProvider] ${error.message}`)
-            // Do not mark as "ready"
-            setIsEngineReadyAndInitialized(false)
-            return // Abort initialization
-        }
-
-        let currentEngine: OnboardingEngine<TContext> | null = null
-        let unsubscribeStateChange: UnsubscribeFunction | undefined
-
-        try {
-            currentEngine = new OnboardingEngine<TContext>(engineConfig)
-            setEngine(currentEngine) // Set engine instance immediately
-
-            currentEngine
-                .ready()
-                .then(() => {
-                    if (currentEngine) {
-                        // Check if component is still mounted / engine is current
-                        setEngineState(currentEngine.getState())
-                        setIsEngineReadyAndInitialized(true)
-
-                        unsubscribeStateChange = currentEngine.addEventListener('stateChange', (event) => {
-                            setEngineState(event.state)
-                        })
-                    }
-                })
-                .catch((engineInitError) => {
-                    console.error('[OnboardingProvider] Engine initialization failed:', engineInitError)
-                    setIsEngineReadyAndInitialized(false) // Explicitly false on error
-                })
-        } catch (configError) {
-            console.error('[OnboardingProvider] Error creating OnboardingEngine (invalid config):', configError)
-            setIsEngineReadyAndInitialized(false)
-        }
-
-        return () => {
-            if (unsubscribeStateChange) {
-                unsubscribeStateChange()
-            }
-        }
-    }, [
-        steps,
-        initialStepId,
-        initialContext,
-        onFlowCompleteHandler,
-        onDataLoadHandler,
-        onDataPersistHandler,
-        onClearPersistedDataHandler,
-        stablePlugins,
-    ])
-
-    // isLoading should reflect loading between steps
-    const isLoading = useMemo(
-        () => componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false),
-        [componentLoading, engineState?.isLoading, engineState?.isHydrating]
-    )
-
-    const actions = useMemo(
-        () => ({
-            next: async (overrideData?: Record<string, unknown>) => {
-                if (!engine || !isEngineReadyAndInitialized) return
-                const dataToPass = overrideData !== undefined ? overrideData : stepSpecificData.data
-
-                if (!stepSpecificData.isValid && overrideData === undefined) {
-                    console.warn(
-                        '[OnboardJS] `next()` called, but the current step component reports invalid state. Navigation blocked.'
-                    )
-                    return
-                }
-
-                setComponentLoading(true)
-                try {
-                    await engine.next(dataToPass)
-                } finally {
-                    setComponentLoading(false)
-                }
-            },
-            previous: async () => {
-                if (!engine || !isEngineReadyAndInitialized) return
-                setComponentLoading(true)
-                try {
-                    await engine.previous()
-                } finally {
-                    setComponentLoading(false)
-                }
-                setStepSpecificData({ data: null, isValid: true })
-            },
-            skip: async () => {
-                if (!engine || !isEngineReadyAndInitialized) return
-                setComponentLoading(true)
-                try {
-                    await engine.skip()
-                } finally {
-                    setComponentLoading(false)
-                }
-            },
-            goToStep: async (stepId: string, data?: Record<string, unknown>) => {
-                if (!engine || !isEngineReadyAndInitialized) return
-                setComponentLoading(true)
-                try {
-                    await engine.goToStep(stepId, data)
-                } finally {
-                    setComponentLoading(false)
-                }
-            },
-            updateContext: async (newContextData: Partial<TContext>) => {
-                if (!engine || !isEngineReadyAndInitialized) return
-                setComponentLoading(true)
-                try {
-                    await engine.updateContext(newContextData)
-                } finally {
-                    setComponentLoading(false)
-                }
-            },
-            reset: async (newConfig?: Partial<OnboardingEngineConfig<TContext>>) => {
-                if (!engine) return // Allow reset even if not fully "ready" but engine instance exists
-                setComponentLoading(true)
-                try {
-                    // Resetting the engine will trigger its own async initialization.
-                    // The useEffect will likely re-run if config props change,
-                    // or the engine's internal stateChange will update the provider.
-                    await engine.reset(newConfig)
-                    // After reset, the engine re-initializes. We might need to reflect this.
-                    // The stateChange listener should handle updating engineState.
-                    // We might want to set isEngineReadyAndInitialized to false here and let ready() set it true.
-                    // However, engine.reset() itself re-initializes and should eventually emit state.
-                } finally {
-                    setComponentLoading(false)
-                }
-            },
+            onStepChange,
+            loadData: onDataLoad,
+            persistData: onDataPersist,
+            clearPersistedData: onClearPersistedData,
+            debug,
         }),
-        [engine, isEngineReadyAndInitialized, stepSpecificData]
+        [
+            steps,
+            plugins,
+            initialStepId,
+            initialContext,
+            onFlowCompleteHandler,
+            onStepChange,
+            onDataLoad,
+            onDataPersist,
+            onClearPersistedData,
+            debug,
+        ]
     )
 
+    // Initialize and manage engine lifecycle
+    const { engine, isReady, error: engineError } = useEngineLifecycle(engineConfig)
+
+    // Synchronize engine state to React state
+    const engineState = useEngineState(engine, isReady)
+
+    // Setup step rendering
+    const handleDataChange = useCallback((data: unknown, isValid: boolean) => {
+        setStepSpecificData({ data, isValid })
+    }, [])
+
+    const renderStep = useStepRenderer({
+        engineState,
+        componentRegistry,
+        onDataChange: handleDataChange,
+    })
+
+    // Setup engine actions
+    const actions = useEngineActions<TContext>({
+        engine,
+        isEngineReady: isReady,
+        stepData: stepSpecificData,
+        onLoadingChange: setComponentLoading,
+    })
+
+    // Compute loading state
+    const isLoading = componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false)
+
+    // Setup analytics methods - simplified API that uses trackCustomEvent internally
     const analytics = useMemo(
         () => ({
-            trackEvent: (eventName: string, properties: Record<string, any> = {}) => {
-                if (engine && isEngineReadyAndInitialized) {
-                    engine.trackEvent(eventName, properties)
-                }
-            },
-            trackCustomEvent: (
+            trackEvent: (
                 eventName: string,
-                properties: Record<string, any> = {},
+                properties: Record<string, unknown> = {},
                 options: {
                     includeStepContext?: boolean
                     includeFlowProgress?: boolean
@@ -482,44 +255,60 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
                     priority?: 'low' | 'normal' | 'high' | 'critical'
                 } = {}
             ) => {
-                if (engine && isEngineReadyAndInitialized) {
+                if (engine && isReady) {
+                    // Always use trackCustomEvent for unified API
+                    // The engine handles empty options internally
                     engine.trackCustomEvent(eventName, properties, options)
                 }
             },
             flush: async () => {
-                if (engine && isEngineReadyAndInitialized) {
+                if (engine && isReady) {
                     await engine.flushAnalytics()
                 }
             },
             setUserId: (userId: string) => {
-                if (engine && isEngineReadyAndInitialized) {
+                if (engine && isReady) {
                     engine.setAnalyticsUserId(userId)
                 }
             },
         }),
-        [engine, isEngineReadyAndInitialized]
+        [engine, isReady]
     )
 
+    // Build context value
     const value = useMemo(
         (): OnboardingContextValue<TContext> => ({
-            engine: isEngineReadyAndInitialized ? engine : null,
-            engineInstanceId: isEngineReadyAndInitialized ? engine?.instanceId : undefined,
-            state: isEngineReadyAndInitialized ? engineState : null,
+            engine: isReady ? engine : null,
+            engineInstanceId: isReady ? engine?.instanceId : undefined,
+            state: isReady ? engineState : null,
             isLoading,
             setComponentLoading,
-            currentStep: engineState?.currentStep as OnboardingStep<TContext> | null,
+            currentStep: (engineState?.currentStep as OnboardingStep<TContext>) ?? null,
             isCompleted: engineState?.isCompleted,
-            error: engineState?.error ?? null,
+            error: engineError ?? engineState?.error ?? null,
             renderStep,
             analytics,
             ...actions,
         }),
-        [engine, engineState, isLoading, isEngineReadyAndInitialized, actions, renderStep, analytics]
+        [engine, engineState, isLoading, isReady, engineError, actions, renderStep, analytics]
     )
 
-    return (
-        <OnboardingContext.Provider value={value as unknown as OnboardingContextValue<OnboardingContextType>}>
-            {children}
-        </OnboardingContext.Provider>
-    )
+    // Type assertion explanation:
+    // OnboardingContext is typed to OnboardingContextType (the base type) for backwards compatibility.
+    // However, our value is OnboardingContextValue<TContext> where TContext extends OnboardingContextType.
+    //
+    // TypeScript won't allow the direct assignment due to contravariance in the engine's method parameters:
+    // - OnboardingEngine<TContext> has methods that accept OnboardingPlugin<TContext> (contravariant position)
+    // - OnboardingEngine<OnboardingContextType> has methods that accept OnboardingPlugin<OnboardingContextType>
+    // - These are incompatible in TypeScript's type system, even though TContext extends OnboardingContextType
+    //
+    // At runtime, this is safe because:
+    // 1. The context provider is used with a generic parameter that matches the value's type
+    // 2. The consumer (useOnboarding<TContext>) casts the result back to the correct type
+    // 3. TypeScript enforces generic constraints, so TContext is always compatible with OnboardingContextType
+    //
+    // This is the standard pattern for generic Context in React with TypeScript.
+    const contextValue = value as unknown as OnboardingContextValue<OnboardingContextType>
+
+    return <OnboardingContext.Provider value={contextValue}>{children}</OnboardingContext.Provider>
 }

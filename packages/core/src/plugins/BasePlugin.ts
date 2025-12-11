@@ -7,8 +7,7 @@ import { OnboardingPlugin, PluginHooks, PluginConfig, PluginCleanup } from './ty
 export abstract class BasePlugin<
     TContext extends OnboardingContext = OnboardingContext,
     TConfig extends PluginConfig = PluginConfig,
-> implements OnboardingPlugin<TContext>
-{
+> implements OnboardingPlugin<TContext> {
     abstract readonly name: string
     abstract readonly version: string
     readonly description?: string
@@ -16,7 +15,7 @@ export abstract class BasePlugin<
 
     protected config: TConfig
     protected engine!: OnboardingEngine<TContext>
-    private unsubscribeFunctions: (() => void)[] = []
+    private _unsubscribeFunctions: (() => void)[] = []
 
     constructor(config: TConfig) {
         this.config = config
@@ -34,7 +33,7 @@ export abstract class BasePlugin<
         // Return cleanup function
         return async () => {
             await this.onUninstall()
-            this.cleanup()
+            this._cleanup()
         }
     }
 
@@ -84,20 +83,20 @@ export abstract class BasePlugin<
                     const eventKey = eventName.charAt(0).toLowerCase() + eventName.slice(1)
                     // @ts-ignore
                     const unsubscribe = this.engine.addEventListener(eventKey, handler)
-                    this.unsubscribeFunctions.push(unsubscribe)
+                    this._unsubscribeFunctions.push(unsubscribe)
                 } else {
                     // @ts-ignore
                     const engineMethod = this.engine[hookToEngineMethod[hookName]] as (handler: any) => () => void
                     const unsubscribe = engineMethod.call(this.engine, handler)
-                    this.unsubscribeFunctions.push(unsubscribe)
+                    this._unsubscribeFunctions.push(unsubscribe)
                 }
             }
         }
     }
 
-    private cleanup(): void {
-        this.unsubscribeFunctions.forEach((unsubscribe) => unsubscribe())
-        this.unsubscribeFunctions = []
+    private _cleanup(): void {
+        this._unsubscribeFunctions.forEach((unsubscribe) => unsubscribe())
+        this._unsubscribeFunctions = []
     }
 
     /** Override to provide plugin hooks */

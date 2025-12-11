@@ -334,7 +334,12 @@ describe('useOnboarding', () => {
 
             await waitFor(() => expect(result.current.state?.currentStep?.id).toBe('step1'))
 
-            const { getByTestId, queryByTestId } = render(<>{result.current.renderStep()}</>)
+            let renderedStep: React.ReactNode
+            act(() => {
+                renderedStep = result.current.renderStep()
+            })
+
+            const { getByTestId, queryByTestId } = render(<>{renderedStep}</>)
             expect(getByTestId('information-step')).toBeTruthy()
             expect(queryByTestId('single-choice-step')).toBeNull()
         })
@@ -361,16 +366,20 @@ describe('useOnboarding', () => {
 
             // ASSERT
             await waitFor(() => {
-                // Now, this check will reliably pass because the engine was ready.
                 expect(result.current.state?.currentStep?.id).toBe('step4')
-
-                const { getByText } = render(<>{result.current.renderStep()}</>)
-                expect(getByText('Component for step "step4" not found.')).toBeTruthy()
-
-                expect(consoleWarnSpy).toHaveBeenCalledWith(
-                    '[OnboardJS] No component found in registry for step step4. Tried keys: "step4" (by ID) and "CONFIRMATION" (by type/componentKey).'
-                )
             })
+
+            let renderedStep: React.ReactNode
+            act(() => {
+                renderedStep = result.current.renderStep()
+            })
+
+            const { getByText } = render(<>{renderedStep}</>)
+            expect(getByText('Component for step "step4" not found.')).toBeTruthy()
+
+            expect(consoleWarnSpy).toHaveBeenCalledWith(
+                '[OnboardJS] No component found for step "step4". Tried: step.component, registry["step4"], registry["CONFIRMATION"]'
+            )
 
             consoleWarnSpy.mockRestore()
         })
