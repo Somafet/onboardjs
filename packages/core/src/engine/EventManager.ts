@@ -1,11 +1,14 @@
 import { OnboardingContext } from '../types'
 import { EventListenerMap, UnsubscribeFunction } from './types'
+import { Logger } from '../services'
+
+const logger = new Logger({ prefix: '[EventManager]' })
 
 /**
  * Unified event listener handler with consistent error management
  */
 export class EventManager<TContext extends OnboardingContext = OnboardingContext> {
-    private listeners: Map<keyof EventListenerMap<TContext>, Set<any>> = new Map()
+    private _listeners: Map<keyof EventListenerMap<TContext>, Set<any>> = new Map()
 
     constructor() {
         // Initialize listener sets for each event type
@@ -60,7 +63,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
         ]
 
         eventTypes.forEach((eventType) => {
-            this.listeners.set(eventType, new Set())
+            this._listeners.set(eventType, new Set())
         })
     }
 
@@ -71,7 +74,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
         eventType: T,
         listener: EventListenerMap<TContext>[T]
     ): UnsubscribeFunction {
-        const listenerSet = this.listeners.get(eventType)
+        const listenerSet = this._listeners.get(eventType)
         if (!listenerSet) {
             throw new Error(`Unknown event type: ${String(eventType)}`)
         }
@@ -87,7 +90,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
         eventType: T,
         ...args: Parameters<EventListenerMap<TContext>[T]>
     ): void {
-        const listenerSet = this.listeners.get(eventType)
+        const listenerSet = this._listeners.get(eventType)
         if (!listenerSet) return
 
         listenerSet.forEach((listener) => {
@@ -99,15 +102,15 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
                         const legacyEventName =
                             eventType === 'flowCompleted'
                                 ? 'async onFlowHasCompleted'
-                                : this.getLegacyEventName(eventType)
-                        console.error(`Error in ${legacyEventName} listener:`, err)
+                                : this._getLegacyEventName(eventType)
+                        logger.error(`Error in ${legacyEventName} listener:`, err)
                     })
                 }
             } catch (err) {
                 // Use legacy error message format for backward compatibility
                 const legacyEventName =
-                    eventType === 'flowCompleted' ? 'sync onFlowHasCompleted' : this.getLegacyEventName(eventType)
-                console.error(`Error in ${legacyEventName} listener:`, err)
+                    eventType === 'flowCompleted' ? 'sync onFlowHasCompleted' : this._getLegacyEventName(eventType)
+                logger.error(`Error in ${legacyEventName} listener:`, err)
             }
         })
     }
@@ -115,7 +118,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
     /**
      * Get legacy event name for error messages to maintain backward compatibility
      */
-    private getLegacyEventName<T extends keyof EventListenerMap<TContext>>(eventType: T): string {
+    private _getLegacyEventName<T extends keyof EventListenerMap<TContext>>(eventType: T): string {
         switch (eventType) {
             case 'stepChange':
                 return 'stepChange'
@@ -143,7 +146,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
         eventType: T,
         ...args: Parameters<EventListenerMap<TContext>[T]>
     ): Promise<void> {
-        const listenerSet = this.listeners.get(eventType)
+        const listenerSet = this._listeners.get(eventType)
         if (!listenerSet) return
 
         for (const listener of listenerSet) {
@@ -153,7 +156,7 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
                     await result
                 }
             } catch (err) {
-                console.error(`[OnboardingEngine] Error in sequential ${String(eventType)} listener:`, err)
+                logger.error(`Error in sequential ${String(eventType)} listener:`, err)
                 throw err // Re-throw for beforeStepChange cancellation logic
             }
         }
@@ -163,13 +166,13 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
      * Get the number of listeners for an event type
      */
     getListenerCount<T extends keyof EventListenerMap<TContext>>(eventType: T): number {
-        return this.listeners.get(eventType)?.size || 0
+        return this._listeners.get(eventType)?.size || 0
     }
 
     /**
      * Clear all listeners
      */
     clearAllListeners(): void {
-        this.listeners.forEach((listenerSet) => listenerSet.clear())
+        this._listeners.forEach((listenerSet) => listenerSet.clear())
     }
 }

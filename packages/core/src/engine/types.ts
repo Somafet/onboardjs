@@ -3,6 +3,7 @@
 import { AnalyticsConfig } from '../analytics/types'
 import { OnboardingPlugin } from '../plugins'
 import { OnboardingStep, OnboardingContext } from '../types'
+import type { OnboardingEngineRegistry } from './OnboardingEngineRegistry'
 
 // =============================================================================
 // Engine State & Base Types
@@ -422,4 +423,23 @@ export interface OnboardingEngineConfig<TContext extends OnboardingContext = Onb
      * The user ID for tracking user-specific events.
      */
     userId?: string | null
+
+    /**
+     * Optional registry instance for SSR-safe engine management.
+     * If provided, the engine will register itself with this registry instead of the global one.
+     * This is recommended for SSR environments to prevent cross-request state pollution.
+     *
+     * @example
+     * ```typescript
+     * import { createRegistry, OnboardingEngine } from '@onboardjs/core'
+     *
+     * const registry = createRegistry()
+     * const engine = new OnboardingEngine({
+     *   flowId: 'my-flow',
+     *   steps: [...],
+     *   registry
+     * })
+     * ```
+     */
+    registry?: OnboardingEngineRegistry
 }

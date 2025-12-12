@@ -1,5 +1,6 @@
 // src/analytics/aha-tracker/flow-extractor.ts
 import { OnboardingEngine } from '../../engine/OnboardingEngine'
+import { OnboardingEngineRegistry } from '../../engine/OnboardingEngineRegistry'
 import { OnboardingFlowData } from './types'
 
 /**
@@ -8,19 +9,17 @@ import { OnboardingFlowData } from './types'
 export class FlowDataExtractor {
     /**
      * Get flow data from a specific flow ID
+     * @param flowId - The flow ID to get data for
+     * @param registry - Optional registry to search for engines (required if flowId is provided)
      */
-    static getFlowData(flowId?: string): OnboardingFlowData | undefined {
-        if (!flowId) {
-            // Try to auto-detect from active engines
-            const engines = OnboardingEngine.getAllEngines()
-            if (engines.length === 1) {
-                return FlowDataExtractor.extractFromEngine(engines[0])
-            }
+    static getFlowData(flowId?: string, registry?: OnboardingEngineRegistry): OnboardingFlowData | undefined {
+        if (!flowId || !registry) {
+            // Cannot auto-detect without registry
             return undefined
         }
 
-        // Get engine by flow ID
-        const engine = OnboardingEngine.getByFlowId(flowId)
+        // Get engine by flow ID from registry
+        const engine = registry.get(flowId)
         if (!engine) return undefined
 
         return FlowDataExtractor.extractFromEngine(engine)

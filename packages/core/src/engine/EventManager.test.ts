@@ -158,8 +158,12 @@ describe('EventManager', () => {
 
             expect(erroringListener).toHaveBeenCalledWith(eventPayload)
             expect(normalListener).toHaveBeenCalledWith(eventPayload)
-            // The new implementation just uses the eventType string in the error
-            expect(consoleErrorSpy).toHaveBeenCalledWith('Error in error listener:', new Error('Sync error'))
+            // Logger now includes prefix and [ERROR] label
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[EventManager] [ERROR]',
+                'Error in error listener:',
+                new Error('Sync error')
+            )
         })
 
         it('should handle async listeners that reject and log the error', async () => {
@@ -175,6 +179,7 @@ describe('EventManager', () => {
             await vi.runAllTimersAsync()
 
             expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[EventManager] [ERROR]',
                 'Error in async onFlowHasCompleted listener:',
                 new Error('Async reject')
             )
@@ -226,7 +231,8 @@ describe('EventManager', () => {
                 'Sequential sync error'
             )
             expect(consoleErrorSpy).toHaveBeenCalledWith(
-                '[OnboardingEngine] Error in sequential beforeStepChange listener:',
+                '[EventManager] [ERROR]',
+                'Error in sequential beforeStepChange listener:',
                 new Error('Sequential sync error')
             )
         })
@@ -242,7 +248,8 @@ describe('EventManager', () => {
                 'Sequential async reject'
             )
             expect(consoleErrorSpy).toHaveBeenCalledWith(
-                '[OnboardingEngine] Error in sequential beforeStepChange listener:',
+                '[EventManager] [ERROR]',
+                'Error in sequential beforeStepChange listener:',
                 new Error('Sequential async reject')
             )
         })

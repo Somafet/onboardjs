@@ -2,75 +2,75 @@ import { EventManager } from '../engine/EventManager'
 import { OnboardingContext, OnboardingStep } from '../types'
 
 export class ActivityTracker<TContext extends OnboardingContext> {
-    private lastActivity = Date.now()
-    private idleTimeout: NodeJS.Timeout | null = null
-    private isIdle = false
-    private readonly IDLE_THRESHOLD = 30000 // 30 seconds
+    private _lastActivity = Date.now()
+    private _idleTimeout: ReturnType<typeof setTimeout> | null = null
+    private _isIdle = false
+    private readonly _IDLE_THRESHOLD = 30000 // 30 seconds
 
     constructor(
-        private eventManager: EventManager<TContext>,
-        private getCurrentStep: () => OnboardingStep<TContext> | null,
-        private getContext: () => TContext
+        private _eventManager: EventManager<TContext>,
+        private _getCurrentStep: () => OnboardingStep<TContext> | null,
+        private _getContext: () => TContext
     ) {
-        this.setupActivityListeners()
+        this._setupActivityListeners()
     }
 
-    private setupActivityListeners(): void {
+    private _setupActivityListeners(): void {
         if (typeof window !== 'undefined') {
             ;['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach((event) => {
-                document.addEventListener(event, this.handleActivity.bind(this), true)
+                document.addEventListener(event, this._handleActivity.bind(this), true)
             })
         }
     }
 
-    private handleActivity(): void {
+    private _handleActivity(): void {
         const now = Date.now()
-        const wasIdle = this.isIdle
+        const wasIdle = this._isIdle
 
         if (wasIdle) {
-            const awayDuration = now - this.lastActivity
-            const currentStep = this.getCurrentStep()
+            const awayDuration = now - this._lastActivity
+            const currentStep = this._getCurrentStep()
             if (currentStep) {
-                this.eventManager.notifyListeners('userReturned', {
+                this._eventManager.notifyListeners('userReturned', {
                     step: currentStep,
-                    context: this.getContext(),
+                    context: this._getContext(),
                     awayDuration,
                 })
             }
-            this.isIdle = false
+            this._isIdle = false
         }
 
-        this.lastActivity = now
-        this.resetIdleTimer()
+        this._lastActivity = now
+        this._resetIdleTimer()
     }
 
-    private resetIdleTimer(): void {
-        if (this.idleTimeout) {
-            clearTimeout(this.idleTimeout)
+    private _resetIdleTimer(): void {
+        if (this._idleTimeout) {
+            clearTimeout(this._idleTimeout)
         }
 
-        this.idleTimeout = setTimeout(() => {
-            const currentStep = this.getCurrentStep()
-            if (currentStep && !this.isIdle) {
-                const idleDuration = Date.now() - this.lastActivity
-                this.eventManager.notifyListeners('userIdle', {
+        this._idleTimeout = setTimeout(() => {
+            const currentStep = this._getCurrentStep()
+            if (currentStep && !this._isIdle) {
+                const idleDuration = Date.now() - this._lastActivity
+                this._eventManager.notifyListeners('userIdle', {
                     step: currentStep,
-                    context: this.getContext(),
+                    context: this._getContext(),
                     idleDuration,
                 })
-                this.isIdle = true
+                this._isIdle = true
             }
-        }, this.IDLE_THRESHOLD)
+        }, this._IDLE_THRESHOLD)
     }
 
     cleanup(): void {
-        if (this.idleTimeout) {
-            clearTimeout(this.idleTimeout)
+        if (this._idleTimeout) {
+            clearTimeout(this._idleTimeout)
         }
 
         if (typeof window !== 'undefined') {
             ;['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach((event) => {
-                document.removeEventListener(event, this.handleActivity.bind(this), true)
+                document.removeEventListener(event, this._handleActivity.bind(this), true)
             })
         }
     }

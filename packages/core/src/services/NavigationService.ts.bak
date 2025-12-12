@@ -1,0 +1,825 @@
+// src/services/NavigationService.ts
+// Consolidated navigation service merging NavigationManager + ChecklistManager functionality
+// Provides a cleaner, unified interface for step navigation and checklist management
+
+import { Logger } from './Logger'
+import {
+    OnboardingContext,
+    OnboardingStep,
+    ChecklistStepPayload,
+    ChecklistItemState,
+    ChecklistItemDefinition,
+} from '../types'
+import { findStepById, evaluateStepId } from '../utils/step-utils'
+import { ErrorHandler } from '../engine/ErrorHandler'
+import { EventManager } from '../engine/EventManager'
+import { StateManager } from '../engine/StateManager'
+import { BeforeStepChangeEvent } from '../engine/types'
+import type { INavigationService, IPersistenceService } from './interfaces'
+
+/**
+ * Checklist progress information
+ */
+export interface ChecklistProgress {
+    completed: number
+    total: number
+    percentage: number
+    isComplete: boolean
+}
+
+/**
+ * NavigationService consolidates NavigationManager and ChecklistManager.
+ * Implements INavigationService interface for dependency injection.
+ *
+ * Key responsibilities:
+ * - Step navigation (next, previous, skip, goTo)
+ * - Before/after step change event handling
+ * - Conditional step skipping
+ * - Checklist state management
+ * - Checklist completion validation
+ */
+export class NavigationService<
+    TContext extends OnboardingContext = OnboardingContext,
+> implements INavigationService<TContext> {
+    private readonly _logger: Logger
+
+    constructor(
+        private readonly _steps: OnboardingStep<TContext>[],
+        private readonly _eventManager: EventManager<TContext>,
+        private readonly _stateManager: StateManager<TContext>,
+        private readonly _persistenceService: IPersistenceService<TContext>,
+        private readonly _errorHandler: ErrorHandler<TContext>,
+        logger?: Logger
+    ) {
+        this._logger = logger ?? new Logger({ prefix: 'NavigationService' })
+    }
+
+    // =========================================================================
+    // INavigationService Implementation
+    // =========================================================================
+
+    /**
+     * Navigate to a specific step with full event handling.
+     */
+    async navigateToStep(
+        requestedTargetStepId: string | number | null | undefined,
+        direction: 'next' | 'previous' | 'skip' | 'goto' | 'initial' = 'goto',
+        currentStep: OnboardingStep<TContext> | null,
+        context: TContext,
+        history: string[],
+        onStepChangeCallback?: (
+            newStep: OnboardingStep<TContext> | null,
+            oldStep: OnboardingStep<TContext> | null,
+            context: TContext
+        ) => void,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<OnboardingStep<TContext> | null> {
+        let isCancelled = false
+        let finalTargetStepId = requestedTargetStepId
+
+        // Handle beforeStepChange event
+        if (this._eventManager.getListenerCount('beforeStepChange') > 0) {
+            const event: BeforeStepChangeEvent<TContext> = {
+                currentStep,
+                targetStepId: requestedTargetStepId,
+                direction,
+                cancel: () => {
+                    isCancelled = true
+                },
+                redirect: (newTargetId) => {
+                    if (!isCancelled) {
+                        finalTargetStepId = newTargetId
+                        this._logger.debug(
+                            `[NavigationService] Navigation redirected to ${newTargetId} by beforeStepChange listener.`
+                        )
+                    }
+                },
+            }
+
+            try {
+                await this._eventManager.notifyListenersSequential('beforeStepChange', event)
+                if (isCancelled) {
+                    this._logger.debug('[NavigationService] Navigation cancelled by beforeStepChange listener.')
+                    this._stateManager.setLoading(false)
+                    return currentStep
+                }
+            } catch (error) {
+                this._errorHandler.handleError(error, 'beforeStepChange listener', context)
+                return currentStep
+            }
+        }
+
+        this._stateManager.setLoading(true)
+        this._stateManager.setError(null)
+
+        let candidateStep: OnboardingStep<TContext> | undefined | null = findStepById(this._steps, finalTargetStepId)
+
+        // Skip conditional steps that don't match the current context
+        while (candidateStep && candidateStep.condition && !candidateStep.condition(context)) {
+            this._logger.debug(`[NavigationService] Skipping conditional step: ${candidateStep.id}`)
+            if (direction === 'previous') {
+                candidateStep = this._findPreviousStepCandidate(candidateStep, context, [])
+            } else {
+                candidateStep = this._findNextStepCandidate(candidateStep, context)
+            }
+        }
+
+        const oldStep = currentStep
+        const newCurrentStep = candidateStep ?? null
+
+        // Emit navigation events based on direction
+        this._emitNavigationEvents(direction, currentStep, newCurrentStep, context)
+
+        if (newCurrentStep) {
+            await this._handleStepActivation(newCurrentStep, oldStep, direction, context, history)
+        } else {
+            await this._handleFlowComplete(oldStep, direction, context, onFlowComplete)
+        }
+
+        // Execute step change callback
+        if (onStepChangeCallback) {
+            try {
+                onStepChangeCallback(newCurrentStep, oldStep, context)
+            } catch (error) {
+                this._errorHandler.handleError(error, 'onStepChangeCallback', context)
+            }
+        }
+
+        this._eventManager.notifyListeners('stepChange', {
+            oldStep,
+            newStep: newCurrentStep,
+            context,
+        })
+
+        this._stateManager.setLoading(false)
+        return newCurrentStep
+    }
+
+    /**
+     * Calculate the next step without navigating.
+     */
+    calculateNextStep(currentStep: OnboardingStep<TContext>, context: TContext): OnboardingStep<TContext> | null {
+        return this._findNextStepCandidate(currentStep, context) ?? null
+    }
+
+    /**
+     * Calculate the previous step without navigating.
+     */
+    calculatePreviousStep(
+        currentStep: OnboardingStep<TContext>,
+        context: TContext,
+        history: string[]
+    ): OnboardingStep<TContext> | null {
+        return this._findPreviousStepCandidate(currentStep, context, history) ?? null
+    }
+
+    /**
+     * Get checklist item state for a CHECKLIST step.
+     */
+    getChecklistState(step: OnboardingStep<TContext>, context: TContext): ChecklistItemState[] {
+        if (step.type !== 'CHECKLIST') {
+            return []
+        }
+        return this._getChecklistItemsState(step as OnboardingStep<TContext> & { type: 'CHECKLIST' }, context)
+    }
+
+    /**
+     * Check if a checklist step is complete.
+     */
+    isChecklistComplete(step: OnboardingStep<TContext>, context: TContext): boolean {
+        if (step.type !== 'CHECKLIST') {
+            return true // Non-checklist steps are always "complete"
+        }
+        return this._isChecklistStepComplete(step as OnboardingStep<TContext> & { type: 'CHECKLIST' }, context)
+    }
+
+    /**
+     * Update a checklist item.
+     */
+    async updateChecklistItem(
+        itemId: string,
+        isCompleted: boolean,
+        step: OnboardingStep<TContext>,
+        context: TContext,
+        persistCallback?: () => Promise<void>
+    ): Promise<void> {
+        if (step.type !== 'CHECKLIST') {
+            this._logger.warn(`[NavigationService] Cannot update checklist item on non-CHECKLIST step: ${step.id}`)
+            return
+        }
+
+        await this._updateChecklistItem(
+            itemId,
+            isCompleted,
+            step as OnboardingStep<TContext> & { type: 'CHECKLIST' },
+            context,
+            persistCallback
+        )
+    }
+
+    // =========================================================================
+    // High-Level Navigation Methods
+    // =========================================================================
+
+    /**
+     * Navigate to the next step with data persistence.
+     */
+    async next(
+        currentStep: OnboardingStep<TContext> | null,
+        stepSpecificData: any,
+        context: TContext,
+        history: string[],
+        onStepChangeCallback?: (
+            newStep: OnboardingStep<TContext> | null,
+            oldStep: OnboardingStep<TContext> | null,
+            context: TContext
+        ) => void,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<OnboardingStep<TContext> | null> {
+        if (!currentStep || this._stateManager.isLoading) {
+            return currentStep
+        }
+
+        // Handle checklist completion check
+        if (currentStep.type === 'CHECKLIST') {
+            if (
+                !this._isChecklistStepComplete(currentStep as OnboardingStep<TContext> & { type: 'CHECKLIST' }, context)
+            ) {
+                const error = new Error('Checklist criteria not met.')
+                this._logger.warn(
+                    `[NavigationService] Cannot proceed from checklist step '${currentStep.id}': Not all completion criteria met.`
+                )
+                this._stateManager.setError(error)
+                this._eventManager.notifyListeners('error', { error, context })
+                return currentStep
+            }
+
+            // Include checklist data in stepSpecificData
+            const checklistPayload = currentStep.payload as ChecklistStepPayload
+            stepSpecificData = {
+                ...stepSpecificData,
+                [checklistPayload.dataKey]: context.flowData[checklistPayload.dataKey] || [],
+            }
+        }
+
+        this._stateManager.setLoading(true)
+        this._stateManager.setError(null)
+
+        try {
+            // Update context with step-specific data
+            if (stepSpecificData && Object.keys(stepSpecificData).length > 0) {
+                const newFlowData = {
+                    ...context.flowData,
+                    ...stepSpecificData,
+                }
+                if (JSON.stringify(context.flowData) !== JSON.stringify(newFlowData)) {
+                    context.flowData = newFlowData
+                }
+            }
+
+            // Execute step completion logic
+            if (currentStep.onStepComplete) {
+                await currentStep.onStepComplete(stepSpecificData || {}, context)
+            }
+
+            this._eventManager.notifyListeners('stepCompleted', {
+                step: currentStep,
+                stepData: stepSpecificData || {},
+                context,
+            })
+
+            // Mark step as completed
+            this._markStepCompleted(currentStep, context)
+
+            // Determine next step
+            const nextStepCandidate = this._findNextStepCandidate(currentStep, context)
+            const finalNextStepId = nextStepCandidate ? nextStepCandidate.id : null
+
+            const newCurrentStep = await this.navigateToStep(
+                finalNextStepId,
+                'next',
+                currentStep,
+                context,
+                history,
+                onStepChangeCallback,
+                onFlowComplete
+            )
+
+            await this._persistenceService.persistDataIfNeeded(
+                context,
+                newCurrentStep?.id || null,
+                this._stateManager.isHydrating
+            )
+
+            return newCurrentStep
+        } catch (error) {
+            this._errorHandler.handleError(error, `next() for step ${currentStep.id}`, context)
+            this._stateManager.setLoading(false)
+            return currentStep
+        }
+    }
+
+    /**
+     * Navigate to the previous step.
+     */
+    async previous(
+        currentStep: OnboardingStep<TContext> | null,
+        context: TContext,
+        history: string[],
+        onStepChangeCallback?: (
+            newStep: OnboardingStep<TContext> | null,
+            oldStep: OnboardingStep<TContext> | null,
+            context: TContext
+        ) => void,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<OnboardingStep<TContext> | null> {
+        if (!currentStep || this._stateManager.isLoading) {
+            return currentStep
+        }
+
+        // Determine the previous step candidate
+        const candidate = this._findPreviousStepCandidate(currentStep, context, history)
+        const prevStepId = candidate ? candidate.id : null
+
+        // Pop from history if history was the source and previousStep was undefined
+        if (
+            evaluateStepId(currentStep.previousStep, context) === undefined &&
+            history.length > 0 &&
+            history[history.length - 1] === prevStepId
+        ) {
+            history.pop()
+        }
+
+        if (prevStepId) {
+            return this.navigateToStep(
+                prevStepId,
+                'previous',
+                currentStep,
+                context,
+                history,
+                onStepChangeCallback,
+                onFlowComplete
+            )
+        }
+
+        return currentStep
+    }
+
+    /**
+     * Skip the current step.
+     */
+    async skip(
+        currentStep: OnboardingStep<TContext> | null,
+        context: TContext,
+        history: string[],
+        onStepChangeCallback?: (
+            newStep: OnboardingStep<TContext> | null,
+            oldStep: OnboardingStep<TContext> | null,
+            context: TContext
+        ) => void,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<OnboardingStep<TContext> | null> {
+        if (!currentStep || !currentStep.isSkippable || this._stateManager.isLoading) {
+            this._logger.debug(
+                `[NavigationService] skip(): Cannot skip from step '${currentStep?.id}'. Not skippable or engine loading.`
+            )
+            return currentStep
+        }
+
+        const skipReason = currentStep.skipToStep ? 'explicit_skip_target' : 'default_skip'
+        this._eventManager.notifyListeners('stepSkipped', {
+            step: currentStep,
+            context,
+            skipReason,
+        })
+
+        const finalSkipTargetId = this._calculateSkipTarget(currentStep, context)
+
+        return await this.navigateToStep(
+            finalSkipTargetId,
+            'skip',
+            currentStep,
+            context,
+            history,
+            onStepChangeCallback,
+            onFlowComplete
+        )
+    }
+
+    /**
+     * Navigate directly to a specific step by ID.
+     */
+    async goToStep(
+        stepId: string,
+        stepSpecificData: unknown,
+        currentStep: OnboardingStep<TContext> | null,
+        context: TContext,
+        history: string[],
+        onStepChangeCallback?: (
+            newStep: OnboardingStep<TContext> | null,
+            oldStep: OnboardingStep<TContext> | null,
+            context: TContext
+        ) => void,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<OnboardingStep<TContext> | null> {
+        if (this._stateManager.isLoading) {
+            this._logger.debug(`[NavigationService] goToStep(): Ignoring - engine is loading.`)
+            return currentStep
+        }
+
+        if (stepSpecificData) {
+            if (!context.flowData) {
+                context.flowData = {}
+            }
+            context.flowData = {
+                ...context.flowData,
+                ...stepSpecificData,
+            }
+            this._logger.debug(`[NavigationService] goToStep(): Context flowData updated with step-specific data.`)
+        }
+
+        return await this.navigateToStep(
+            stepId,
+            'goto',
+            currentStep,
+            context,
+            history,
+            onStepChangeCallback,
+            onFlowComplete
+        )
+    }
+
+    // =========================================================================
+    // Checklist Methods
+    // =========================================================================
+
+    /**
+     * Get checklist progress for a step.
+     */
+    getChecklistProgress(step: OnboardingStep<TContext> & { type: 'CHECKLIST' }, context: TContext): ChecklistProgress {
+        const itemStates = this._getChecklistItemsState(step, context)
+        const { items: itemDefinitions } = step.payload
+
+        let totalItems = 0
+        let completedItems = 0
+
+        for (const def of itemDefinitions) {
+            if (def.condition && !def.condition(context)) {
+                continue
+            }
+
+            totalItems++
+            const state = itemStates.find((s) => s.id === def.id)
+            if (state?.isCompleted) {
+                completedItems++
+            }
+        }
+
+        const percentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0
+        const isComplete = this._isChecklistStepComplete(step, context)
+
+        return {
+            completed: completedItems,
+            total: totalItems,
+            percentage: Math.round(percentage),
+            isComplete,
+        }
+    }
+
+    // =========================================================================
+    // Private Methods - Navigation
+    // =========================================================================
+
+    private _findNextStepCandidate(
+        currentStep: OnboardingStep<TContext>,
+        context: TContext
+    ): OnboardingStep<TContext> | undefined | null {
+        // Priority 1: Explicit `nextStep` property
+        const explicitNextStepId = evaluateStepId(currentStep.nextStep, context)
+
+        if (explicitNextStepId !== undefined) {
+            if (explicitNextStepId === null) {
+                return null // Flow explicitly ended
+            }
+            return findStepById(this._steps, explicitNextStepId) || undefined
+        }
+
+        // Priority 2: Array order
+        const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
+        if (currentIndex === -1) {
+            return undefined
+        }
+
+        // Find the first valid step after current
+        for (let i = currentIndex + 1; i < this._steps.length; i++) {
+            const candidateStep = this._steps[i]
+            if (!candidateStep.condition || candidateStep.condition(context)) {
+                return candidateStep
+            }
+        }
+
+        return undefined
+    }
+
+    private _findPreviousStepCandidate(
+        currentStep: OnboardingStep<TContext>,
+        context: TContext,
+        history: string[]
+    ): OnboardingStep<TContext> | undefined {
+        // Priority 1: Explicit `previousStep` property
+        let targetId = evaluateStepId(currentStep.previousStep, context)
+
+        if (targetId !== undefined) {
+            return findStepById(this._steps, targetId) || undefined
+        }
+
+        // Priority 2: History
+        if (history.length > 0) {
+            targetId = history[history.length - 1]
+            return findStepById(this._steps, targetId) || undefined
+        }
+
+        // Priority 3: Array order
+        const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
+        if (currentIndex > 0) {
+            for (let i = currentIndex - 1; i >= 0; i--) {
+                const candidateStep = this._steps[i]
+                if (!candidateStep.condition || candidateStep.condition(context)) {
+                    return candidateStep
+                }
+            }
+        }
+
+        return undefined
+    }
+
+    private _calculateSkipTarget(currentStep: OnboardingStep<TContext>, context: TContext): string | number | null {
+        // Determine target: skipToStep > nextStep > next in array
+        let evaluatedSkipTarget = evaluateStepId(currentStep.skipToStep, context)
+        if (evaluatedSkipTarget === undefined) {
+            evaluatedSkipTarget = evaluateStepId(currentStep.nextStep, context)
+        }
+
+        if (evaluatedSkipTarget !== undefined) {
+            return evaluatedSkipTarget
+        }
+
+        // Fallback to next step in array
+        const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
+        if (currentIndex !== -1 && currentIndex < this._steps.length - 1) {
+            for (let i = currentIndex + 1; i < this._steps.length; i++) {
+                const step = this._steps[i]
+                if (!step.condition || step.condition(context)) {
+                    this._logger.debug(
+                        `[NavigationService] skip(): No explicit skip/next target. Skipping to next valid step: '${step.id}'`
+                    )
+                    return step.id
+                }
+            }
+        }
+
+        this._logger.debug(`[NavigationService] skip(): No next step available. Flow will complete.`)
+        return null
+    }
+
+    private _emitNavigationEvents(
+        direction: string,
+        currentStep: OnboardingStep<TContext> | null,
+        newCurrentStep: OnboardingStep<TContext> | null,
+        context: TContext
+    ): void {
+        if (currentStep && newCurrentStep && currentStep.id !== newCurrentStep.id) {
+            switch (direction) {
+                case 'previous':
+                    this._eventManager.notifyListeners('navigationBack', {
+                        fromStep: currentStep,
+                        toStep: newCurrentStep,
+                        context,
+                    })
+                    break
+                case 'next':
+                    this._eventManager.notifyListeners('navigationForward', {
+                        fromStep: currentStep,
+                        toStep: newCurrentStep,
+                        context,
+                    })
+                    break
+                case 'goto':
+                    this._eventManager.notifyListeners('navigationJump', {
+                        fromStep: currentStep,
+                        toStep: newCurrentStep,
+                        context,
+                    })
+                    break
+            }
+        }
+    }
+
+    private async _handleStepActivation(
+        newCurrentStep: OnboardingStep<TContext>,
+        oldStep: OnboardingStep<TContext> | null,
+        direction: string,
+        context: TContext,
+        history: string[]
+    ): Promise<void> {
+        const startTime = Date.now()
+
+        // Record step start time
+        context.flowData._internal!.stepStartTimes![String(newCurrentStep.id)] = startTime
+        this._logger.debug(`[NavigationService] Recorded step start time for '${newCurrentStep.id}': ${startTime}`)
+
+        // Initialize checklist data on activation
+        if (newCurrentStep.type === 'CHECKLIST') {
+            this._getChecklistItemsState(newCurrentStep as OnboardingStep<TContext> & { type: 'CHECKLIST' }, context)
+        }
+
+        // Update history
+        if (direction !== 'previous' && oldStep && oldStep.id !== newCurrentStep.id) {
+            if (history[history.length - 1] !== String(oldStep.id)) {
+                history.push(String(oldStep.id))
+            }
+        }
+
+        // Execute step activation logic
+        try {
+            if (newCurrentStep.onStepActive) {
+                await newCurrentStep.onStepActive(context)
+            }
+            this._eventManager.notifyListeners('stepActive', {
+                step: newCurrentStep,
+                context,
+                startTime,
+            })
+        } catch (error) {
+            this._errorHandler.handleError(error, `onStepActive for ${newCurrentStep.id}`, context)
+        }
+    }
+
+    private async _handleFlowComplete(
+        oldStep: OnboardingStep<TContext> | null,
+        direction: string,
+        context: TContext,
+        onFlowComplete?: (context: TContext) => Promise<void> | void
+    ): Promise<void> {
+        this._stateManager.setCompleted(true)
+        const finalContext = context
+
+        // Calculate flow duration
+        const flowStartedAt = finalContext.flowData._internal?.startedAt
+        const flowDuration = flowStartedAt && flowStartedAt > 0 ? Date.now() - flowStartedAt : 0
+
+        if (
+            onFlowComplete &&
+            direction !== 'initial' &&
+            (!oldStep || !evaluateStepId(oldStep.nextStep, finalContext))
+        ) {
+            try {
+                await onFlowComplete(finalContext)
+            } catch (error) {
+                const processedError = error instanceof Error ? error : new Error(String(error))
+                this._stateManager.setError(processedError)
+                this._errorHandler.handleError(error, 'onFlowComplete', context)
+            }
+        }
+
+        this._eventManager.notifyListeners('flowCompleted', {
+            context: finalContext,
+            duration: Math.round(flowDuration),
+        })
+
+        await this._persistenceService.persistDataIfNeeded(context, null, this._stateManager.isHydrating)
+    }
+
+    private _markStepCompleted(step: OnboardingStep<TContext>, context: TContext): void {
+        if (!context.flowData._internal) {
+            context.flowData._internal = {
+                completedSteps: {},
+                startedAt: Date.now(),
+                stepStartTimes: {},
+            }
+        }
+        context.flowData._internal.completedSteps = {
+            ...(context.flowData._internal.completedSteps || {}),
+            [step.id]: Date.now(),
+        }
+    }
+
+    // =========================================================================
+    // Private Methods - Checklist
+    // =========================================================================
+
+    private _getChecklistItemsState(
+        step: OnboardingStep<TContext> & { type: 'CHECKLIST' },
+        context: TContext
+    ): ChecklistItemState[] {
+        const { dataKey, items: itemDefinitions } = step.payload
+        let currentItemStates = context.flowData[dataKey] as ChecklistItemState[] | undefined
+
+        if (!currentItemStates || currentItemStates.length !== itemDefinitions.length) {
+            // Initialize or re-initialize if structure mismatch
+            currentItemStates = itemDefinitions.map((def) => ({
+                id: def.id,
+                isCompleted: false,
+            }))
+
+            // Persist this initial state
+            context.flowData = {
+                ...context.flowData,
+                [dataKey]: [...currentItemStates],
+            }
+        }
+
+        return currentItemStates
+    }
+
+    private _isChecklistStepComplete(
+        step: OnboardingStep<TContext> & { type: 'CHECKLIST' },
+        context: TContext
+    ): boolean {
+        const itemStates = this._getChecklistItemsState(step, context)
+        const { items: itemDefinitions, minItemsToComplete } = step.payload
+        let completedCount = 0
+        let mandatoryPending = 0
+
+        for (const def of itemDefinitions) {
+            if (def.condition && !def.condition(context)) {
+                continue
+            }
+
+            const state = itemStates.find((s) => s.id === def.id)
+            const isMandatory = def.isMandatory !== false
+
+            if (state?.isCompleted) {
+                completedCount++
+            } else if (isMandatory) {
+                mandatoryPending++
+            }
+        }
+
+        if (typeof minItemsToComplete === 'number') {
+            return completedCount >= minItemsToComplete
+        } else {
+            return mandatoryPending === 0
+        }
+    }
+
+    private async _updateChecklistItem(
+        itemId: string,
+        isCompleted: boolean,
+        step: OnboardingStep<TContext> & { type: 'CHECKLIST' },
+        context: TContext,
+        persistCallback?: () => Promise<void>
+    ): Promise<void> {
+        const payload = step.payload as ChecklistStepPayload
+        const { dataKey } = payload
+
+        let itemStates = (context.flowData[dataKey] as ChecklistItemState[] | undefined) || []
+        const itemIndex = itemStates.findIndex((item) => item.id === itemId)
+
+        // Ensure item definitions exist
+        const itemDefExists = payload.items.some((def: ChecklistItemDefinition) => def.id === itemId)
+        if (!itemDefExists) {
+            console.warn(
+                `[NavigationService] Attempted to update non-existent checklist item '${itemId}' for step '${step.id}'.`
+            )
+            return
+        }
+
+        this._eventManager.notifyListeners('checklistItemToggled', {
+            itemId,
+            isCompleted,
+            step,
+            context,
+        })
+
+        const progress = this.getChecklistProgress(step, context)
+        this._eventManager.notifyListeners('checklistProgressChanged', {
+            step,
+            context,
+            progress,
+        })
+
+        if (itemIndex !== -1) {
+            const newItemStates = [...itemStates]
+            newItemStates[itemIndex] = { ...newItemStates[itemIndex], isCompleted }
+            itemStates = newItemStates
+        } else {
+            itemStates = [...itemStates, { id: itemId, isCompleted }]
+        }
+
+        // Update flowData
+        const oldFlowDataJSON = JSON.stringify(context.flowData)
+        context.flowData = {
+            ...context.flowData,
+            [dataKey]: itemStates,
+        }
+
+        if (JSON.stringify(context.flowData) !== oldFlowDataJSON && persistCallback) {
+            try {
+                await persistCallback()
+            } catch (error) {
+                this._errorHandler.handleError(error, 'updateChecklistItem persistence', context)
+            }
+        }
+    }
+}

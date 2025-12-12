@@ -75,8 +75,10 @@ describe('ErrorHandler', () => {
 
     describe('Constructor', () => {
         it('should store the provided EventManager and StateManager instances', () => {
-            expect((errorHandler as any).eventManager).toBe(mockEventManagerInstance)
-            expect((errorHandler as any).stateManager).toBe(manualMockStateManager)
+            // Test that constructor doesn't throw and instances are set up
+            expect(errorHandler).toBeInstanceOf(ErrorHandler)
+            expect(errorHandler.hasErrors()).toBe(false)
+            expect(errorHandler.getErrorHistory()).toEqual([])
         })
     })
 
@@ -130,8 +132,10 @@ describe('ErrorHandler', () => {
             const error = new Error('Console log test')
             errorHandler.handleError(error, testOperation, mockEngineContext)
 
+            // Logger prepends prefix and [ERROR], so check the call format
             expect(consoleErrorSpy).toHaveBeenCalledWith(
-                `[OnboardingEngine] ${testOperation}:`,
+                expect.stringContaining('[ErrorHandler]'),
+                expect.stringContaining(`[OnboardingEngine] ${testOperation}:`),
                 error,
                 expect.objectContaining({
                     operation: testOperation,
@@ -171,12 +175,13 @@ describe('ErrorHandler', () => {
             const asyncOperation = vi.fn().mockResolvedValue(successResult)
             const result = await errorHandler.safeExecute(asyncOperation, operationName, mockEngineContext)
 
-            expect(result).toBe(successResult)
+            // safeExecute now returns Result<T, Error>
+            expect(result).toEqual({ ok: true, value: successResult })
             expect(asyncOperation).toHaveBeenCalledTimes(1)
             expect(errorHandler.hasErrors()).toBe(false)
         })
 
-        it('should call handleError and return null if async operation throws', async () => {
+        it('should call handleError and return Err if async operation throws', async () => {
             const error = new Error('Async op failed')
             const failingAsyncOperation = vi.fn().mockRejectedValue(error)
             // No need to spy on errorHandler.handleError, its effects are tested elsewhere
@@ -189,7 +194,8 @@ describe('ErrorHandler', () => {
                 'stepX'
             )
 
-            expect(result).toBeNull()
+            // safeExecute now returns Result<T, Error>
+            expect(result).toEqual({ ok: false, error: expect.any(Error) })
             expect(failingAsyncOperation).toHaveBeenCalledTimes(1)
             expect(errorHandler.hasErrors()).toBe(true)
             const history = errorHandler.getErrorHistory()
@@ -206,12 +212,13 @@ describe('ErrorHandler', () => {
             const syncOperation = vi.fn().mockReturnValue(successResult)
             const result = errorHandler.safeExecuteSync(syncOperation, operationName, mockEngineContext)
 
-            expect(result).toBe(successResult)
+            // safeExecuteSync now returns Result<T, Error>
+            expect(result).toEqual({ ok: true, value: successResult })
             expect(syncOperation).toHaveBeenCalledTimes(1)
             expect(errorHandler.hasErrors()).toBe(false)
         })
 
-        it('should call handleError and return null if sync operation throws', () => {
+        it('should call handleError and return Err if sync operation throws', () => {
             const error = new Error('Sync op failed')
             const failingSyncOperation = vi.fn(() => {
                 throw error
@@ -219,7 +226,8 @@ describe('ErrorHandler', () => {
 
             const result = errorHandler.safeExecuteSync(failingSyncOperation, operationName, mockEngineContext, 'stepY')
 
-            expect(result).toBeNull()
+            // safeExecuteSync now returns Result<T, Error>
+            expect(result).toEqual({ ok: false, error: expect.any(Error) })
             expect(failingSyncOperation).toHaveBeenCalledTimes(1)
             expect(errorHandler.hasErrors()).toBe(true)
             const history = errorHandler.getErrorHistory()

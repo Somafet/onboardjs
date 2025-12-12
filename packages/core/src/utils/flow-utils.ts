@@ -1,12 +1,16 @@
 // src/utils/flow-utils.ts
 
 import { OnboardingEngine } from '../engine/OnboardingEngine'
+import { OnboardingEngineRegistry } from '../engine/OnboardingEngineRegistry'
 import { OnboardingContext } from '../types'
+import { Logger } from '../services'
 
 /**
  * Utility functions for working with multiple flows
  */
 export class FlowUtils {
+    private static _logger = new Logger({ prefix: '[FlowUtils]' })
+
     /**
      * Generate a namespaced persistence key based on flow identification
      */
@@ -32,13 +36,18 @@ export class FlowUtils {
 
     /**
      * Get all engines matching a flow pattern
+     * @param pattern - Pattern to match engines
+     * @param registry - Registry to search in
      */
-    static getEnginesByPattern(pattern: {
-        flowId?: string
-        flowName?: string
-        flowVersion?: string
-    }): OnboardingEngine<any>[] {
-        const allEngines = OnboardingEngine.getAllEngines()
+    static getEnginesByPattern(
+        pattern: {
+            flowId?: string
+            flowName?: string
+            flowVersion?: string
+        },
+        registry: OnboardingEngineRegistry
+    ): OnboardingEngine<any>[] {
+        const allEngines = registry.getAll()
 
         return allEngines.filter((engine) => {
             if (pattern.flowId && engine.getFlowId() !== pattern.flowId) {
@@ -56,9 +65,14 @@ export class FlowUtils {
 
     /**
      * Get the most recent version of a flow by name
+     * @param flowName - Name of the flow to find
+     * @param registry - Registry to search in
      */
-    static getLatestVersionByFlowName(flowName: string): OnboardingEngine<any> | null {
-        const engines = FlowUtils.getEnginesByPattern({ flowName })
+    static getLatestVersionByFlowName(
+        flowName: string,
+        registry: OnboardingEngineRegistry
+    ): OnboardingEngine<any> | null {
+        const engines = FlowUtils.getEnginesByPattern({ flowName }, registry)
 
         if (engines.length === 0) return null
 
@@ -107,7 +121,7 @@ export class FlowUtils {
                     const data = localStorage.getItem(persistenceKey)
                     return data ? JSON.parse(data) : null
                 } catch (error) {
-                    console.error(`Error loading data for ${persistenceKey}:`, error)
+                    FlowUtils._logger.error(`Error loading data for ${persistenceKey}:`, error)
                     return null
                 }
             },
@@ -122,7 +136,7 @@ export class FlowUtils {
                     }
                     localStorage.setItem(persistenceKey, JSON.stringify(dataToSave))
                 } catch (error) {
-                    console.error(`Error saving data for ${persistenceKey}:`, error)
+                    FlowUtils._logger.error(`Error saving data for ${persistenceKey}:`, error)
                 }
             },
 
@@ -130,7 +144,7 @@ export class FlowUtils {
                 try {
                     localStorage.removeItem(persistenceKey)
                 } catch (error) {
-                    console.error(`Error clearing data for ${persistenceKey}:`, error)
+                    FlowUtils._logger.error(`Error clearing data for ${persistenceKey}:`, error)
                 }
             },
 

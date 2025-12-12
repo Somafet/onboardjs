@@ -1,6 +1,8 @@
 // src/engine/services/ErrorHandler.ts
 
+import { Logger } from '../services'
 import { OnboardingContext } from '../types'
+import { err, ok, Result } from '../types/Result'
 import { EventManager } from './EventManager'
 import { StateManager } from './StateManager'
 
@@ -12,17 +14,22 @@ export interface ErrorContext {
 }
 
 export class ErrorHandler<TContext extends OnboardingContext> {
-    private errorHistory: Array<{
+    private _errorHistory: Array<{
         error: Error
         context: ErrorContext
         engineContext: TContext
     }> = []
-    private maxHistorySize = 50
+    private _maxHistorySize = 50
+    private _logger: Logger
 
     constructor(
-        private eventManager: EventManager<TContext>,
-        private stateManager: StateManager<TContext>
-    ) {}
+        private _eventManager: EventManager<TContext>,
+        private _stateManager: StateManager<TContext>
+    ) {
+        this._logger = new Logger({
+            prefix: '[ErrorHandler]',
+        })
+    }
 
     handleError(error: unknown, operation: string, engineContext: TContext, stepId?: string | number): Error {
         const processedError = error instanceof Error ? error : new Error(String(error))
@@ -34,23 +41,23 @@ export class ErrorHandler<TContext extends OnboardingContext> {
             stack: processedError.stack,
         }
 
-        this.errorHistory.push({
+        this._errorHistory.push({
             error: processedError,
             context: errorContext,
             engineContext: { ...engineContext }, // Store a snapshot
         })
 
         // Trim history if needed
-        if (this.errorHistory.length > this.maxHistorySize) {
-            this.errorHistory.shift()
+        if (this._errorHistory.length > this._maxHistorySize) {
+            this._errorHistory.shift()
         }
 
-        console.error(`[OnboardingEngine] ${operation}:`, processedError, errorContext)
+        this._logger.error(`[OnboardingEngine] ${operation}:`, processedError, errorContext)
 
-        this.stateManager.setError(processedError)
+        this._stateManager.setError(processedError)
 
         // Notify error listeners
-        this.eventManager.notifyListeners('error', {
+        this._eventManager.notifyListeners('error', {
             error: processedError,
             context: engineContext,
         })
@@ -63,12 +70,12 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         operationName: string,
         engineContext: TContext,
         stepId?: string | number
-    ): Promise<T | null> {
+    ): Promise<Result<T, Error>> {
         try {
-            return await operation()
+            return ok(await operation())
         } catch (error) {
             this.handleError(error, operationName, engineContext, stepId)
-            return null
+            return err(error as Error)
         }
     }
 
@@ -77,12 +84,12 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         operationName: string,
         engineContext: TContext,
         stepId?: string | number
-    ): T | null {
+    ): Result<T, Error> {
         try {
-            return operation()
+            return ok(operation())
         } catch (error) {
             this.handleError(error, operationName, engineContext, stepId)
-            return null
+            return err(error as Error)
         }
     }
 
@@ -91,7 +98,7 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         context: ErrorContext
         engineContext: TContext
     }> {
-        return [...this.errorHistory]
+        return [...this._errorHistory]
     }
 
     getRecentErrors(count: number = 10): Array<{
@@ -102,15 +109,15 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         if (count <= 0) {
             return []
         }
-        return this.errorHistory.slice(-count)
+        return this._errorHistory.slice(-count)
     }
 
     clearErrorHistory(): void {
-        this.errorHistory = []
+        this._errorHistory = []
     }
 
     hasErrors(): boolean {
-        return this.errorHistory.length > 0
+        return this._errorHistory.length > 0
     }
 
     getErrorsByOperation(operation: string): Array<{
@@ -118,7 +125,7 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         context: ErrorContext
         engineContext: TContext
     }> {
-        return this.errorHistory.filter((entry) => entry.context.operation.includes(operation))
+        return this._errorHistory.filter((entry) => entry.context.operation.includes(operation))
     }
 
     getErrorsByStep(stepId: string | number): Array<{
@@ -126,6 +133,6 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         context: ErrorContext
         engineContext: TContext
     }> {
-        return this.errorHistory.filter((entry) => entry.context.stepId === stepId)
+        return this._errorHistory.filter((entry) => entry.context.stepId === stepId)
     }
 }

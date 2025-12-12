@@ -13,21 +13,21 @@ export interface LoggerConfig {
 }
 
 export class Logger {
-    private debugEnabled: boolean
-    private logPrefix: string
+    private _debugEnabled: boolean
+    private _logPrefix: string
 
     /**
      * Creates an instance of Logger.
      * @param config The configuration object for the logger.
      */
     constructor(config?: LoggerConfig) {
-        this.debugEnabled = config?.debugMode ?? false
+        this._debugEnabled = config?.debugMode ?? false
         // Ensure prefix is a string, default to empty if not provided or not a string
-        this.logPrefix = typeof config?.prefix === 'string' ? `${config.prefix}` : ''
+        this._logPrefix = typeof config?.prefix === 'string' ? `${config.prefix}` : ''
 
         // Add a space if a prefix exists to separate it from the message
-        if (this.logPrefix) {
-            this.logPrefix = `${this.logPrefix} `
+        if (this._logPrefix) {
+            this._logPrefix = `${this._logPrefix} `
         }
     }
 
@@ -36,8 +36,9 @@ export class Logger {
      * @param messages The messages to log.
      */
     public debug(...messages: any[]): void {
-        if (this.debugEnabled) {
-            console.log(`${this.logPrefix}[DEBUG]`, ...messages)
+        if (this._debugEnabled) {
+            // eslint-disable-next-line no-console
+            console.log(`${this._logPrefix}[DEBUG]`, ...messages)
         }
     }
 
@@ -46,7 +47,7 @@ export class Logger {
      * @param messages The messages to log.
      */
     public info(...messages: any[]): void {
-        console.info(`${this.logPrefix}[INFO]`, ...messages)
+        console.info(`${this._logPrefix}[INFO]`, ...messages)
     }
 
     /**
@@ -54,7 +55,7 @@ export class Logger {
      * @param messages The messages to log.
      */
     public warn(...messages: any[]): void {
-        console.warn(`${this.logPrefix}[WARN]`, ...messages)
+        console.warn(`${this._logPrefix}[WARN]`, ...messages)
     }
 
     /**
@@ -62,6 +63,6 @@ export class Logger {
      * @param messages The messages to log.
      */
     public error(...messages: any[]): void {
-        console.error(`${this.logPrefix}[ERROR]`, ...messages)
+        console.error(`${this._logPrefix}[ERROR]`, ...messages)
     }
 }
