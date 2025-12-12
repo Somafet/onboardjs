@@ -1319,15 +1319,15 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
 
         // Track navigation events
         this.addEventListener('navigationBack', (event) => {
-            manager.trackNavigationBack(event.fromStep, event.toStep, event.context)
+            manager.trackNavigationBack(event.fromStep, event.toStep)
         })
 
         this.addEventListener('navigationForward', (event) => {
-            manager.trackNavigationForward(event.fromStep, event.toStep, event.context)
+            manager.trackNavigationForward(event.fromStep, event.toStep)
         })
 
         this.addEventListener('navigationJump', (event) => {
-            manager.trackNavigationJump(event.fromStep, event.toStep, event.context)
+            manager.trackNavigationJump(event.fromStep, event.toStep)
         })
 
         // Track context updates (data changes)
