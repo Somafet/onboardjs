@@ -4,6 +4,7 @@ export * from './types'
 export * from './engine/OnboardingEngine'
 export * from './engine/OnboardingEngineRegistry'
 export * from './engine/ConfigurationBuilder'
+export * from './engine/StepValidator'
 export * from './engine/types' // Export engine-specific types like EngineState
 export * from './utils/step-utils'
 export * from './utils/flow-utils'

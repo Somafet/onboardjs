@@ -1,6 +1,7 @@
 // src/engine/ConfigurationBuilder.ts
 import { OnboardingContext } from '../types'
 import { OnboardingEngineConfig } from './types'
+import { StepValidator } from './StepValidator'
 
 export class ConfigurationBuilder {
     static buildInitialContext<T extends OnboardingContext>(config: OnboardingEngineConfig<T>): T {
@@ -79,34 +80,22 @@ export class ConfigurationBuilder {
         const errors: string[] = []
         const warnings: string[] = []
 
-        // Validate steps
+        // Validate steps using StepValidator (TASK-035)
         if (!config.steps || config.steps.length === 0) {
             warnings.push('No steps defined in configuration')
         } else {
-            const stepIds = new Set<string | number>()
-            for (const step of config.steps) {
-                // Check for duplicate step IDs
-                if (stepIds.has(step.id)) {
-                    errors.push(`Duplicate step ID found: ${step.id}`)
-                }
-                stepIds.add(step.id)
+            const validator = new StepValidator<T>(100, false)
+            const validationResult = validator.validateSteps(config.steps)
 
-                // Validate step structure
-                if (!step.id) {
-                    errors.push('Step found without ID')
-                }
+            // Add validation errors
+            validationResult.errors.forEach((error) => {
+                errors.push(error.message)
+            })
 
-                // Validate checklist steps
-                if (step.type === 'CHECKLIST') {
-                    const payload = step.payload
-                    if (!payload?.dataKey) {
-                        errors.push(`Checklist step ${step.id} missing dataKey`)
-                    }
-                    if (!payload?.items || !Array.isArray(payload.items)) {
-                        errors.push(`Checklist step ${step.id} missing or invalid items`)
-                    }
-                }
-            }
+            // Add validation warnings
+            validationResult.warnings.forEach((warning) => {
+                warnings.push(warning.message)
+            })
         }
 
         // Validate initial step ID

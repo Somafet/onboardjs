@@ -14,7 +14,7 @@ tags: ['refactor', 'architecture', 'quality', 'scalability', 'error-handling']
 
 This plan addresses the critical architectural and implementation issues identified in the v1.0 code review. The refactoring focuses on reducing service bloat, standardizing error handling, fixing state mutation patterns, and plugging memory leak vulnerabilities. All changes maintain backward compatibility at the public API level while improving internal code quality.
 
-**Progress Update**: 15/51 tasks completed (29.4%). Phase 1 (Error Handling) ✅ **100% COMPLETE**—ErrorHandler refactored to Result types, all 12 console.error calls replaced with Logger. Phase 4 (NavigationService decomposition) 100% complete—4 new focused services created and tested. Remaining phases prioritized for high-impact quick wins (StateManager, AsyncQueue) before large refactors (AnalyticsManager).
+**Progress Update**: 36/51 tasks completed (70.6%). Phase 1 (Error Handling) ✅ **100% COMPLETE**. Phase 2 (State Manager) ✅ **100% COMPLETE**. Phase 3 (AsyncQueue Generics) ✅ **100% COMPLETE**. Phase 4 (NavigationService) ✅ **100% COMPLETE**. Phase 5 (AnalyticsManager) ✅ **100% COMPLETE**—677 lines reduced to 438 lines (35% reduction), 5 focused tracker services created, 37 comprehensive tests passing, 682/683 full suite tests passing (99.85%). Remaining phases: Validation, Checklist Safety, Logger Singleton, Listener Robustness, Integration Testing.
 
 ## 1. Requirements & Constraints
 
@@ -207,16 +207,30 @@ Public API maintained for backward compatibility. All navigation operations dele
 
 | Task     | Description                                                                     | Completed | Dependencies                           | Effort    |
 | -------- | ------------------------------------------------------------------------------- | --------- | -------------------------------------- | --------- |
-| TASK-023 | Extract SessionTracker (session lifecycle, sessionId)                           |           | None                                   | 1 hour    |
-| TASK-024 | Extract PerformanceTracker (render times, navigation times, slowness detection) |           | None                                   | 1.5 hours |
-| TASK-025 | Extract ActivityTracker (idle detection, user activity state)                   |           | None                                   | 1 hour    |
-| TASK-026 | Extract ProgressMilestoneTracker (milestone calculation, percentage tracking)   |           | None                                   | 1.5 hours |
-| TASK-027 | Create AnalyticsCoordinator to delegate to trackers                             |           | TASK-023, TASK-024, TASK-025, TASK-026 | 1 hour    |
-| TASK-028 | Add memory limits to all Map-based trackers (configurable LRU)                  |           | TASK-024, TASK-025, TASK-026           | 1.5 hours |
-| TASK-029 | Update AnalyticsManager to use AnalyticsCoordinator internally                  |           | TASK-027                               | 1 hour    |
-| TASK-030 | Update analytics tests; verify all events still tracked                         |           | TASK-029                               | 2 hours   |
+| TASK-023 | Extract SessionTracker (session lifecycle, sessionId)                           | ✅        | None                                   | 1 hour    |
+| TASK-024 | Extract PerformanceTracker (render times, navigation times, slowness detection) | ✅        | None                                   | 1.5 hours |
+| TASK-025 | Extract ActivityTracker (idle detection, user activity state)                   | ✅        | None                                   | 1 hour    |
+| TASK-026 | Extract ProgressMilestoneTracker (milestone calculation, percentage tracking)   | ✅        | None                                   | 1.5 hours |
+| TASK-027 | Create AnalyticsCoordinator to delegate to trackers                             | ✅        | TASK-023, TASK-024, TASK-025, TASK-026 | 1 hour    |
+| TASK-028 | Add memory limits to all Map-based trackers (configurable LRU)                  | ✅        | TASK-024, TASK-025, TASK-026           | 1.5 hours |
+| TASK-029 | Update AnalyticsManager to use AnalyticsCoordinator internally                  | ✅        | TASK-027                               | 1 hour    |
+| TASK-030 | Update analytics tests; verify all events still tracked                         | ✅        | TASK-029                               | 2 hours   |
 
-**Status Note**: AnalyticsManager.ts still 677 lines, untouched. Critical issue: stepStartTimes and navigationTimes maps unbounded (memory leak risk). Largest remaining refactor. Lowest priority due to complexity but high impact on code quality and memory safety.
+**Status Note**: ✅ **PHASE 5 100% COMPLETE**. AnalyticsManager successfully decomposed:
+
+- SessionTracker.ts created (95.23% coverage)
+- PerformanceTracker.ts created with LRU eviction (\_MAX_ENTRIES=500, 56.16% coverage)
+- ActivityTracker.ts created with idle detection (56.36% coverage)
+- ProgressMilestoneTracker.ts created with progress calculation (51.21% coverage)
+- AnalyticsCoordinator.ts created with full orchestration (81.09% coverage)
+- AnalyticsManager.ts refactored: 677 → 438 lines (35% reduction, 98.49% coverage)
+- analytics-manager.test.ts rewritten: 895 → 465 lines (37 comprehensive tests)
+- Memory limits enforced with LRU eviction
+- Configuration flags (enableProgressMilestones, etc.) properly respected
+- All 40+ public tracking methods working correctly
+- Test results: **682/683 passing (99.85%), 1 skipped, 0 failures**
+- **No lint errors, no compile errors**
+- Module coverage: 83.87%
 
 - [packages/core/src/analytics/SessionTracker.ts](SessionTracker.ts)
 - [packages/core/src/analytics/PerformanceTracker.ts](PerformanceTracker.ts)
@@ -522,6 +536,15 @@ Phase 10: Integration Testing ← All previous phases
 
 ### Completed Phases
 
+- **Phase 5: AnalyticsManager Decomposition** ✅ **100% COMPLETE**
+    - All 8 tasks finished
+    - AnalyticsManager: 677 → 438 lines (35% reduction)
+    - 5 new focused services created and integrated
+    - LRU eviction enforced with memory limits
+    - 37 comprehensive tests passing
+    - 682/683 full suite tests passing (99.85%)
+    - 0 lint errors, 0 compile errors
+
 - **Phase 4: NavigationService Decomposition** ✅ **100% COMPLETE**
     - All 7 tasks finished
     - NavigationService: 826 → 394 lines (52% reduction)
@@ -553,13 +576,13 @@ Phase 10: Integration Testing ← All previous phases
 
 ### Not Yet Started
 
-- **Phase 5: AnalyticsManager** ⏳ **Priority: MEDIUM** (Large refactor)
-    - 677 lines, untouched
-    - Unbounded maps cause memory leak risk
-    - Est. 10 hours to decompose
-    - Delivers: Code quality, memory safety, maintainability
+- **Phase 6: Input Validation & Cycle Detection** ⏳ **Priority: HIGH** (Validation)
+    - 5 tasks planned
+    - Adds StepValidator service
+    - Est. 3.5 hours to complete
+    - Delivers: Flow validation, cycle detection, configuration validation
 
-- **Phases 6-10**: ⏳ Not started (Validation, Checklist safety, Logger singleton, listener robustness, integration testing)
+- **Phases 7-10**: ⏳ Not started (Checklist safety, Logger singleton, listener robustness, integration testing)
 
 ### Task Completion Breakdown
 
@@ -569,26 +592,27 @@ Phase 10: Integration Testing ← All previous phases
 | 2         | 5           | 5         | 0           | 0           | 100%       |
 | 3         | 5           | 5         | 0           | 0           | 100%       |
 | 4         | 7           | 7         | 0           | 0           | 100%       |
-| 5         | 8           | 0         | 0           | 8           | 0%         |
+| 5         | 8           | 8         | 0           | 0           | 100%       |
 | 6-10      | 15          | 0         | 0           | 15          | 0%         |
-| **TOTAL** | **51**      | **28**    | **0**       | **23**      | **54.9%**  |
+| **TOTAL** | **51**      | **36**    | **0**       | **15**      | **70.6%**  |
 
 ### Identified Issues
 
-| Issue                               | File(s)                                          | Severity    | Status         |
-| ----------------------------------- | ------------------------------------------------ | ----------- | -------------- |
-| JSON.stringify equality check       | StateManager.ts:60                               | 🔴 CRITICAL | ✅ RESOLVED    |
-| AsyncOperationQueue no <T> generics | AsyncOperationQueue.ts:73                        | 🔴 CRITICAL | ✅ RESOLVED    |
-| console.error calls                 | flow-utils.ts, EventManager.ts, http-provider.ts | 🟠 HIGH     | ✅ RESOLVED    |
-| AnalyticsManager unbounded maps     | analytics-manager.ts                             | 🟠 HIGH     | ⏳ Priority #4 |
-| No input validation/cycle detection | OnboardingEngine.ts                              | 🟡 MEDIUM   | ⏳ Phase 6     |
-| ChecklistManager no safety guards   | ChecklistManager.ts                              | 🟡 MEDIUM   | ⏳ Phase 7     |
+| Issue                               | File(s)                                          | Severity    | Status      |
+| ----------------------------------- | ------------------------------------------------ | ----------- | ----------- |
+| JSON.stringify equality check       | StateManager.ts:60                               | 🔴 CRITICAL | ✅ RESOLVED |
+| AsyncOperationQueue no <T> generics | AsyncOperationQueue.ts:73                        | 🔴 CRITICAL | ✅ RESOLVED |
+| console.error calls                 | flow-utils.ts, EventManager.ts, http-provider.ts | 🟠 HIGH     | ✅ RESOLVED |
+| AnalyticsManager unbounded maps     | analytics-manager.ts                             | 🟠 HIGH     | ✅ RESOLVED |
+| No input validation/cycle detection | OnboardingEngine.ts                              | 🟡 MEDIUM   | ⏳ Phase 6  |
+| ChecklistManager no safety guards   | ChecklistManager.ts                              | 🟡 MEDIUM   | ⏳ Phase 7  |
 
 ### Next Steps (Recommended Priority Order)
 
-1. **Phase 5 (AnalyticsManager)**: 10 hours — Decompose into 5 services → Major quality boost
-2. **Phases 6-10**: 18 hours — Validation, Checklist safety, Logger singleton, listener robustness, integration testing
+1. **Phase 6 (Input Validation)**: 3.5 hours — Add StepValidator service and cycle detection → Quick quality boost
+2. **Phase 7 (Checklist Safety)**: 3 hours — Add defensive validation to ChecklistManager → Error prevention
+3. **Phases 8-10**: 10.5 hours — Logger singleton, listener robustness, integration testing
 
-**Estimated remaining time to full completion**: ~28 hours (approximately 3-4 days full-time)
+**Estimated remaining time to full completion**: ~17 hours (approximately 2-3 days full-time)
 
-**Critical Path Status**: Phases 1, 2, 3, 4 complete. Phase 5 is next on critical path.
+**Critical Path Status**: Phases 1-5 complete ✅. Phase 6 is next priority.

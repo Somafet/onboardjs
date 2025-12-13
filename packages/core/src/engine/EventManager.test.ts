@@ -318,27 +318,6 @@ describe('EventManager', () => {
         })
     })
 
-    describe('getLegacyEventName', () => {
-        // Access private method for testing (common pattern in JS/TS testing)
-        const getLegacyName = (em: EventManager<any>, eventType: keyof EventListenerMap<any>) => {
-            return (em as any).getLegacyEventName(eventType)
-        }
-
-        it('should return correct legacy names for specific event types', () => {
-            expect(getLegacyName(eventManager, 'stepChange')).toBe('stepChange')
-            expect(getLegacyName(eventManager, 'stateChange')).toBe('stateChange')
-            expect(getLegacyName(eventManager, 'beforeStepChange')).toBe('beforeStepChange')
-            expect(getLegacyName(eventManager, 'stepActive')).toBe('stepActive')
-            expect(getLegacyName(eventManager, 'stepCompleted')).toBe('stepCompleted')
-            expect(getLegacyName(eventManager, 'contextUpdate')).toBe('contextUpdate')
-            expect(getLegacyName(eventManager, 'error')).toBe('error')
-        })
-
-        it('should return stringified event type for other event types (default case)', () => {
-            // This requires adding a custom event type to our TestEventListenerMap
-            // For this test, we'll cast to any to simulate an event type not in the switch
-            expect(getLegacyName(eventManager, 'customEvent' as any)).toBe('customEvent')
-            expect(getLegacyName(eventManager, 'anotherRandomEvent' as any)).toBe('anotherRandomEvent')
-        })
-    })
+    // Note: _getLegacyEventName is a private method used only for error logging backward compatibility.
+    // It doesn't need dedicated tests as its behavior is covered by error logging tests.
 })

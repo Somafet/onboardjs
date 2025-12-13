@@ -317,7 +317,7 @@ describe('ConfigurationBuilder', () => {
             }
             const result = ConfigurationBuilder.validateConfig(config)
             expect(result.isValid).toBe(false)
-            expect(result.errors).toContain('Duplicate step ID found: s1')
+            expect(result.errors).toContain("Duplicate step ID 's1' found at indices 0 and 1")
         })
 
         it('should detect steps without an ID', () => {
@@ -326,7 +326,7 @@ describe('ConfigurationBuilder', () => {
             }
             const result = ConfigurationBuilder.validateConfig(config)
             expect(result.isValid).toBe(false)
-            expect(result.errors).toContain('Step found without ID')
+            expect(result.errors).toContain("Step at index 1 is missing an 'id' property")
         })
 
         it('should validate checklist steps: missing dataKey', () => {
@@ -335,7 +335,7 @@ describe('ConfigurationBuilder', () => {
             }
             const result = ConfigurationBuilder.validateConfig(config)
             expect(result.isValid).toBe(false)
-            expect(result.errors).toContain('Checklist step c1 missing dataKey')
+            expect(result.errors).toContain("Step 'c1' of type 'CHECKLIST' must have a 'dataKey' in its payload")
         })
 
         it('should validate checklist steps: missing items array', () => {
@@ -344,7 +344,9 @@ describe('ConfigurationBuilder', () => {
             }
             const result = ConfigurationBuilder.validateConfig(config)
             expect(result.isValid).toBe(false)
-            expect(result.errors).toContain('Checklist step c1 missing or invalid items')
+            expect(result.errors).toContain(
+                "Step 'c1' of type 'CHECKLIST' must have a non-empty 'items' array in its payload"
+            )
         })
 
         it('should validate checklist steps: items is not an array', () => {
@@ -359,7 +361,9 @@ describe('ConfigurationBuilder', () => {
             }
             const result = ConfigurationBuilder.validateConfig(config)
             expect(result.isValid).toBe(false)
-            expect(result.errors).toContain('Checklist step c1 missing or invalid items')
+            expect(result.errors).toContain(
+                "Step 'c1' of type 'CHECKLIST' must have a non-empty 'items' array in its payload"
+            )
         })
 
         it('should validate initialStepId if provided and exists', () => {
@@ -432,8 +436,8 @@ describe('ConfigurationBuilder', () => {
             // It might also have a warning for "No steps defined" if all steps are invalid,
             // but the errors take precedence for isValid.
             // In this case, it will have errors for duplicate, missing ID, initialStepId, plugin.
-            expect(result.errors).toContain('Duplicate step ID found: s1')
-            expect(result.errors).toContain('Step found without ID')
+            expect(result.errors).toContain("Duplicate step ID 's1' found at indices 0 and 1")
+            expect(result.errors).toContain("Step at index 2 is missing an 'id' property")
             expect(result.errors).toContain('Initial step ID s3 not found in steps')
             expect(result.errors).toContain('Plugin found without name')
         })

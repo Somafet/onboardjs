@@ -1,13 +1,45 @@
 // @onboardjs/core/src/utils/flow-validator.ts
 
-import { OnboardingStep, OnboardingContext, CustomComponentStepPayload } from '../types'
-import { findStepById } from './step-utils' // Assuming step-utils is in the same directory or path is adjusted
+import { OnboardingStep, CustomComponentStepPayload } from '../types'
+import { findStepById } from './step-utils'
+import { StepValidator } from '../engine/StepValidator'
 
 export interface ValidationIssue {
     level: 'error' | 'warning'
     message: string
     stepId?: string | number // The ID of the step where the issue was found
     relatedStepId?: string // For issues like broken links
+}
+
+/**
+ * Enhanced validateFlow using StepValidator for comprehensive validation
+ * This maintains backward compatibility while leveraging the new StepValidator
+ */
+export function validateFlowWithStepValidator(steps: OnboardingStep[], maxDepth: number = 100): ValidationIssue[] {
+    const validator = new StepValidator(maxDepth, false)
+    const result = validator.validateSteps(steps)
+
+    const issues: ValidationIssue[] = []
+
+    // Convert errors to ValidationIssue format
+    result.errors.forEach((error) => {
+        issues.push({
+            level: 'error',
+            message: error.message,
+            stepId: error.stepId,
+        })
+    })
+
+    // Convert warnings to ValidationIssue format
+    result.warnings.forEach((warning) => {
+        issues.push({
+            level: 'warning',
+            message: warning.message,
+            stepId: warning.stepId,
+        })
+    })
+
+    return issues
 }
 
 export function validateFlow(
