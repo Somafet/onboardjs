@@ -146,6 +146,16 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     plugins,
     componentRegistry,
     debug,
+    // Forwarded engine config fields (not previously passed through)
+    flowId,
+    flowName,
+    flowVersion,
+    flowMetadata,
+    publicKey,
+    apiHost,
+    cloudOptions,
+    analytics,
+    userId,
 }: OnboardingProviderProps<TContext>) {
     // Component loading state
     const [componentLoading, setComponentLoading] = useState(false)
@@ -198,6 +208,18 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             persistData: onDataPersist,
             clearPersistedData: onClearPersistedData,
             debug,
+            // Flow identification
+            flowId,
+            flowName,
+            flowVersion,
+            flowMetadata,
+            // Cloud analytics
+            publicKey,
+            apiHost,
+            cloudOptions,
+            analytics,
+            // User + registry
+            userId,
         }),
         [
             steps,
@@ -210,6 +232,15 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             onDataPersist,
             onClearPersistedData,
             debug,
+            flowId,
+            flowName,
+            flowVersion,
+            flowMetadata,
+            publicKey,
+            apiHost,
+            cloudOptions,
+            analytics,
+            userId,
         ]
     )
 
@@ -242,7 +273,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     const isLoading = componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false)
 
     // Setup analytics methods - simplified API that uses trackCustomEvent internally
-    const analytics = useMemo(
+    const analyticsApi = useMemo(
         () => ({
             trackEvent: (
                 eventName: string,
@@ -287,10 +318,10 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             isCompleted: engineState?.isCompleted,
             error: engineError ?? engineState?.error ?? null,
             renderStep,
-            analytics,
+            analytics: analyticsApi,
             ...actions,
         }),
-        [engine, engineState, isLoading, isReady, engineError, actions, renderStep, analytics]
+        [engine, engineState, isLoading, isReady, engineError, actions, renderStep, analyticsApi]
     )
 
     // Type assertion explanation:
