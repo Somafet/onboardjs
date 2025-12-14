@@ -7,6 +7,7 @@ import {
     EngineState,
     OnboardingEngineConfig,
     OnboardingContext as OnboardingContextType,
+    ConfigurationBuilder,
 } from '@onboardjs/core'
 import { OnboardingStep, StepComponentRegistry } from '../types'
 import {
@@ -124,6 +125,34 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     analytics,
     userId,
 }: OnboardingProviderProps<TContext>) {
+    // ============================================================================
+    // CONFIGURATION VALIDATION (Fail Fast at Provider Level)
+    // ============================================================================
+    // Validate configuration immediately before any state initialization.
+    // This ensures errors surface during provider instantiation, not async.
+    const configValidation = useMemo(() => {
+        return ConfigurationBuilder.validateConfig({
+            steps,
+            initialStepId,
+            initialContext,
+            plugins,
+            debug,
+        })
+    }, [steps, initialStepId, initialContext, plugins, debug])
+
+    // Fail fast: throw error immediately if config is invalid
+    if (!configValidation.isValid) {
+        throw new Error(`[OnboardJS] Invalid Onboarding Configuration:\n${configValidation.errors.join('\n')}`)
+    }
+
+    // Log warnings only in debug mode
+    if (configValidation.warnings.length > 0 && debug) {
+        console.warn('[OnboardJS] Configuration warnings:', configValidation.warnings)
+    }
+
+    // ============================================================================
+    // STATE & PERSISTENCE SETUP
+    // ============================================================================
     // Component loading state
     const [componentLoading, setComponentLoading] = useState(false)
 
@@ -141,74 +170,62 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         customOnClearPersistedData,
     })
 
-    // Flow complete handler with persistence cleanup
-    const onFlowCompleteHandler = useCallback(
-        async (context: TContext) => {
-            try {
-                if (passedOnFlowComplete) {
-                    await passedOnFlowComplete(context)
-                }
-            } catch (error) {
-                console.error('[OnboardJS] Error in onFlowComplete callback:', error)
-            }
-
-            // Clear persisted data on completion
-            try {
-                await onClearPersistedData()
-            } catch (error) {
-                console.error('[OnboardJS] Error clearing persisted data on flow completion:', error)
-            }
-        },
-        [passedOnFlowComplete, onClearPersistedData]
-    )
-
-    // Build engine configuration
-    const engineConfig: OnboardingEngineConfig<TContext> = useMemo(
+    // ============================================================================
+    // THREE-TIER CONFIGURATION APPROACH
+    // ============================================================================
+    // Tier 1: Structural config (triggers engine re-creation on change)
+    // These are configuration changes that meaningfully affect the flow structure
+    const structuralConfig = useMemo(
         () => ({
             steps,
-            plugins: plugins || [],
             initialStepId,
             initialContext,
-            onFlowComplete: onFlowCompleteHandler,
+            debug,
+            plugins: plugins || [],
+        }),
+        [steps, initialStepId, initialContext, debug, plugins]
+    )
+
+    // Tier 2: Behavioral config (passed via callbacks, doesn't re-create engine)
+    // These are configuration changes that affect behavior but not flow structure.
+    // Includes callbacks like onFlowComplete, onStepChange, and persistence handlers.
+    const behavioralConfig = useMemo(
+        () => ({
+            onFlowComplete: passedOnFlowComplete,
             onStepChange,
             loadData: onDataLoad,
             persistData: onDataPersist,
             clearPersistedData: onClearPersistedData,
-            debug,
-            // Flow identification
+        }),
+        [passedOnFlowComplete, onStepChange, onDataLoad, onDataPersist, onClearPersistedData]
+    )
+
+    // Tier 3: Cloud/Analytics config (additional engine configuration)
+    // These are settings that don't affect core flow but enhance analytics and cloud features
+    const cloudConfig = useMemo(
+        () => ({
             flowId,
             flowName,
             flowVersion,
             flowMetadata,
-            // Cloud analytics
             publicKey,
             apiHost,
             cloudOptions,
             analytics,
-            // User + registry
             userId,
         }),
-        [
-            steps,
-            plugins,
-            initialStepId,
-            initialContext,
-            onFlowCompleteHandler,
-            onStepChange,
-            onDataLoad,
-            onDataPersist,
-            onClearPersistedData,
-            debug,
-            flowId,
-            flowName,
-            flowVersion,
-            flowMetadata,
-            publicKey,
-            apiHost,
-            cloudOptions,
-            analytics,
-            userId,
-        ]
+        [flowId, flowName, flowVersion, flowMetadata, publicKey, apiHost, cloudOptions, analytics, userId]
+    )
+
+    // Build engine configuration by merging all three tiers.
+    // This reduces dependency array complexity from 19 to just 3 dependencies.
+    const engineConfig: OnboardingEngineConfig<TContext> = useMemo(
+        () => ({
+            ...structuralConfig,
+            ...behavioralConfig,
+            ...cloudConfig,
+        }),
+        [structuralConfig, behavioralConfig, cloudConfig]
     )
 
     // Initialize and manage engine lifecycle

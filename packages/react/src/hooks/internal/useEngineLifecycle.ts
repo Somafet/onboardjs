@@ -2,12 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import {
-    OnboardingEngine,
-    OnboardingEngineConfig,
-    OnboardingContext as OnboardingContextType,
-    ConfigurationBuilder,
-} from '@onboardjs/core'
+import { OnboardingEngine, OnboardingEngineConfig, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 import { createConfigHash } from '../../utils/configHash'
 
 export interface UseEngineLifecycleResult<TContext extends OnboardingContextType> {
@@ -18,6 +13,11 @@ export interface UseEngineLifecycleResult<TContext extends OnboardingContextType
 
 /**
  * Manages engine creation, initialization, and cleanup.
+ *
+ * IMPORTANT: Configuration validation is now performed at the OnboardingProvider level
+ * with fail-fast semantics. This function assumes a valid configuration and focuses
+ * solely on engine lifecycle management.
+ *
  * Uses configuration hashing to ensure engine is only recreated when meaningful
  * configuration changes occur (not on callback reference changes).
  */
@@ -31,7 +31,9 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
     // Track if component is mounted to prevent state updates after unmount
     const isMountedRef = useRef(true)
 
-    // Store the latest config in a ref so we can access it without triggering re-initialization
+    // Keep a ref to the latest config so we can access it in the effect
+    // without adding config to the dependency array (which would cause
+    // engine recreation on every callback reference change)
     const configRef = useRef(config)
     configRef.current = config
 
@@ -55,21 +57,13 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
         setEngine(null)
         setError(null)
 
-        // Use the latest config from ref to ensure we have current callbacks
-        const currentConfig = configRef.current
-
-        // Validate configuration before creating engine
-        const validation = ConfigurationBuilder.validateConfig(currentConfig)
-        if (!validation.isValid) {
-            const validationError = new Error(`Invalid Onboarding Configuration: ${validation.errors.join(', ')}`)
-            console.error('[OnboardJS] Configuration validation failed:', validationError.message)
-            if (isMountedRef.current) {
-                setError(validationError)
-            }
-            return
-        }
+        // Note: Configuration validation happens at OnboardingProvider level (fail-fast).
+        // By the time we reach this hook, the config is guaranteed to be valid.
 
         let currentEngine: OnboardingEngine<TContext> | null = null
+
+        // Use configRef.current to get the latest config without depending on config object reference
+        const currentConfig = configRef.current
 
         try {
             currentEngine = new OnboardingEngine<TContext>(currentConfig)
@@ -104,7 +98,9 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
             isMountedRef.current = false
             // Engine cleanup is handled by the engine itself
         }
-        // Only re-run when the configuration hash changes (meaningful changes)
+        // Only re-run when the configuration hash changes (meaningful structural changes)
+        // We use configRef to access the latest config without adding it to dependencies,
+        // which would cause engine recreation on every callback reference change
     }, [configHash])
 
     return { engine, isReady, error }
