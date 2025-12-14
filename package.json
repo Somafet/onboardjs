@@ -1,7 +1,7 @@
 {
     "name": "onboardjs",
     "private": true,
-    "packageManager": "pnpm@10.15.0",
+    "packageManager": "pnpm@10.25.0",
     "type": "module",
     "scripts": {
         "build": "turbo run build",

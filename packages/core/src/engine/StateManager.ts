@@ -5,22 +5,23 @@ import { evaluateStepId, findStepById } from '../utils/step-utils'
 import { EventManager } from './EventManager'
 import { Logger } from '../services/Logger'
 import { EngineState, FlowContext } from './types'
+import deepEqual from 'fast-deep-equal'
 
 export class StateManager<TContext extends OnboardingContext> {
-    private isLoadingInternal = false
-    private isHydratingInternal = true
-    private errorInternal: Error | null = null
-    private isCompletedInternal = false
-    private logger: Logger
+    private _isLoadingInternal = false
+    private _isHydratingInternal = true
+    private _errorInternal: Error | null = null
+    private _isCompletedInternal = false
+    private _logger: Logger
 
     constructor(
-        private eventManager: EventManager<TContext>,
-        private steps: OnboardingStep<TContext>[],
-        private initialStepId: string | number | null,
-        private flowContext: FlowContext,
+        private _eventManager: EventManager<TContext>,
+        private _steps: OnboardingStep<TContext>[],
+        private _initialStepId: string | number | null,
+        private _flowContext: FlowContext,
         debugMode?: boolean
     ) {
-        this.logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode: debugMode ?? false,
             prefix: 'StateManager',
         })
@@ -40,24 +41,24 @@ export class StateManager<TContext extends OnboardingContext> {
         let contextChanged = false
         let stateChanged = false
 
-        if (changes.isLoading !== undefined && changes.isLoading !== this.isLoadingInternal) {
-            this.isLoadingInternal = changes.isLoading
+        if (changes.isLoading !== undefined && changes.isLoading !== this._isLoadingInternal) {
+            this._isLoadingInternal = changes.isLoading
             stateChanged = true
         }
-        if (changes.isHydrating !== undefined && changes.isHydrating !== this.isHydratingInternal) {
-            this.isHydratingInternal = changes.isHydrating
+        if (changes.isHydrating !== undefined && changes.isHydrating !== this._isHydratingInternal) {
+            this._isHydratingInternal = changes.isHydrating
             stateChanged = true
         }
-        if (changes.error !== undefined && changes.error !== this.errorInternal) {
-            this.errorInternal = changes.error
+        if (changes.error !== undefined && changes.error !== this._errorInternal) {
+            this._errorInternal = changes.error
             stateChanged = true
         }
-        if (changes.isCompleted !== undefined && changes.isCompleted !== this.isCompletedInternal) {
-            this.isCompletedInternal = changes.isCompleted
+        if (changes.isCompleted !== undefined && changes.isCompleted !== this._isCompletedInternal) {
+            this._isCompletedInternal = changes.isCompleted
             stateChanged = true
         }
         if (changes.context) {
-            if (JSON.stringify(context) !== JSON.stringify(changes.context)) {
+            if (!deepEqual(context, changes.context)) {
                 Object.assign(context, changes.context)
                 contextChanged = true
                 stateChanged = true
@@ -66,20 +67,20 @@ export class StateManager<TContext extends OnboardingContext> {
 
         // Only notify if there was a meaningful change to the state object
         if (stateChanged) {
-            this.notifyStateChangeListeners(currentStep, context, history)
+            this._notifyStateChangeListeners(currentStep, context, history)
         }
 
-        if (contextChanged && !this.isHydratingInternal && onContextChange) {
+        if (contextChanged && !this._isHydratingInternal && onContextChange) {
             onContextChange(oldContext, context)
         }
     }
 
     notifyStateChange(currentStep: OnboardingStep<TContext> | null, context: TContext, history: string[]): void {
-        this.notifyStateChangeListeners(currentStep, context, history)
+        this._notifyStateChangeListeners(currentStep, context, history)
     }
 
     get hasError(): boolean {
-        return this.errorInternal !== null
+        return this._errorInternal !== null
     }
 
     getState(
@@ -95,12 +96,12 @@ export class StateManager<TContext extends OnboardingContext> {
             previousStepCandidate = this._findPreviousStep(currentStep, context, history)
         }
 
-        const isFirstStep = !!currentStep && currentStep.id === this.initialStepId
+        const isFirstStep = !!currentStep && currentStep.id === this._initialStepId
 
         const completedIds = new Set(Object.keys(context.flowData?._internal?.completedSteps || {}))
 
         // First, determine the list of steps that are currently relevant based on conditions.
-        const relevantSteps = this.steps.filter((step) => !step.condition || step.condition(context))
+        const relevantSteps = this._steps.filter((step) => !step.condition || step.condition(context))
 
         const totalRelevantSteps = relevantSteps.length
 
@@ -118,24 +119,24 @@ export class StateManager<TContext extends OnboardingContext> {
 
         return {
             // Flow identification
-            flowId: this.flowContext.flowId,
-            flowName: this.flowContext.flowName,
-            flowVersion: this.flowContext.flowVersion,
-            flowMetadata: this.flowContext.flowMetadata,
-            instanceId: this.flowContext.instanceId,
+            flowId: this._flowContext.flowId,
+            flowName: this._flowContext.flowName,
+            flowVersion: this._flowContext.flowVersion,
+            flowMetadata: this._flowContext.flowMetadata,
+            instanceId: this._flowContext.instanceId,
 
             // Current state
             currentStep,
             context,
             isFirstStep,
-            isLastStep: currentStep ? !nextStepCandidate : this.isCompletedInternal,
-            canGoPrevious: !isFirstStep && !!currentStep && !!previousStepCandidate && !this.errorInternal,
-            canGoNext: !!(currentStep && nextStepCandidate && !this.errorInternal),
-            isSkippable: !!(currentStep && currentStep.isSkippable && !this.errorInternal),
-            isLoading: this.isLoadingInternal,
-            isHydrating: this.isHydratingInternal,
-            error: this.errorInternal,
-            isCompleted: this.isCompletedInternal,
+            isLastStep: currentStep ? !nextStepCandidate : this._isCompletedInternal,
+            canGoPrevious: !isFirstStep && !!currentStep && !!previousStepCandidate && !this._errorInternal,
+            canGoNext: !!(currentStep && nextStepCandidate && !this._errorInternal),
+            isSkippable: !!(currentStep && currentStep.isSkippable && !this._errorInternal),
+            isLoading: this._isLoadingInternal,
+            isHydrating: this._isHydratingInternal,
+            error: this._errorInternal,
+            isCompleted: this._isCompletedInternal,
             previousStepCandidate: previousStepCandidate,
             nextStepCandidate: nextStepCandidate,
             totalSteps: totalRelevantSteps,
@@ -145,13 +146,13 @@ export class StateManager<TContext extends OnboardingContext> {
         }
     }
 
-    private notifyStateChangeListeners(
+    private _notifyStateChangeListeners(
         currentStep: OnboardingStep<TContext> | null,
         context: TContext,
         history: string[]
     ): void {
         const state = this.getState(currentStep, context, history)
-        this.eventManager.notifyListeners('stateChange', { state })
+        this._eventManager.notifyListeners('stateChange', { state })
     }
 
     private _findNextStep(currentStep: OnboardingStep<TContext>, context: TContext): OnboardingStep<TContext> | null {
@@ -160,7 +161,7 @@ export class StateManager<TContext extends OnboardingContext> {
 
         if (explicitNextStepId) {
             // An explicit target is set, find it. NavigationManager will handle its condition.
-            return findStepById(this.steps, explicitNextStepId) || null
+            return findStepById(this._steps, explicitNextStepId) || null
         }
 
         if (explicitNextStepId === null) {
@@ -170,14 +171,14 @@ export class StateManager<TContext extends OnboardingContext> {
 
         // 2. If nextStep is undefined, fall back to array order
         if (explicitNextStepId === undefined) {
-            const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id)
-            if (currentIndex === -1 || currentIndex >= this.steps.length - 1) {
+            const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
+            if (currentIndex === -1 || currentIndex >= this._steps.length - 1) {
                 return null // Not found or is the last step
             }
 
             // Find the next step in the array that satisfies its condition
-            for (let i = currentIndex + 1; i < this.steps.length; i++) {
-                const candidateStep = this.steps[i]
+            for (let i = currentIndex + 1; i < this._steps.length; i++) {
+                const candidateStep = this._steps[i]
                 if (!candidateStep.condition || candidateStep.condition(context)) {
                     return candidateStep // Found the next valid step
                 }
@@ -202,9 +203,9 @@ export class StateManager<TContext extends OnboardingContext> {
                 targetId = history[history.length - 1]
             } else {
                 // Priority 3: Array Order (The fix for persisted state)
-                const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id)
+                const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
                 if (currentIndex > 0) {
-                    targetId = this.steps[currentIndex - 1].id
+                    targetId = this._steps[currentIndex - 1].id
                 }
             }
         }
@@ -214,7 +215,7 @@ export class StateManager<TContext extends OnboardingContext> {
         }
 
         // --- STEP 2: Validate the candidate and traverse backwards if its condition fails ---
-        let candidateStep = findStepById(this.steps, targetId)
+        let candidateStep = findStepById(this._steps, targetId)
 
         while (candidateStep) {
             // If the candidate's condition passes (or it has no condition), we've found our step.
@@ -230,7 +231,7 @@ export class StateManager<TContext extends OnboardingContext> {
             if (!nextTargetIdInChain) {
                 return null // The backward chain is broken by a failed condition.
             }
-            candidateStep = findStepById(this.steps, nextTargetIdInChain)
+            candidateStep = findStepById(this._steps, nextTargetIdInChain)
         }
 
         return null // Loop finished (e.g., a bad ID was found in the chain).
@@ -238,19 +239,19 @@ export class StateManager<TContext extends OnboardingContext> {
 
     // Getters for internal state
     get isLoading(): boolean {
-        return this.isLoadingInternal
+        return this._isLoadingInternal
     }
 
     get isHydrating(): boolean {
-        return this.isHydratingInternal
+        return this._isHydratingInternal
     }
 
     get error(): Error | null {
-        return this.errorInternal
+        return this._errorInternal
     }
 
     get isCompleted(): boolean {
-        return this.isCompletedInternal
+        return this._isCompletedInternal
     }
 
     /**
@@ -259,35 +260,35 @@ export class StateManager<TContext extends OnboardingContext> {
      * @returns An array of relevant onboarding steps in the current flow.
      */
     public getRelevantSteps(context: TContext): OnboardingStep<TContext>[] {
-        return this.steps.filter((step) => !step.condition || step.condition(context))
+        return this._steps.filter((step) => !step.condition || step.condition(context))
     }
 
     public getStepById(stepId: string | number) {
-        return findStepById(this.steps, stepId)
+        return findStepById(this._steps, stepId)
     }
 
     public getCompletedSteps(context: TContext): OnboardingStep<TContext>[] {
         const completedIds = new Set(Object.keys(context.flowData?._internal?.completedSteps || {}))
-        return this.steps.filter((step) => completedIds.has(String(step.id)))
+        return this._steps.filter((step) => completedIds.has(String(step.id)))
     }
 
     // Setters for internal state
     setLoading(loading: boolean): void {
-        this.isLoadingInternal = loading
+        this._isLoadingInternal = loading
     }
 
     setHydrating(hydrating: boolean): void {
-        this.isHydratingInternal = hydrating
+        this._isHydratingInternal = hydrating
     }
 
     setError(error: Error | null): void {
-        this.errorInternal = error
+        this._errorInternal = error
         if (error) {
-            this.logger.error('Error set:', error)
+            this._logger.error('Error set:', error)
         }
     }
 
     setCompleted(completed: boolean): void {
-        this.isCompletedInternal = completed
+        this._isCompletedInternal = completed
     }
 }

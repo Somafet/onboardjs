@@ -16,7 +16,7 @@ import {
 } from './types'
 
 export class EventHandlerRegistry<TContext extends OnboardingContext> {
-    constructor(private eventManager: EventManager<TContext>) {}
+    constructor(private _eventManager: EventManager<TContext>) {}
 
     /**
      * Unified method to register event listeners
@@ -25,149 +25,149 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
         eventType: T,
         listener: EventListenerMap<TContext>[T]
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener(eventType, listener)
+        return this._eventManager.addEventListener(eventType, listener)
     }
 
     // Convenience methods for common event types
     public onStepChange(listener: (event: StepChangeEvent<TContext>) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepChange', listener)
+        return this._eventManager.addEventListener('stepChange', listener)
     }
 
     public onFlowCompleted(
         listener: (event: FlowCompletedEvent<TContext>) => void | Promise<void>
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowCompleted', listener)
+        return this._eventManager.addEventListener('flowCompleted', listener)
     }
 
     public onStepActive(listener: (event: StepActiveEvent<TContext>) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepActive', listener)
+        return this._eventManager.addEventListener('stepActive', listener)
     }
 
     public onStepCompleted(
         listener: (event: StepCompletedEvent<TContext>) => void | Promise<void>
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepCompleted', listener)
+        return this._eventManager.addEventListener('stepCompleted', listener)
     }
 
     public onContextUpdate(
         listener: (event: ContextUpdateEvent<TContext>) => void | Promise<void>
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener('contextUpdate', listener)
+        return this._eventManager.addEventListener('contextUpdate', listener)
     }
 
     public onError(listener: (event: ErrorEvent<TContext>) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('error', listener)
+        return this._eventManager.addEventListener('error', listener)
     }
 
     public onStateChange(
         listener: (event: { state: EngineState<TContext> }) => void | Promise<void>
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stateChange', listener)
+        return this._eventManager.addEventListener('stateChange', listener)
     }
 
     public onBeforeStepChange(
         listener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void>
     ): UnsubscribeFunction {
-        return this.eventManager.addEventListener('beforeStepChange', listener)
+        return this._eventManager.addEventListener('beforeStepChange', listener)
     }
 
     // Flow-level events
     public onFlowStarted(listener: (event: FlowStartedEvent<TContext>) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowStarted', listener)
+        return this._eventManager.addEventListener('flowStarted', listener)
     }
 
     public onFlowPaused(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowPaused', listener)
+        return this._eventManager.addEventListener('flowPaused', listener)
     }
 
     public onFlowResumed(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowResumed', listener)
+        return this._eventManager.addEventListener('flowResumed', listener)
     }
 
     public onFlowAbandoned(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowAbandoned', listener)
+        return this._eventManager.addEventListener('flowAbandoned', listener)
     }
 
     public onFlowReset(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('flowReset', listener)
+        return this._eventManager.addEventListener('flowReset', listener)
     }
 
     // Step-level events
     public onStepSkipped(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepSkipped', listener)
+        return this._eventManager.addEventListener('stepSkipped', listener)
     }
 
     public onStepRetried(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepRetried', listener)
+        return this._eventManager.addEventListener('stepRetried', listener)
     }
 
     public onStepValidationFailed(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepValidationFailed', listener)
+        return this._eventManager.addEventListener('stepValidationFailed', listener)
     }
 
     public onStepHelpRequested(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepHelpRequested', listener)
+        return this._eventManager.addEventListener('stepHelpRequested', listener)
     }
 
     public onStepAbandoned(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepAbandoned', listener)
+        return this._eventManager.addEventListener('stepAbandoned', listener)
     }
 
     // Navigation events
     public onNavigationBack(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('navigationBack', listener)
+        return this._eventManager.addEventListener('navigationBack', listener)
     }
 
     public onNavigationForward(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('navigationForward', listener)
+        return this._eventManager.addEventListener('navigationForward', listener)
     }
 
     public onNavigationJump(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('navigationJump', listener)
+        return this._eventManager.addEventListener('navigationJump', listener)
     }
 
     // Interaction events
     public onUserIdle(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('userIdle', listener)
+        return this._eventManager.addEventListener('userIdle', listener)
     }
 
     public onUserReturned(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('userReturned', listener)
+        return this._eventManager.addEventListener('userReturned', listener)
     }
 
     public onDataChanged(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('dataChanged', listener)
+        return this._eventManager.addEventListener('dataChanged', listener)
     }
 
     // Performance events
     public onStepRenderTime(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('stepRenderTime', listener)
+        return this._eventManager.addEventListener('stepRenderTime', listener)
     }
 
     public onPersistenceSuccess(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('persistenceSuccess', listener)
+        return this._eventManager.addEventListener('persistenceSuccess', listener)
     }
 
     public onPersistenceFailure(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('persistenceFailure', listener)
+        return this._eventManager.addEventListener('persistenceFailure', listener)
     }
 
     // Checklist events
     public onChecklistItemToggled(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('checklistItemToggled', listener)
+        return this._eventManager.addEventListener('checklistItemToggled', listener)
     }
 
     public onChecklistProgressChanged(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('checklistProgressChanged', listener)
+        return this._eventManager.addEventListener('checklistProgressChanged', listener)
     }
 
     // Plugin events
     public onPluginInstalled(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('pluginInstalled', listener)
+        return this._eventManager.addEventListener('pluginInstalled', listener)
     }
 
     public onPluginError(listener: (event: any) => void | Promise<void>): UnsubscribeFunction {
-        return this.eventManager.addEventListener('pluginError', listener)
+        return this._eventManager.addEventListener('pluginError', listener)
     }
 
     // Plugin compatibility methods
@@ -177,7 +177,7 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
         // Convert to BeforeStepChangeListener format
         const wrappedListener: (event: BeforeStepChangeEvent<TContext>) => void | Promise<void> = async (event) => {
             if (event.targetStepId) {
-                const nextStep = this.findStepById(event.targetStepId)
+                const nextStep = this._findStepById(event.targetStepId)
                 if (nextStep) {
                     await listener(event)
                 }
@@ -222,21 +222,22 @@ export class EventHandlerRegistry<TContext extends OnboardingContext> {
     }
 
     // Helper method (would need to be injected or passed from engine)
-    private findStepById(stepId: string | number | null | undefined): OnboardingStep<TContext> | undefined {
+    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    private _findStepById(_stepId: string | number | null | undefined): OnboardingStep<TContext> | undefined {
         // This would need to be provided by the engine or injected
         return undefined
     }
 
     // Utility methods
     public removeAllListeners(): void {
-        this.eventManager.clearAllListeners()
+        this._eventManager.clearAllListeners()
     }
 
     public getListenerCount(eventType: keyof EventListenerMap<TContext>): number {
-        return this.eventManager.getListenerCount(eventType)
+        return this._eventManager.getListenerCount(eventType)
     }
 
     public hasListeners(eventType: keyof EventListenerMap<TContext>): boolean {
-        return this.eventManager.getListenerCount(eventType) > 0
+        return this._eventManager.hasListeners(eventType)
     }
 }

@@ -87,3 +87,18 @@ runs:
               -F draft=false \
               -F prerelease=false \
               -F generate_release_notes=false
+
+        - name: Remove consumed changesets
+          shell: bash
+          run: |
+              # Remove all changeset files
+              find .changeset -maxdepth 1 -name "*.md" ! -name "README.md" -delete
+
+              # Stage and commit the changes
+              git add .changeset
+
+              # Commit only if there are changes
+              if ! git diff --cached --quiet; then
+                  git commit -m "chore: remove consumed changesets for ${{ inputs.package_name }}@${{ inputs.package_version }}"
+                  git push origin main
+              fi

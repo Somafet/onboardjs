@@ -5,13 +5,13 @@ import { Logger } from '../services/Logger'
 
 export class PerformanceUtils {
     // Memoization cache
-    private static stepCache = new Map<string, OnboardingStep<any>>()
-    private static evaluationCache = new Map<string, any>()
-    private static maxCacheSize = 1000
+    private static _stepCache = new Map<string, OnboardingStep<any>>()
+    private static _evaluationCache = new Map<string, any>()
+    private static _maxCacheSize = 1000
 
     // Performance monitoring
-    private static performanceMetrics = new Map<string, number[]>()
-    private static logger = new Logger({
+    private static _performanceMetrics = new Map<string, number[]>()
+    private static _logger = Logger.getInstance({
         debugMode: false, // Default to false, could be made configurable
         prefix: 'PerformanceUtils',
     })
@@ -27,11 +27,11 @@ export class PerformanceUtils {
 
         const cacheKey = `${steps.length}-${stepId}`
 
-        if (this.stepCache.has(cacheKey)) {
-            const cached = this.stepCache.get(cacheKey)
+        if (this._stepCache.has(cacheKey)) {
+            const cached = this._stepCache.get(cacheKey)
             // Move to end (LRU)
-            this.stepCache.delete(cacheKey)
-            this.stepCache.set(cacheKey, cached!)
+            this._stepCache.delete(cacheKey)
+            this._stepCache.set(cacheKey, cached!)
             return cached
         }
 
@@ -39,13 +39,13 @@ export class PerformanceUtils {
 
         if (step) {
             // Apply LRU eviction when cache is full
-            if (this.stepCache.size >= this.maxCacheSize) {
-                const firstKey = this.stepCache.keys().next().value
+            if (this._stepCache.size >= this._maxCacheSize) {
+                const firstKey = this._stepCache.keys().next().value
                 if (firstKey) {
-                    this.stepCache.delete(firstKey)
+                    this._stepCache.delete(firstKey)
                 }
             }
-            this.stepCache.set(cacheKey, step)
+            this._stepCache.set(cacheKey, step)
         }
 
         return step
@@ -62,25 +62,25 @@ export class PerformanceUtils {
         if (!stepId) return evaluator(stepId, context)
 
         // Create cache key from stepId and relevant context parts
-        const contextHash = this.hashContext(context)
+        const contextHash = this._hashContext(context)
         const cacheKey = `${stepId}-${contextHash}`
 
-        if (this.evaluationCache.has(cacheKey)) {
-            return this.evaluationCache.get(cacheKey)
+        if (this._evaluationCache.has(cacheKey)) {
+            return this._evaluationCache.get(cacheKey)
         }
 
         const result = evaluator(stepId, context)
 
         // Apply cache size limit
-        if (this.evaluationCache.size >= this.maxCacheSize) {
-            const firstKey = this.evaluationCache.keys().next().value
+        if (this._evaluationCache.size >= this._maxCacheSize) {
+            const firstKey = this._evaluationCache.keys().next().value
             if (firstKey) {
                 // Remove the oldest entry
-                this.evaluationCache.delete(firstKey)
+                this._evaluationCache.delete(firstKey)
             }
         }
 
-        this.evaluationCache.set(cacheKey, result)
+        this._evaluationCache.set(cacheKey, result)
         return result
     }
 
@@ -91,7 +91,7 @@ export class PerformanceUtils {
         func: T,
         wait: number
     ): (...args: Parameters<T>) => void {
-        let timeout: NodeJS.Timeout
+        let timeout: ReturnType<typeof setTimeout>
         return (...args: Parameters<T>) => {
             clearTimeout(timeout)
             timeout = setTimeout(() => func(...args), wait)
@@ -125,11 +125,11 @@ export class PerformanceUtils {
         const duration = endTime - startTime
 
         // Store performance metrics
-        if (!this.performanceMetrics.has(operationName)) {
-            this.performanceMetrics.set(operationName, [])
+        if (!this._performanceMetrics.has(operationName)) {
+            this._performanceMetrics.set(operationName, [])
         }
 
-        const metrics = this.performanceMetrics.get(operationName)!
+        const metrics = this._performanceMetrics.get(operationName)!
         metrics.push(duration)
 
         // Keep only last 100 measurements
@@ -139,7 +139,7 @@ export class PerformanceUtils {
 
         // Log slow operations
         if (duration > 100) {
-            this.logger.warn(`Slow operation detected: ${operationName} took ${duration.toFixed(2)}ms`)
+            this._logger.warn(`Slow operation detected: ${operationName} took ${duration.toFixed(2)}ms`)
         }
 
         return result
@@ -155,11 +155,11 @@ export class PerformanceUtils {
         const duration = endTime - startTime
 
         // Store performance metrics
-        if (!this.performanceMetrics.has(operationName)) {
-            this.performanceMetrics.set(operationName, [])
+        if (!this._performanceMetrics.has(operationName)) {
+            this._performanceMetrics.set(operationName, [])
         }
 
-        const metrics = this.performanceMetrics.get(operationName)!
+        const metrics = this._performanceMetrics.get(operationName)!
         metrics.push(duration)
 
         // Keep only last 100 measurements
@@ -169,7 +169,7 @@ export class PerformanceUtils {
 
         // Log slow operations
         if (duration > 200) {
-            this.logger.warn(`Slow async operation detected: ${operationName} took ${duration.toFixed(2)}ms`)
+            this._logger.warn(`Slow async operation detected: ${operationName} took ${duration.toFixed(2)}ms`)
         }
 
         return result
@@ -185,7 +185,7 @@ export class PerformanceUtils {
         max: number
         recent: number
     } | null {
-        const metrics = this.performanceMetrics.get(operationName)
+        const metrics = this._performanceMetrics.get(operationName)
         if (!metrics || metrics.length === 0) {
             return null
         }
@@ -204,9 +204,9 @@ export class PerformanceUtils {
      * Clear all caches
      */
     static clearCaches(): void {
-        this.stepCache.clear()
-        this.evaluationCache.clear()
-        this.performanceMetrics.clear()
+        this._stepCache.clear()
+        this._evaluationCache.clear()
+        this._performanceMetrics.clear()
     }
 
     /**
@@ -218,16 +218,16 @@ export class PerformanceUtils {
         performanceMetricsCount: number
     } {
         return {
-            stepCacheSize: this.stepCache.size,
-            evaluationCacheSize: this.evaluationCache.size,
-            performanceMetricsCount: this.performanceMetrics.size,
+            stepCacheSize: this._stepCache.size,
+            evaluationCacheSize: this._evaluationCache.size,
+            performanceMetricsCount: this._performanceMetrics.size,
         }
     }
 
     /**
      * Simple context hashing for cache keys
      */
-    private static hashContext<T extends OnboardingContext>(context: T): string {
+    private static _hashContext<T extends OnboardingContext>(context: T): string {
         const flowData = context.flowData || {}
         // Create a stable representation of flowData by sorting keys
         const sortedFlowDataKeys = Object.keys(flowData).sort()
@@ -279,10 +279,10 @@ export class PerformanceUtils {
         performanceMemoryEstimate: number
     } {
         // Rough estimates of memory usage
-        const stepCacheMemory = this.stepCache.size * 1000 // ~1KB per cached step
-        const evaluationCacheMemory = this.evaluationCache.size * 500 // ~500B per evaluation
+        const stepCacheMemory = this._stepCache.size * 1000 // ~1KB per cached step
+        const evaluationCacheMemory = this._evaluationCache.size * 500 // ~500B per evaluation
         const performanceMemory =
-            Array.from(this.performanceMetrics.values()).reduce((sum, metrics) => sum + metrics.length, 0) * 8 // 8 bytes per number
+            Array.from(this._performanceMetrics.values()).reduce((sum, metrics) => sum + metrics.length, 0) * 8 // 8 bytes per number
 
         return {
             cacheMemoryEstimate: stepCacheMemory + evaluationCacheMemory,

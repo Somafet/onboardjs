@@ -131,7 +131,7 @@ describe('OnboardingEngine', () => {
 
             // Check that the error was logged
             expect(consoleErrorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('StateManager [ERROR]'),
+                expect.stringContaining('CoreEngineService [ERROR]'),
                 expect.stringContaining('Error set'),
                 expect.any(Error)
             )
@@ -173,7 +173,7 @@ describe('OnboardingEngine', () => {
             await engine.updateContext({ flowData: { test: 'data' } })
 
             expect(consoleErrorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('StateManager [ERROR]'),
+                expect.stringContaining('CoreEngineService [ERROR]'),
                 expect.stringContaining('Error set'),
                 expect.any(Error)
             )
@@ -987,6 +987,7 @@ describe('OnboardingEngine', () => {
             const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
             const config = { ...basicConfig, steps: checklistSteps }
             engine = new OnboardingEngine(config)
+            await engine.ready()
 
             await engine.updateChecklistItem('task1', true) // Only complete task1
             await engine.next() // Should fail
@@ -1062,6 +1063,7 @@ describe('OnboardingEngine', () => {
     describe('State Management', () => {
         beforeEach(async () => {
             engine = new OnboardingEngine(basicConfig)
+            await engine.ready()
         })
 
         it('should provide correct state information', () => {
@@ -1104,6 +1106,7 @@ describe('OnboardingEngine', () => {
     describe('Event Listeners', () => {
         beforeEach(async () => {
             engine = new OnboardingEngine(basicConfig)
+            await engine.ready()
         })
 
         it('should notify state change listeners', async () => {
@@ -1447,7 +1450,9 @@ describe('OnboardingEngine', () => {
             await engine.ready()
 
             // Fire multiple navigation calls rapidly
-            const promises = [engine.next(), engine.goToStep('step3'), engine.previous(), engine.next()]
+            // Sequence: step1 -> step2, step2 -> step2, step2 -> step1, step1 -> step2
+            // End result should be step2 (which has a nextStep, so flow doesn't complete)
+            const promises = [engine.next(), engine.goToStep('step2'), engine.previous(), engine.next()]
 
             await Promise.all(promises)
 
@@ -1708,6 +1713,7 @@ describe('OnboardingEngine', () => {
                 await engine.next()
 
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    '[EventManager] [ERROR]',
                     expect.stringContaining('Error in stepChange listener:'),
                     expect.any(Error)
                 )
@@ -1777,6 +1783,7 @@ describe('OnboardingEngine', () => {
                 await engine.next()
 
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    '[EventManager] [ERROR]',
                     expect.stringContaining('Error in sync onFlowHasCompleted listener:'),
                     expect.any(Error)
                 )
@@ -1799,6 +1806,7 @@ describe('OnboardingEngine', () => {
                 await new Promise((resolve) => setTimeout(resolve, 10))
 
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    '[EventManager] [ERROR]',
                     expect.stringContaining('Error in async onFlowHasCompleted listener:'),
                     expect.any(Error)
                 )
@@ -2118,6 +2126,7 @@ describe('OnboardingEngine', () => {
                 expect(workingStepChangeListener).toHaveBeenCalled()
                 expect(stateChangeListener).toHaveBeenCalled()
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    '[EventManager] [ERROR]',
                     expect.stringContaining('Error in stepChange listener:'),
                     expect.any(Error)
                 )

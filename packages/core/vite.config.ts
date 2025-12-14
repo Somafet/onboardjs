@@ -8,7 +8,6 @@ export default defineConfig({
             entry: path.resolve(__dirname, 'src/index.ts'),
             name: 'OnboardJSCore',
             fileName: (format) => `index.${format}.js`,
-            formats: ['es', 'cjs'],
         },
         rollupOptions: {
             output: [

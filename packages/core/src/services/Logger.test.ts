@@ -167,4 +167,90 @@ describe('Logger', () => {
             })
         })
     })
+
+    describe('Singleton Pattern', () => {
+        beforeEach(() => {
+            // Clear cache before each singleton test
+            Logger.clearCache()
+        })
+
+        afterEach(() => {
+            // Clean up after each test
+            Logger.clearCache()
+        })
+
+        it('should return the same instance when called without config', () => {
+            const logger1 = Logger.getInstance()
+            const logger2 = Logger.getInstance()
+            expect(logger1).toBe(logger2)
+        })
+
+        it('should return cached instance for the same prefix', () => {
+            const logger1 = Logger.getInstance({ prefix: 'MyService' })
+            const logger2 = Logger.getInstance({ prefix: 'MyService' })
+            expect(logger1).toBe(logger2)
+        })
+
+        it('should return different instances for different prefixes', () => {
+            const logger1 = Logger.getInstance({ prefix: 'ServiceA' })
+            const logger2 = Logger.getInstance({ prefix: 'ServiceB' })
+            expect(logger1).not.toBe(logger2)
+        })
+
+        it('should return different instances for different debugMode settings', () => {
+            const logger1 = Logger.getInstance({ debugMode: true, prefix: 'Test' })
+            const logger2 = Logger.getInstance({ debugMode: false, prefix: 'Test' })
+            expect(logger1).not.toBe(logger2)
+        })
+
+        it('should cache instances based on full config (debugMode + prefix)', () => {
+            const logger1 = Logger.getInstance({ debugMode: true, prefix: 'App' })
+            const logger2 = Logger.getInstance({ debugMode: true, prefix: 'App' })
+            const logger3 = Logger.getInstance({ debugMode: false, prefix: 'App' })
+
+            expect(logger1).toBe(logger2)
+            expect(logger1).not.toBe(logger3)
+        })
+
+        it('should clear all cached instances', () => {
+            const logger1 = Logger.getInstance({ prefix: 'Test1' })
+            const logger2 = Logger.getInstance({ prefix: 'Test2' })
+
+            Logger.clearCache()
+
+            const logger3 = Logger.getInstance({ prefix: 'Test1' })
+            const logger4 = Logger.getInstance({ prefix: 'Test2' })
+
+            expect(logger1).not.toBe(logger3)
+            expect(logger2).not.toBe(logger4)
+        })
+
+        it('should return different instance for default singleton vs configured', () => {
+            const defaultLogger = Logger.getInstance()
+            const configuredLogger = Logger.getInstance({ prefix: 'Custom' })
+
+            expect(defaultLogger).not.toBe(configuredLogger)
+        })
+
+        it('cached instances should maintain their configuration', () => {
+            const logger = Logger.getInstance({ debugMode: true, prefix: 'DebugService' })
+
+            logger.debug('Debug message')
+            expect(mockConsoleLog).toHaveBeenCalledWith('DebugService [DEBUG]', 'Debug message')
+
+            // Get the same cached instance
+            const sameLogger = Logger.getInstance({ debugMode: true, prefix: 'DebugService' })
+            mockConsoleLog.mockClear()
+
+            sameLogger.debug('Another debug message')
+            expect(mockConsoleLog).toHaveBeenCalledWith('DebugService [DEBUG]', 'Another debug message')
+        })
+
+        it('should handle undefined config as default singleton', () => {
+            const logger1 = Logger.getInstance(undefined)
+            const logger2 = Logger.getInstance()
+
+            expect(logger1).toBe(logger2)
+        })
+    })
 })

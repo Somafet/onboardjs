@@ -42,9 +42,7 @@ const mockSteps: OnboardingStep[] = [
                 },
             ],
         },
-        onStepComplete: () => {
-            console.log('Dev tools selected')
-        },
+        onStepComplete: () => {},
     },
     {
         id: 'custom-comp',
@@ -456,7 +454,7 @@ describe('StepJSONParser', () => {
         describe('serializeStep', () => {
             it('should catch an error during individual step serialization', () => {
                 const errorMessage = 'Schema is null or undefined'
-                vi.spyOn(StepJSONParser as any, 'serializePayload').mockImplementation(() => {
+                vi.spyOn(StepJSONParser as any, '_serializePayload').mockImplementation(() => {
                     throw new Error(errorMessage)
                 })
                 const steps = [{ id: 'step1', type: 'INFORMATION', payload: {} }]
@@ -504,7 +502,7 @@ describe('StepJSONParser', () => {
             it('should catch an error during individual step deserialization', () => {
                 const validJson = StepJSONParser.serialize([{ id: 's1', type: 'INFORMATION', payload: {} }])!
                 const errorMessage = 'Schema is null or undefined'
-                vi.spyOn(StepJSONParser as any, 'deserializePayload').mockImplementation(() => {
+                vi.spyOn(StepJSONParser as any, '_deserializePayload').mockImplementation(() => {
                     throw new Error(errorMessage)
                 })
 
@@ -526,7 +524,7 @@ describe('StepJSONParser', () => {
                     __functionBody: 'return { this is invalid syntax',
                 }
 
-                const resultFn = (StepJSONParser as any).deserializeFunction(
+                const resultFn = (StepJSONParser as any)._deserializeFunction(
                     invalidSerializedFunc,
                     'testProp',
                     'testId',

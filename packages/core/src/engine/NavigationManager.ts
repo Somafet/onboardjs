@@ -12,13 +12,13 @@ import { BeforeStepChangeEvent } from './types'
 
 export class NavigationManager<TContext extends OnboardingContext> {
     constructor(
-        private steps: OnboardingStep<TContext>[],
-        private eventManager: EventManager<TContext>,
-        private stateManager: StateManager<TContext>,
-        private checklistManager: ChecklistManager<TContext>,
-        private persistenceManager: PersistenceManager<TContext>,
-        private errorHandler: ErrorHandler<TContext>,
-        private logger: Logger
+        private _steps: OnboardingStep<TContext>[],
+        private _eventManager: EventManager<TContext>,
+        private _stateManager: StateManager<TContext>,
+        private _checklistManager: ChecklistManager<TContext>,
+        private _persistenceManager: PersistenceManager<TContext>,
+        private _errorHandler: ErrorHandler<TContext>,
+        private _logger: Logger
     ) {}
 
     async navigateToStep(
@@ -36,10 +36,9 @@ export class NavigationManager<TContext extends OnboardingContext> {
     ): Promise<OnboardingStep<TContext> | null> {
         let isCancelled = false
         let finalTargetStepId = requestedTargetStepId
-        let redirected = false
 
         // Handle beforeStepChange event
-        if (this.eventManager.getListenerCount('beforeStepChange') > 0) {
+        if (this._eventManager.hasListeners('beforeStepChange')) {
             const event: BeforeStepChangeEvent<TContext> = {
                 currentStep,
                 targetStepId: requestedTargetStepId,
@@ -50,8 +49,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 redirect: (newTargetId) => {
                     if (!isCancelled) {
                         finalTargetStepId = newTargetId
-                        redirected = true
-                        this.logger.debug(
+                        this._logger.debug(
                             `[NavigationManager] Navigation redirected to ${newTargetId} by beforeStepChange listener.`
                         )
                     }
@@ -59,26 +57,26 @@ export class NavigationManager<TContext extends OnboardingContext> {
             }
 
             try {
-                await this.eventManager.notifyListenersSequential('beforeStepChange', event)
+                await this._eventManager.notifyListenersSequential('beforeStepChange', event)
                 if (isCancelled) {
-                    this.logger.debug('[NavigationManager] Navigation cancelled by beforeStepChange listener.')
-                    this.stateManager.setLoading(false)
+                    this._logger.debug('[NavigationManager] Navigation cancelled by beforeStepChange listener.')
+                    this._stateManager.setLoading(false)
                     return currentStep
                 }
             } catch (error) {
-                this.errorHandler.handleError(error, 'beforeStepChange listener', context)
+                this._errorHandler.handleError(error, 'beforeStepChange listener', context)
                 return currentStep
             }
         }
 
-        this.stateManager.setLoading(true)
-        this.stateManager.setError(null)
+        this._stateManager.setLoading(true)
+        this._stateManager.setError(null)
 
-        let candidateStep: OnboardingStep<TContext> | undefined | null = findStepById(this.steps, finalTargetStepId)
+        let candidateStep: OnboardingStep<TContext> | undefined | null = findStepById(this._steps, finalTargetStepId)
 
         // This loop now correctly handles skipping by using our robust helper methods.
         while (candidateStep && candidateStep.condition && !candidateStep.condition(context)) {
-            this.logger.debug(`[NavigationManager] Skipping conditional step: ${candidateStep.id}`)
+            this._logger.debug(`[NavigationManager] Skipping conditional step: ${candidateStep.id}`)
             if (direction === 'previous') {
                 // When skipping backwards, we must find the previous valid candidate
                 // relative to the *current candidate*, not the original currentStep.
@@ -101,21 +99,21 @@ export class NavigationManager<TContext extends OnboardingContext> {
         if (currentStep && newCurrentStep && currentStep.id !== newCurrentStep.id) {
             switch (direction) {
                 case 'previous':
-                    this.eventManager.notifyListeners('navigationBack', {
+                    this._eventManager.notifyListeners('navigationBack', {
                         fromStep: currentStep,
                         toStep: newCurrentStep,
                         context,
                     })
                     break
                 case 'next':
-                    this.eventManager.notifyListeners('navigationForward', {
+                    this._eventManager.notifyListeners('navigationForward', {
                         fromStep: currentStep,
                         toStep: newCurrentStep,
                         context,
                     })
                     break
                 case 'goto':
-                    this.eventManager.notifyListeners('navigationJump', {
+                    this._eventManager.notifyListeners('navigationJump', {
                         fromStep: currentStep,
                         toStep: newCurrentStep,
                         context,
@@ -131,11 +129,11 @@ export class NavigationManager<TContext extends OnboardingContext> {
             // We rely on ConfigurationBuilder ensuring _internal and stepStartTimes exist
             // Use String(id) for map keys for consistency, as step IDs can be numbers
             context.flowData._internal!.stepStartTimes![String(newCurrentStep.id)] = startTime
-            this.logger.debug(`[NavigationManager] Recorded step start time for '${newCurrentStep.id}': ${startTime}`)
+            this._logger.debug(`[NavigationManager] Recorded step start time for '${newCurrentStep.id}': ${startTime}`)
 
             // Initialize checklist data on activation
             if (newCurrentStep.type === 'CHECKLIST') {
-                this.checklistManager.getChecklistItemsState(
+                this._checklistManager.getChecklistItemsState(
                     newCurrentStep as OnboardingStep<TContext> & {
                         type: 'CHECKLIST'
                     },
@@ -156,17 +154,17 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 if (newCurrentStep.onStepActive) {
                     await newCurrentStep.onStepActive(context)
                 }
-                this.eventManager.notifyListeners('stepActive', {
+                this._eventManager.notifyListeners('stepActive', {
                     step: newCurrentStep,
                     context,
                     startTime, // Still pass startTime in the event for consumers (e.g., AnalyticsManager)
                 })
             } catch (error) {
-                this.errorHandler.handleError(error, `onStepActive for ${newCurrentStep.id}`, context)
+                this._errorHandler.handleError(error, `onStepActive for ${newCurrentStep.id}`, context)
             }
         } else {
             // Flow is completed
-            this.stateManager.setCompleted(true)
+            this._stateManager.setCompleted(true)
             const finalContext = context // Capture context at completion point
 
             // Calculate flow duration here, before onFlowComplete or persistence
@@ -182,19 +180,19 @@ export class NavigationManager<TContext extends OnboardingContext> {
                     await onFlowComplete(finalContext)
                 } catch (error) {
                     const processedError = error instanceof Error ? error : new Error(String(error))
-                    this.stateManager.setError(processedError)
-                    this.errorHandler.handleError(error, 'onFlowComplete', context)
+                    this._stateManager.setError(processedError)
+                    this._errorHandler.handleError(error, 'onFlowComplete', context)
                 }
             }
 
-            this.eventManager.notifyListeners('flowCompleted', {
+            this._eventManager.notifyListeners('flowCompleted', {
                 context: finalContext,
                 duration: Math.round(flowDuration), // Pass duration to event
             })
-            await this.persistenceManager.persistDataIfNeeded(
+            await this._persistenceManager.persistDataIfNeeded(
                 context,
                 null, // Current step is null when flow completes
-                this.stateManager.isHydrating
+                this._stateManager.isHydrating
             )
         }
 
@@ -203,17 +201,17 @@ export class NavigationManager<TContext extends OnboardingContext> {
             try {
                 onStepChangeCallback(newCurrentStep, oldStep, context)
             } catch (error) {
-                this.errorHandler.handleError(error, 'onStepChangeCallback', context)
+                this._errorHandler.handleError(error, 'onStepChangeCallback', context)
             }
         }
 
-        this.eventManager.notifyListeners('stepChange', {
+        this._eventManager.notifyListeners('stepChange', {
             oldStep,
             newStep: newCurrentStep,
             context,
         })
 
-        this.stateManager.setLoading(false)
+        this._stateManager.setLoading(false)
         return newCurrentStep
     }
 
@@ -229,14 +227,14 @@ export class NavigationManager<TContext extends OnboardingContext> {
         ) => void,
         onFlowComplete?: (context: TContext) => Promise<void> | void
     ): Promise<OnboardingStep<TContext> | null> {
-        if (!currentStep || this.stateManager.isLoading) {
+        if (!currentStep || this._stateManager.isLoading) {
             return currentStep
         }
 
         // Handle checklist completion check
         if (currentStep.type === 'CHECKLIST') {
             if (
-                !this.checklistManager.isChecklistStepComplete(
+                !this._checklistManager.isChecklistStepComplete(
                     currentStep as OnboardingStep<TContext> & {
                         type: 'CHECKLIST'
                     },
@@ -244,11 +242,11 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 )
             ) {
                 const error = new Error('Checklist criteria not met.')
-                this.logger.warn(
+                this._logger.warn(
                     `[NavigationManager] Cannot proceed from checklist step '${currentStep.id}': Not all completion criteria met.`
                 )
-                this.stateManager.setError(error)
-                this.eventManager.notifyListeners('error', { error, context })
+                this._stateManager.setError(error)
+                this._eventManager.notifyListeners('error', { error, context })
                 return currentStep
             }
 
@@ -260,8 +258,8 @@ export class NavigationManager<TContext extends OnboardingContext> {
             }
         }
 
-        this.stateManager.setLoading(true)
-        this.stateManager.setError(null)
+        this._stateManager.setLoading(true)
+        this._stateManager.setError(null)
 
         try {
             // Update context with step-specific data
@@ -281,7 +279,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 await currentStep.onStepComplete(stepSpecificData || {}, context)
             }
 
-            this.eventManager.notifyListeners('stepCompleted', {
+            this._eventManager.notifyListeners('stepCompleted', {
                 step: currentStep,
                 stepData: stepSpecificData || {},
                 context,
@@ -318,16 +316,16 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 onFlowComplete
             )
 
-            await this.persistenceManager.persistDataIfNeeded(
+            await this._persistenceManager.persistDataIfNeeded(
                 context,
                 newCurrentStep?.id || null,
-                this.stateManager.isHydrating
+                this._stateManager.isHydrating
             )
 
             return newCurrentStep
         } catch (error) {
-            this.errorHandler.handleError(error, `next() for step ${currentStep.id}`, context)
-            this.stateManager.setLoading(false)
+            this._errorHandler.handleError(error, `next() for step ${currentStep.id}`, context)
+            this._stateManager.setLoading(false)
             return currentStep
         }
     }
@@ -343,7 +341,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
         ) => void,
         onFlowComplete?: (context: TContext) => Promise<void> | void
     ): Promise<OnboardingStep<TContext> | null> {
-        if (!currentStep || this.stateManager.isLoading) {
+        if (!currentStep || this._stateManager.isLoading) {
             return currentStep
         }
 
@@ -388,15 +386,15 @@ export class NavigationManager<TContext extends OnboardingContext> {
         ) => void,
         onFlowComplete?: (context: TContext) => Promise<void> | void
     ): Promise<OnboardingStep<TContext> | null> {
-        if (!currentStep || !currentStep.isSkippable || this.stateManager.isLoading) {
-            this.logger.debug(
+        if (!currentStep || !currentStep.isSkippable || this._stateManager.isLoading) {
+            this._logger.debug(
                 `[NavigationManager] skip(): Cannot skip from step '${currentStep?.id}'. Not skippable or engine loading.`
             )
             return currentStep
         }
 
         const skipReason = currentStep.skipToStep ? 'explicit_skip_target' : 'default_skip'
-        this.eventManager.notifyListeners('stepSkipped', {
+        this._eventManager.notifyListeners('stepSkipped', {
             step: currentStep,
             context,
             skipReason,
@@ -412,12 +410,12 @@ export class NavigationManager<TContext extends OnboardingContext> {
 
         if (evaluatedSkipTarget === undefined) {
             // Fallback to next step in the configuration array
-            const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id)
-            if (currentIndex !== -1 && currentIndex < this.steps.length - 1) {
+            const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
+            if (currentIndex !== -1 && currentIndex < this._steps.length - 1) {
                 // Find the first valid subsequent step in array order
                 let nextInArrayCandidate: OnboardingStep<TContext> | undefined = undefined
-                for (let i = currentIndex + 1; i < this.steps.length; i++) {
-                    const step = this.steps[i]
+                for (let i = currentIndex + 1; i < this._steps.length; i++) {
+                    const step = this._steps[i]
                     if (!step.condition || step.condition(context)) {
                         nextInArrayCandidate = step
                         break
@@ -425,17 +423,17 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 }
                 finalSkipTargetId = nextInArrayCandidate?.id
                 if (nextInArrayCandidate) {
-                    this.logger.debug(
+                    this._logger.debug(
                         `[NavigationManager] skip(): No explicit skip/next target. Skipping to next valid step in array: '${finalSkipTargetId}'`
                     )
                 } else {
-                    this.logger.debug(
+                    this._logger.debug(
                         `[NavigationManager] skip(): No explicit skip/next target and no subsequent valid step in array. Flow will complete.`
                     )
                 }
             } else {
                 finalSkipTargetId = null // No next step, so flow completes
-                this.logger.debug(
+                this._logger.debug(
                     `[NavigationManager] skip(): No explicit skip/next target, no next in array. Flow will complete on skip.`
                 )
             }
@@ -467,8 +465,8 @@ export class NavigationManager<TContext extends OnboardingContext> {
         ) => void,
         onFlowComplete?: (context: TContext) => Promise<void> | void
     ): Promise<OnboardingStep<TContext> | null> {
-        if (this.stateManager.isLoading) {
-            this.logger.debug(`[NavigationManager] goToStep(): Ignoring - engine is loading.`)
+        if (this._stateManager.isLoading) {
+            this._logger.debug(`[NavigationManager] goToStep(): Ignoring - engine is loading.`)
             return currentStep
         }
 
@@ -482,7 +480,7 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 ...context.flowData,
                 ...stepSpecificData,
             }
-            this.logger.debug(`[NavigationManager] goToStep(): Context flowData updated with step-specific data.`)
+            this._logger.debug(`[NavigationManager] goToStep(): Context flowData updated with step-specific data.`)
         }
 
         return await this.navigateToStep(
@@ -508,18 +506,18 @@ export class NavigationManager<TContext extends OnboardingContext> {
                 // Flow is explicitly ended.
                 return null
             }
-            return findStepById(this.steps, explicitNextStepId) || undefined
+            return findStepById(this._steps, explicitNextStepId) || undefined
         }
 
         // Priority 2: Array order (if nextStep is undefined).
-        const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id)
+        const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
         if (currentIndex === -1) {
             return undefined
         }
 
         // Iterate through the rest of the array to find the first valid step.
-        for (let i = currentIndex + 1; i < this.steps.length; i++) {
-            const candidateStep = this.steps[i]
+        for (let i = currentIndex + 1; i < this._steps.length; i++) {
+            const candidateStep = this._steps[i]
             if (!candidateStep.condition || candidateStep.condition(context)) {
                 return candidateStep // Found the next valid step.
             }
@@ -537,21 +535,21 @@ export class NavigationManager<TContext extends OnboardingContext> {
         let targetId = evaluateStepId(currentStep.previousStep, context)
 
         if (targetId !== undefined) {
-            return findStepById(this.steps, targetId) || undefined
+            return findStepById(this._steps, targetId) || undefined
         }
 
         // Priority 2: History (if previousStep is undefined).
         if (history.length > 0) {
             targetId = history[history.length - 1] // Use the last item in history
-            return findStepById(this.steps, targetId) || undefined
+            return findStepById(this._steps, targetId) || undefined
         }
 
         // Priority 3: Array order (if previousStep and history are undefined/empty).
-        const currentIndex = this.steps.findIndex((s) => s.id === currentStep.id)
+        const currentIndex = this._steps.findIndex((s) => s.id === currentStep.id)
         if (currentIndex > 0) {
             // Iterate backwards in the array to find the first valid step.
             for (let i = currentIndex - 1; i >= 0; i--) {
-                const candidateStep = this.steps[i]
+                const candidateStep = this._steps[i]
                 if (!candidateStep.condition || candidateStep.condition(context)) {
                     return candidateStep // Found the previous valid step.
                 }
