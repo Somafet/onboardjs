@@ -32,7 +32,8 @@ export {
 } from './components'
 
 // Export utilities
-export { createStepsHash, createConfigHash, areStepsEqual } from './utils'
+export { createStepsHash, createConfigHash, areStepsEqual, getLoadingReason, createLoadingState } from './utils'
+export type { LoadingState, LoadingReason } from './utils'
 
 // Export Suspense-related utilities
 export { useSuspenseEngine, clearSuspenseCache, type UseSuspenseEngineResult } from './hooks/internal/useSuspenseEngine'

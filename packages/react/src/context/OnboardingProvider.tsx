@@ -19,6 +19,7 @@ import {
     type LocalStoragePersistenceOptions,
     type UsePersistenceConfig,
 } from '../hooks/internal'
+import { createLoadingState, type LoadingState } from '../utils/loadingState'
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<TContext extends OnboardingContextType = OnboardingContextType> {
@@ -34,7 +35,32 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
     engine: OnboardingEngine<TContext> | null
     engineInstanceId?: number | undefined
     state: EngineState<TContext> | null
+
+    /**
+     * Granular loading state breakdown for better UX control.
+     * Provides visibility into why the UI is blocked.
+     *
+     * @example
+     * ```tsx
+     * const { loading } = useOnboarding()
+     *
+     * if (loading.isHydrating) {
+     *   return <InitialLoadScreen />
+     * } else if (loading.isEngineProcessing) {
+     *   return <NavigationSpinner />
+     * } else if (loading.isComponentProcessing) {
+     *   return <ValidationSpinner />
+     * }
+     * ```
+     */
+    loading: LoadingState
+
+    /**
+     * @deprecated Use `loading.isAnyLoading` instead. Will be removed in v2.0.
+     * Convenience boolean that is true when any loading is occurring.
+     */
     isLoading: boolean
+
     setComponentLoading: (loading: boolean) => void
     // Expose currentStep directly for convenience, derived from state
     currentStep: OnboardingStep<TContext> | null | undefined
@@ -234,6 +260,9 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     // Synchronize engine state to React state
     const engineState = useEngineState(engine, isReady)
 
+    // Engine processing state (navigation, persistence, etc.)
+    const [engineProcessing, setEngineProcessing] = useState(false)
+
     // Setup step rendering
     const handleDataChange = useCallback((data: unknown, isValid: boolean) => {
         setStepSpecificData({ data, isValid })
@@ -245,17 +274,26 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         onDataChange: handleDataChange,
     })
 
-    // Setup engine actions
+    // Setup engine actions with engine processing state callback
     const actions = useEngineActions<TContext>({
         engine,
         isEngineReady: isReady,
         stepData: stepSpecificData,
-        onLoadingChange: setComponentLoading,
+        onEngineProcessingChange: setEngineProcessing,
     })
 
-    // Compute loading state
-    // Compute loading state
-    const isLoading = componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false)
+    // Compute granular loading state
+    const isHydrating = engineState?.isHydrating ?? false
+    const isEngineProcessing = engineProcessing || (engineState?.isLoading ?? false)
+    const isComponentProcessing = componentLoading
+
+    const loading = useMemo(
+        () => createLoadingState(isHydrating, isEngineProcessing, isComponentProcessing),
+        [isHydrating, isEngineProcessing, isComponentProcessing]
+    )
+
+    // Deprecated: kept for backward compatibility, maps to loading.isAnyLoading
+    const isLoading = loading.isAnyLoading
 
     // Build context value
     const value = useMemo(
@@ -263,6 +301,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             engine: isReady ? engine : null,
             engineInstanceId: isReady ? engine?.instanceId : undefined,
             state: isReady ? engineState : null,
+            loading,
             isLoading,
             setComponentLoading,
             currentStep: (engineState?.currentStep as OnboardingStep<TContext>) ?? null,
@@ -271,7 +310,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             renderStep,
             ...actions,
         }),
-        [engine, engineState, isLoading, isReady, engineError, actions, renderStep]
+        [engine, engineState, loading, isLoading, isReady, engineError, actions, renderStep]
     )
 
     // Type assertion explanation:
