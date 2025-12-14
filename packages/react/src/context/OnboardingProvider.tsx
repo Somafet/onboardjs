@@ -46,39 +46,6 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
      * This can be used by consumers to render the step UI.
      */
     renderStep: () => React.ReactNode
-
-    /**
-     * Analytics methods for tracking custom events
-     */
-    analytics: {
-        /**
-         * Track a custom event
-         * @param eventName The name of the event
-         * @param properties Additional properties to include
-         * @param options Optional configuration for the event
-         */
-        trackEvent: (
-            eventName: string,
-            properties?: Record<string, unknown>,
-            options?: {
-                includeStepContext?: boolean
-                includeFlowProgress?: boolean
-                includeContextData?: boolean
-                category?: string
-                priority?: 'low' | 'normal' | 'high' | 'critical'
-            }
-        ) => void
-
-        /**
-         * Flush all pending analytics events
-         */
-        flush: () => Promise<void>
-
-        /**
-         * Set the user ID for analytics tracking
-         */
-        setUserId: (userId: string) => void
-    }
 }
 
 /**
@@ -270,41 +237,8 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     })
 
     // Compute loading state
+    // Compute loading state
     const isLoading = componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false)
-
-    // Setup analytics methods - simplified API that uses trackCustomEvent internally
-    const analyticsApi = useMemo(
-        () => ({
-            trackEvent: (
-                eventName: string,
-                properties: Record<string, unknown> = {},
-                options: {
-                    includeStepContext?: boolean
-                    includeFlowProgress?: boolean
-                    includeContextData?: boolean
-                    category?: string
-                    priority?: 'low' | 'normal' | 'high' | 'critical'
-                } = {}
-            ) => {
-                if (engine && isReady) {
-                    // Always use trackCustomEvent for unified API
-                    // The engine handles empty options internally
-                    engine.trackCustomEvent(eventName, properties, options)
-                }
-            },
-            flush: async () => {
-                if (engine && isReady) {
-                    await engine.flushAnalytics()
-                }
-            },
-            setUserId: (userId: string) => {
-                if (engine && isReady) {
-                    engine.setAnalyticsUserId(userId)
-                }
-            },
-        }),
-        [engine, isReady]
-    )
 
     // Build context value
     const value = useMemo(
@@ -318,10 +252,9 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             isCompleted: engineState?.isCompleted,
             error: engineError ?? engineState?.error ?? null,
             renderStep,
-            analytics: analyticsApi,
             ...actions,
         }),
-        [engine, engineState, isLoading, isReady, engineError, actions, renderStep, analyticsApi]
+        [engine, engineState, isLoading, isReady, engineError, actions, renderStep]
     )
 
     // Type assertion explanation:

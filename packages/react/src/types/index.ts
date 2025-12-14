@@ -3,9 +3,13 @@ import React from 'react'
 import {
     OnboardingStep as CoreOnboardingStep,
     OnboardingContext,
-    // Import specific payload types if needed for prop definitions
-    // e.g., CustomComponentStepPayload from @onboardjs/core if you want to be more specific
-    // for the 'else' branch, though 'any' is often practical here.
+    OnboardingStepType,
+    InformationStepPayload,
+    MultipleChoiceStepPayload,
+    SingleChoiceStepPayload,
+    ConfirmationStepPayload,
+    CustomComponentStepPayload,
+    ChecklistStepPayload,
 } from '@onboardjs/core'
 
 /**
@@ -46,16 +50,16 @@ export interface StepComponentProps<P = unknown, TContext extends OnboardingCont
 }
 
 /**
- * A type representing the React specific definition of an onboarding step.
- * It expands the core onboarding step type to include React-specific properties.
+ * Discriminated union for step component props by step type.
+ * Provides type-safe mapping from step types to their payload types.
  */
-export type OnboardingStep<TContext extends OnboardingContext = OnboardingContext> = CoreOnboardingStep<TContext> & {
-    /**
-     * The React component that will render this step.
-     * It can be a component that accepts `StepComponentProps` to interact with the onboarding engine,
-     * or a simple presentational component that takes no props.
-     */
-    component?: StepComponent<any, TContext>
+export type StepComponentPropsMap<TContext extends OnboardingContext = OnboardingContext> = {
+    INFORMATION: StepComponentProps<InformationStepPayload, TContext>
+    SINGLE_CHOICE: StepComponentProps<SingleChoiceStepPayload, TContext>
+    MULTIPLE_CHOICE: StepComponentProps<MultipleChoiceStepPayload, TContext>
+    CONFIRMATION: StepComponentProps<ConfirmationStepPayload, TContext>
+    CHECKLIST: StepComponentProps<ChecklistStepPayload<TContext>, TContext>
+    CUSTOM_COMPONENT: StepComponentProps<CustomComponentStepPayload, TContext>
 }
 
 /**
@@ -66,18 +70,54 @@ export type OnboardingStep<TContext extends OnboardingContext = OnboardingContex
  * @template P The type of the step's payload.
  * @template TContext The type of the onboarding context.
  */
-export type StepComponent<P = any, TContext extends OnboardingContext = OnboardingContext> = React.ComponentType<
+export type StepComponent<P = unknown, TContext extends OnboardingContext = OnboardingContext> = React.ComponentType<
     StepComponentProps<P, TContext>
 >
 
 /**
- * Defines the mapping from a step type (or a custom key)
- * to a React component for rendering that step.
+ * Strict component type keyed by step type.
+ * Provides type-safe component assignment for predefined step types.
+ */
+export type StepComponentByType<
+    T extends OnboardingStepType,
+    TContext extends OnboardingContext = OnboardingContext,
+> = React.ComponentType<StepComponentPropsMap<TContext>[T]>
+
+/**
+ * Defines the mapping from a step type (or a custom key) to a React component for rendering that step.
  *
- * This advanced type provides payload type inference for standard step types.
- * Uses `any` for the value type to allow components with specific payload types
- * to be assigned without strict type checking issues.
+ * This type provides:
+ * - Strong typing for predefined step types (INFORMATION, CUSTOM_COMPONENT, etc.)
+ * - Flexibility for string-keyed custom components
+ * - Proper payload type inference based on step type
+ *
+ * @example
+ * ```tsx
+ * const registry: StepComponentRegistry<MyContext> = {
+ *   // Predefined types with type-safe props
+ *   INFORMATION: (props) => { // props is StepComponentProps<InformationStepPayload, MyContext>
+ *     return <div>{props.payload.mainText}</div>
+ *   },
+ *   // String keys for custom components
+ *   'custom-step': (props) => {
+ *     return <CustomStepUI payload={props.payload} />
+ *   }
+ * }
+ * ```
  */
 export type StepComponentRegistry<TContext extends OnboardingContext = OnboardingContext> = {
-    [Key in string]?: StepComponent<any, TContext>
+    [K in OnboardingStepType]?: StepComponentByType<K, TContext>
+} & Record<string | number, StepComponent<unknown, TContext>>
+
+/**
+ * A type representing the React specific definition of an onboarding step.
+ * It expands the core onboarding step type to include React-specific properties.
+ */
+export type OnboardingStep<TContext extends OnboardingContext = OnboardingContext> = CoreOnboardingStep<TContext> & {
+    /**
+     * The React component that will render this step.
+     * It can be a component that accepts `StepComponentProps` to interact with the onboarding engine,
+     * or a simple presentational component that takes no props.
+     */
+    component?: StepComponent<unknown, TContext>
 }

@@ -344,9 +344,7 @@ describe('useOnboarding', () => {
             expect(queryByTestId('single-choice-step')).toBeNull()
         })
 
-        it('should render a fallback and warn when a component is not in the registry', async () => {
-            const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
+        it('should render a fallback when a component is not in the registry', async () => {
             // ARRANGE
             const incompleteRegistry = { ...mockStepComponents }
             delete incompleteRegistry.CONFIRMATION
@@ -374,14 +372,16 @@ describe('useOnboarding', () => {
                 renderedStep = result.current.renderStep()
             })
 
-            const { getByText } = render(<>{renderedStep}</>)
-            expect(getByText('Component for step "step4" not found.')).toBeTruthy()
+            const { getByText, container } = render(<>{renderedStep}</>)
 
-            expect(consoleWarnSpy).toHaveBeenCalledWith(
-                '[OnboardJS] No component found for step "step4". Tried: step.component, registry["step4"], registry["CONFIRMATION"]'
-            )
+            // New implementation renders an error div with helpful resolution attempts
+            expect(getByText(/Component Not Found for Step: "step4"/)).toBeTruthy()
 
-            consoleWarnSpy.mockRestore()
+            // Verify the error UI shows attempted resolution paths
+            const errorDiv = container.querySelector('div[style*="color"]')
+            expect(errorDiv).toBeTruthy()
+            expect(errorDiv?.textContent).toContain('step4')
+            expect(errorDiv?.textContent).toContain('registry')
         })
     })
 
