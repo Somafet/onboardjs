@@ -170,6 +170,24 @@ export class EventManager<TContext extends OnboardingContext = OnboardingContext
     }
 
     /**
+     * Check if an event type has any listeners registered.
+     * This is more semantic and robust than checking getListenerCount() === 0.
+     * Prefer this method for conditional event emission optimization.
+     */
+    hasListeners<T extends keyof EventListenerMap<TContext>>(eventType: T): boolean {
+        const listenerSet = this._listeners.get(eventType)
+        return listenerSet !== undefined && listenerSet.size > 0
+    }
+
+    /**
+     * Check if any of the specified event types have listeners.
+     * Useful for checking multiple event types at once.
+     */
+    hasAnyListeners<T extends keyof EventListenerMap<TContext>>(...eventTypes: T[]): boolean {
+        return eventTypes.some((eventType) => this.hasListeners(eventType))
+    }
+
+    /**
      * Clear all listeners
      */
     clearAllListeners(): void {

@@ -47,9 +47,6 @@ describe('PerformanceUtils', () => {
         currentTimeStub += intendedDuration
         const currentCallEndTime = currentTimeStub
 
-        console.log(
-            `TEST HELPER: op=${operationName}, i=${intendedDuration}, configuring perf.now to return ${currentCallStartTime} then ${currentCallEndTime}`
-        )
         mockPerfNow.mockReturnValueOnce(currentCallStartTime).mockReturnValueOnce(currentCallEndTime)
 
         PerformanceUtils.measurePerformance(operationName, () => {})
@@ -67,9 +64,6 @@ describe('PerformanceUtils', () => {
         currentTimeStub += intendedDuration
         const currentCallEndTime = currentTimeStub
 
-        console.log(
-            `TEST HELPER ASYNC: op=${operationName}, i=${intendedDuration}, configuring perf.now to return ${currentCallStartTime} then ${currentCallEndTime}`
-        )
         mockPerfNow.mockReturnValueOnce(currentCallStartTime).mockReturnValueOnce(currentCallEndTime)
 
         await PerformanceUtils.measureAsyncPerformance(operationName, async () => {
@@ -111,22 +105,22 @@ describe('PerformanceUtils', () => {
             for (let i = 0; i < maxCacheSize; i++) {
                 PerformanceUtils.findStepById(manySteps, `step${i}`)
             }
-            expect((PerformanceUtils as any).stepCache.size).toBe(maxCacheSize)
+            expect((PerformanceUtils as any)._stepCache.size).toBe(maxCacheSize)
 
             PerformanceUtils.findStepById(manySteps, `step0`) // Access to move to end of LRU
             PerformanceUtils.findStepById(manySteps, `step${maxCacheSize}`) // New item, evicts oldest unaccessed
 
-            expect((PerformanceUtils as any).stepCache.size).toBe(maxCacheSize)
-            expect((PerformanceUtils as any).stepCache.has(`${manySteps.length}-step0`)).toBe(true)
-            expect((PerformanceUtils as any).stepCache.has(`${manySteps.length}-step1`)).toBe(false) // step1 should be evicted
+            expect((PerformanceUtils as any)._stepCache.size).toBe(maxCacheSize)
+            expect((PerformanceUtils as any)._stepCache.has(`${manySteps.length}-step0`)).toBe(true)
+            expect((PerformanceUtils as any)._stepCache.has(`${manySteps.length}-step1`)).toBe(false) // step1 should be evicted
         })
 
         it('cache key should depend on steps.length and stepId', () => {
             PerformanceUtils.findStepById(mockSteps, 's1')
-            expect((PerformanceUtils as any).stepCache.has(`3-s1`)).toBe(true)
+            expect((PerformanceUtils as any)._stepCache.has(`3-s1`)).toBe(true)
             const shorterSteps = [mockSteps[0]]
             PerformanceUtils.findStepById(shorterSteps, 's1')
-            expect((PerformanceUtils as any).stepCache.has(`1-s1`)).toBe(true)
+            expect((PerformanceUtils as any)._stepCache.has(`1-s1`)).toBe(true)
         })
     })
 
@@ -145,13 +139,13 @@ describe('PerformanceUtils', () => {
             const result = PerformanceUtils.memoizeStepEvaluation(null, mockContext1, mockEvaluator)
             expect(mockEvaluator).toHaveBeenCalledWith(null, mockContext1)
             expect(result.result).toContain('evaluated null')
-            expect((PerformanceUtils as any).evaluationCache.size).toBe(0)
+            expect((PerformanceUtils as any)._evaluationCache.size).toBe(0)
         })
 
         it('should call evaluator for a new stepId/context combination and cache the result', () => {
             PerformanceUtils.memoizeStepEvaluation('eval1', mockContext1, mockEvaluator)
             expect(mockEvaluator).toHaveBeenCalledTimes(1)
-            expect((PerformanceUtils as any).evaluationCache.size).toBe(1)
+            expect((PerformanceUtils as any)._evaluationCache.size).toBe(1)
         })
 
         it('should return cached result if called again with the same stepId/context', () => {
@@ -172,11 +166,11 @@ describe('PerformanceUtils', () => {
             for (let i = 0; i < maxCacheSize + 5; i++) {
                 PerformanceUtils.memoizeStepEvaluation(`eval${i}`, { flowData: { [`key${i}`]: i } }, mockEvaluator)
             }
-            expect((PerformanceUtils as any).evaluationCache.size).toBe(maxCacheSize)
-            const contextHash0 = (PerformanceUtils as any).hashContext({
+            expect((PerformanceUtils as any)._evaluationCache.size).toBe(maxCacheSize)
+            const contextHash0 = (PerformanceUtils as any)._hashContext({
                 flowData: { key0: 0 },
             })
-            expect((PerformanceUtils as any).evaluationCache.has(`eval0-${contextHash0}`)).toBe(false)
+            expect((PerformanceUtils as any)._evaluationCache.has(`eval0-${contextHash0}`)).toBe(false)
         })
     })
 
@@ -313,7 +307,7 @@ describe('PerformanceUtils', () => {
             for (let i = 0; i < 110; i++) {
                 PerformanceUtils.measurePerformance('manyMetrics', () => {})
             }
-            const metrics = (PerformanceUtils as any).performanceMetrics.get('manyMetrics')
+            const metrics = (PerformanceUtils as any)._performanceMetrics.get('manyMetrics')
             expect(metrics).toHaveLength(100)
             tempPerfSpy.mockRestore()
         })
@@ -324,15 +318,10 @@ describe('PerformanceUtils', () => {
             const limit = 100
 
             for (let i = 1; i <= totalMeasurements; i++) {
-                console.log(`TEST LOOP: Iteration for intended duration ${i}`)
                 runMeasuredOp(operationName, i) // Pass 'i' as the intended duration
-                const metricsSoFar = (PerformanceUtils as any).performanceMetrics.get(operationName) as
-                    | number[]
-                    | undefined
-                console.log(`TEST LOOP: Metrics after duration ${i}: ${JSON.stringify(metricsSoFar?.slice(-5))}`) // Log last 5
             }
 
-            const metrics = (PerformanceUtils as any).performanceMetrics.get(operationName) as number[] | undefined
+            const metrics = (PerformanceUtils as any)._performanceMetrics.get(operationName) as number[] | undefined
             expect(metrics).toBeDefined()
             expect(metrics).toHaveLength(limit)
 
@@ -353,7 +342,7 @@ describe('PerformanceUtils', () => {
                 await runAsyncMeasuredOp(operationName, i * 2) // e.g., 2ms, 4ms, ...
             }
 
-            const metrics = (PerformanceUtils as any).performanceMetrics.get(operationName) as number[] | undefined
+            const metrics = (PerformanceUtils as any)._performanceMetrics.get(operationName) as number[] | undefined
             expect(metrics).toBeDefined()
             expect(metrics).toHaveLength(limit)
 
@@ -372,7 +361,7 @@ describe('PerformanceUtils', () => {
         })
 
         it('should calculate stats correctly', () => {
-            ;(PerformanceUtils as any).performanceMetrics.set('testOp', [10, 20, 30, 20, 20])
+            ;(PerformanceUtils as any)._performanceMetrics.set('testOp', [10, 20, 30, 20, 20])
             const stats = PerformanceUtils.getPerformanceStats('testOp')
             expect(stats?.count).toBe(5)
             expect(stats?.average).toBe(20)
@@ -392,9 +381,9 @@ describe('PerformanceUtils', () => {
 
             PerformanceUtils.clearCaches()
 
-            expect((PerformanceUtils as any).stepCache.size).toBe(0)
-            expect((PerformanceUtils as any).evaluationCache.size).toBe(0)
-            expect((PerformanceUtils as any).performanceMetrics.size).toBe(0)
+            expect((PerformanceUtils as any)._stepCache.size).toBe(0)
+            expect((PerformanceUtils as any)._evaluationCache.size).toBe(0)
+            expect((PerformanceUtils as any)._performanceMetrics.size).toBe(0)
         })
     })
 

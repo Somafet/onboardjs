@@ -47,7 +47,7 @@ export class BeforeNavigationHandler<TContext extends OnboardingContext = Onboar
         context: TContext
     ): Promise<BeforeNavigationResult> {
         // Early exit if no listeners
-        if (this._eventManager.getListenerCount('beforeStepChange') === 0) {
+        if (!this._eventManager.hasListeners('beforeStepChange')) {
             return {
                 isCancelled: false,
                 finalTargetStepId: requestedTargetStepId,

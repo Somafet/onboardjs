@@ -299,6 +299,193 @@ describe('EventManager', () => {
         })
     })
 
+    describe('hasListeners', () => {
+        it('should return true when listeners are registered', () => {
+            eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+        })
+
+        it('should return false when no listeners are registered', () => {
+            expect(eventManager.hasListeners('flowCompleted')).toBe(false)
+        })
+
+        it('should return false for unknown event types', () => {
+            // @ts-expect-error Testing unknown event type
+            expect(eventManager.hasListeners('unknownEvent')).toBe(false)
+        })
+
+        it('should update correctly when listeners are added and removed', () => {
+            const unsubscribe = eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+
+            unsubscribe()
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+        })
+
+        it('should handle multiple listeners correctly', () => {
+            const unsubscribe1 = eventManager.addEventListener('stepChange', vi.fn())
+            const unsubscribe2 = eventManager.addEventListener('stepChange', vi.fn())
+
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+
+            unsubscribe1()
+            expect(eventManager.hasListeners('stepChange')).toBe(true) // Still has one listener
+
+            unsubscribe2()
+            expect(eventManager.hasListeners('stepChange')).toBe(false) // Now has no listeners
+        })
+
+        it('should be consistent with getListenerCount', () => {
+            expect(eventManager.hasListeners('stepChange')).toBe(eventManager.getListenerCount('stepChange') > 0)
+
+            eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasListeners('stepChange')).toBe(eventManager.getListenerCount('stepChange') > 0)
+        })
+    })
+
+    describe('hasAnyListeners', () => {
+        it('should return true if any of the specified events have listeners', () => {
+            eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasAnyListeners('stepChange', 'flowCompleted', 'error')).toBe(true)
+        })
+
+        it('should return false if none of the specified events have listeners', () => {
+            expect(eventManager.hasAnyListeners('stepChange', 'flowCompleted', 'error')).toBe(false)
+        })
+
+        it('should handle single event type', () => {
+            eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasAnyListeners('stepChange')).toBe(true)
+            expect(eventManager.hasAnyListeners('flowCompleted')).toBe(false)
+        })
+
+        it('should handle multiple event types with mixed listener states', () => {
+            eventManager.addEventListener('stepChange', vi.fn())
+            eventManager.addEventListener('error', vi.fn())
+
+            expect(eventManager.hasAnyListeners('stepChange', 'flowCompleted')).toBe(true)
+            expect(eventManager.hasAnyListeners('error', 'stepActive')).toBe(true)
+            expect(eventManager.hasAnyListeners('flowCompleted', 'stepActive')).toBe(false)
+        })
+    })
+
+    describe('Concurrent listener add/remove scenarios', () => {
+        it('should handle rapid listener addition and removal', () => {
+            const listeners: Array<() => void> = []
+
+            // Rapidly add listeners
+            for (let i = 0; i < 10; i++) {
+                const unsubscribe = eventManager.addEventListener('stepChange', vi.fn())
+                listeners.push(unsubscribe)
+            }
+
+            expect(eventManager.getListenerCount('stepChange')).toBe(10)
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+
+            // Rapidly remove listeners
+            listeners.forEach((unsubscribe) => unsubscribe())
+
+            expect(eventManager.getListenerCount('stepChange')).toBe(0)
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+        })
+
+        it('should handle interleaved add and remove operations', () => {
+            const unsubscribe1 = eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+
+            const unsubscribe2 = eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.getListenerCount('stepChange')).toBe(2)
+
+            unsubscribe1()
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+            expect(eventManager.getListenerCount('stepChange')).toBe(1)
+
+            const unsubscribe3 = eventManager.addEventListener('stepChange', vi.fn())
+            expect(eventManager.getListenerCount('stepChange')).toBe(2)
+
+            unsubscribe2()
+            unsubscribe3()
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+        })
+
+        it('should maintain correct state when same listener is added multiple times', () => {
+            const listener = vi.fn()
+
+            const unsubscribe1 = eventManager.addEventListener('stepChange', listener)
+            const unsubscribe2 = eventManager.addEventListener('stepChange', listener)
+            const unsubscribe3 = eventManager.addEventListener('stepChange', listener)
+
+            // Set only stores unique values, so count should be 1
+            expect(eventManager.getListenerCount('stepChange')).toBe(1)
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+
+            // Removing once should clear the listener since it's the same reference
+            unsubscribe1()
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+
+            // Additional unsubscribes should be no-ops
+            unsubscribe2()
+            unsubscribe3()
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+        })
+
+        it('should handle rapid notifications during listener changes', () => {
+            const listener1 = vi.fn()
+            const listener2 = vi.fn()
+
+            const unsubscribe1 = eventManager.addEventListener('stepChange', listener1)
+            eventManager.addEventListener('stepChange', listener2)
+
+            // Notify while listeners exist
+            eventManager.notifyListeners('stepChange', {
+                newStep: null,
+                oldStep: null,
+                context: {} as TestContext,
+            })
+
+            expect(listener1).toHaveBeenCalledTimes(1)
+            expect(listener2).toHaveBeenCalledTimes(1)
+
+            // Remove one listener and notify again
+            unsubscribe1()
+            eventManager.notifyListeners('stepChange', {
+                newStep: null,
+                oldStep: null,
+                context: {} as TestContext,
+            })
+
+            expect(listener1).toHaveBeenCalledTimes(1) // Should not be called again
+            expect(listener2).toHaveBeenCalledTimes(2)
+        })
+
+        it('should handle listener removal during notification', () => {
+            let unsubscribe2: (() => void) | null = null
+
+            const listener1 = vi.fn(() => {
+                // Remove listener2 during listener1 execution
+                if (unsubscribe2) {
+                    unsubscribe2()
+                }
+            })
+            const listener2 = vi.fn()
+
+            eventManager.addEventListener('stepChange', listener1)
+            unsubscribe2 = eventManager.addEventListener('stepChange', listener2)
+
+            // This should not cause issues even though listener2 is removed during notification
+            eventManager.notifyListeners('stepChange', {
+                newStep: null,
+                oldStep: null,
+                context: {} as TestContext,
+            })
+
+            expect(listener1).toHaveBeenCalledTimes(1)
+            // listener2 might or might not be called depending on Set iteration order,
+            // but the important thing is no errors are thrown
+            expect(eventManager.hasListeners('stepChange')).toBe(true) // listener1 still exists
+        })
+    })
+
     describe('clearAllListeners', () => {
         it('should remove all listeners for all event types', () => {
             eventManager.addEventListener('stepChange', vi.fn())
@@ -315,6 +502,19 @@ describe('EventManager', () => {
         it('should be idempotent', () => {
             eventManager.clearAllListeners()
             expect(() => eventManager.clearAllListeners()).not.toThrow()
+        })
+
+        it('should clear listeners and affect hasListeners checks', () => {
+            eventManager.addEventListener('stepChange', vi.fn())
+            eventManager.addEventListener('flowCompleted', vi.fn())
+
+            expect(eventManager.hasListeners('stepChange')).toBe(true)
+            expect(eventManager.hasListeners('flowCompleted')).toBe(true)
+
+            eventManager.clearAllListeners()
+
+            expect(eventManager.hasListeners('stepChange')).toBe(false)
+            expect(eventManager.hasListeners('flowCompleted')).toBe(false)
         })
     })
 

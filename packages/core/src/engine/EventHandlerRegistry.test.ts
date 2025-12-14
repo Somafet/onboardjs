@@ -36,6 +36,7 @@ describe('EventHandlerRegistry', () => {
         addEventListener: Mock<AddEventListenerFn>
         clearAllListeners: Mock<ClearAllListenersFn>
         getListenerCount: Mock<GetListenerCountFn>
+        hasListeners: Mock<(eventType: keyof EventListenerMap<TestContext>) => boolean>
         notifyListeners: Mock<NotifyListenersFn>
         notifyListenersSequential: Mock<NotifyListenersSequentialFn>
     }
@@ -50,6 +51,7 @@ describe('EventHandlerRegistry', () => {
             addEventListener: vi.fn(() => sharedMockUnsubscribeFn),
             clearAllListeners: vi.fn(),
             getListenerCount: vi.fn(() => 0),
+            hasListeners: vi.fn(() => false),
             notifyListeners: vi.fn(),
             notifyListenersSequential: vi.fn(),
         }
@@ -63,7 +65,7 @@ describe('EventHandlerRegistry', () => {
 
     describe('Constructor', () => {
         it('should store the provided EventManager instance', () => {
-            expect((registry as any).eventManager).toBe(mockEventManager)
+            expect((registry as any)._eventManager).toBe(mockEventManager)
         })
     })
 
@@ -186,11 +188,10 @@ describe('EventHandlerRegistry', () => {
                 id: 'next',
                 type: 'INFO',
             } as unknown as OnboardingStep<TestContext>
-            const mockContext = { flowData: {} } as TestContext
 
             beforeEach(() => {
                 // Spy on the private method for testing its interaction
-                findStepByIdSpy = vi.spyOn(registry as any, 'findStepById')
+                findStepByIdSpy = vi.spyOn(registry as any, '_findStepById')
             })
 
             it("should add a wrapped listener for 'beforeStepChange'", () => {
@@ -340,13 +341,15 @@ describe('EventHandlerRegistry', () => {
 
         describe('hasListeners', () => {
             it('should return true if listener count > 0', () => {
-                ;(mockEventManager.getListenerCount as Mock).mockReturnValue(1)
+                ;(mockEventManager.hasListeners as Mock).mockReturnValue(true)
                 expect(registry.hasListeners('stateChange')).toBe(true)
+                expect(mockEventManager.hasListeners).toHaveBeenCalledWith('stateChange')
             })
 
             it('should return false if listener count is 0', () => {
-                ;(mockEventManager.getListenerCount as Mock).mockReturnValue(0)
+                ;(mockEventManager.hasListeners as Mock).mockReturnValue(false)
                 expect(registry.hasListeners('stateChange')).toBe(false)
+                expect(mockEventManager.hasListeners).toHaveBeenCalledWith('stateChange')
             })
         })
     })
@@ -354,7 +357,7 @@ describe('EventHandlerRegistry', () => {
     describe('findStepById (Private Helper)', () => {
         // This is a simple implementation that currently returns undefined
         it('should return undefined as per its current implementation', () => {
-            const result = (registry as any).findStepById('anyStepId')
+            const result = (registry as any)._findStepById('anyStepId')
             expect(result).toBeUndefined()
         })
     })
