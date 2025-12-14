@@ -1,5 +1,7 @@
 // src/analytics/aha-tracker/utils.ts
 
+import { generateSecureId } from '../../utils/id-utils'
+
 /**
  * Utility functions for aha tracking
  */
@@ -8,7 +10,7 @@
  * Generate a unique session ID
  */
 export function generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    return generateSecureId()
 }
 
 /**
