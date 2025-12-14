@@ -6,6 +6,37 @@ import { OnboardingContext, OnboardingContextValue } from '../context/Onboarding
 import { UseOnboardingOptions } from './useOnboarding.types'
 import { FlowCompletedEvent, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 
+/**
+ * Hook for accessing the onboarding flow state and actions.
+ *
+ * @template TContext - The type of context used in the onboarding flow
+ * @param options - Optional configuration for event handlers
+ * @returns The onboarding context value containing state, loading, and actions
+ *
+ * @example
+ * ```tsx
+ * const { state, loading, next, previous, renderStep } = useOnboarding()
+ *
+ * // Access granular loading states
+ * if (loading.isHydrating) return <SkeletonLoader />
+ * if (loading.isEngineProcessing) return <TransitionSpinner />
+ *
+ * // Navigate through the flow
+ * const handleNext = () => next({ fieldValue: 'user input' })
+ *
+ * // Render current step
+ * return (
+ *   <div>
+ *     {renderStep()}
+ *     <button onClick={handleNext} disabled={loading.isAnyLoading}>
+ *       Next
+ *     </button>
+ *   </div>
+ * )
+ * ```
+ *
+ * @throws Error if used outside of an OnboardingProvider
+ */
 export function useOnboarding<
     TContext extends OnboardingContextType = OnboardingContextType, // Default generic
 >(options?: UseOnboardingOptions<TContext>): OnboardingContextValue<TContext> {
@@ -17,6 +48,7 @@ export function useOnboarding<
     const {
         engine,
         state,
+        loading,
         isLoading,
         skip,
         next,
@@ -85,6 +117,7 @@ export function useOnboarding<
     return {
         engine,
         state,
+        loading,
         isLoading,
         skip,
         next,

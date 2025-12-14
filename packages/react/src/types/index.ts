@@ -107,7 +107,7 @@ export type StepComponentByType<
  */
 export type StepComponentRegistry<TContext extends OnboardingContext = OnboardingContext> = {
     [K in OnboardingStepType]?: StepComponentByType<K, TContext>
-} & Record<string | number, StepComponent<unknown, TContext>>
+} & Record<string | number, StepComponent<any, TContext>>
 
 /**
  * A type representing the React specific definition of an onboarding step.

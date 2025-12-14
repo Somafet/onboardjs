@@ -118,7 +118,7 @@ export default function OnboardingPage() {
 import { useOnboarding } from '@onboardjs/react'
 
 export default function OnboardingUI({ stepsConfig, stepComponentRegistry }) {
-    const { state, next, isLoading, renderStep } = useOnboarding()
+    const { state, next, loading, renderStep } = useOnboarding()
 
     if (!state || !state.currentStep) return <p>Loading...</p>
     if (state.isCompleted) return <p>Onboarding complete! 🎉</p>
@@ -127,11 +127,51 @@ export default function OnboardingUI({ stepsConfig, stepComponentRegistry }) {
         <div>
             <h2>{state.currentStep.title}</h2>
             {renderStep()}
-            <button onClick={() => next()} disabled={isLoading || !state.canGoNext}>
+            <button onClick={() => next()} disabled={loading.isAnyLoading || !state.canGoNext}>
                 Next
             </button>
         </div>
     )
+}
+```
+
+---
+
+## Loading State Management
+
+The `useOnboarding` hook provides granular loading states through the `loading` object:
+
+```tsx
+const { loading, isLoading } = useOnboarding()
+
+// Granular loading states
+loading.isHydrating // True while loading persisted data on mount
+loading.isEngineProcessing // True during navigation operations (next, previous, skip)
+loading.isComponentProcessing // True when a step component reports loading via setComponentLoading
+loading.isAnyLoading // True if any of the above are true
+
+// Deprecated (backward compatibility)
+isLoading // Equivalent to loading.isAnyLoading
+```
+
+### Usage Example
+
+```tsx
+const { loading, setComponentLoading } = useOnboarding()
+
+// In a step component that performs async operations:
+const handleSubmit = async () => {
+    setComponentLoading(true) // Sets isComponentProcessing to true
+    try {
+        await saveData()
+    } finally {
+        setComponentLoading(false) // Clears the component loading state
+    }
+}
+
+// In your UI, show a spinner during any loading operation:
+if (loading.isAnyLoading) {
+    return <Spinner />
 }
 ```
 

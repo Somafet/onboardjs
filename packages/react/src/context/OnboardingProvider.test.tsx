@@ -354,3 +354,270 @@ describe('OnboardingProvider', () => {
         })
     })
 })
+
+describe('OnboardingProvider - Loading State Management', () => {
+    const mockConfig: OnboardingEngineConfig & {
+        componentRegistry: StepComponentRegistry
+    } = {
+        steps: mockSteps,
+        componentRegistry: mockStepComponents,
+        onFlowComplete: vi.fn(),
+        onStepChange: vi.fn(),
+    }
+
+    afterEach(() => {
+        vi.clearAllMocks()
+        localStorage.clear()
+    })
+
+    // Test consumer that exposes granular loading states
+    const LoadingStateTestConsumer: FC = () => {
+        const { loading, isLoading, state, next, setComponentLoading } = useOnboarding()
+
+        return (
+            <div>
+                <div data-testid="is-hydrating">{loading.isHydrating.toString()}</div>
+                <div data-testid="is-engine-processing">{loading.isEngineProcessing.toString()}</div>
+                <div data-testid="is-component-processing">{loading.isComponentProcessing.toString()}</div>
+                <div data-testid="is-any-loading">{loading.isAnyLoading.toString()}</div>
+                <div data-testid="is-loading">{isLoading.toString()}</div>
+                <div data-testid="current-step">{state?.currentStep?.id || 'no-step'}</div>
+                <button data-testid="next-btn" onClick={() => next()}>
+                    Next
+                </button>
+                <button data-testid="set-component-loading-btn" onClick={() => setComponentLoading(true)}>
+                    Set Component Loading
+                </button>
+                <button data-testid="clear-component-loading-btn" onClick={() => setComponentLoading(false)}>
+                    Clear Component Loading
+                </button>
+            </div>
+        )
+    }
+
+    it('should distinguish hydration loading from engine processing', async () => {
+        // Test that during initial load, isHydrating is true (engine hydrating from persisted data)
+        // and isEngineProcessing reflects the engine's isLoading state
+
+        let initialHydratingCaptured = false
+
+        const HydrationTestConsumer: FC = () => {
+            const { loading, state } = useOnboarding()
+
+            // Capture initial loading states
+            if (loading && !initialHydratingCaptured) {
+                // During hydration, isHydrating should be true before engine is ready
+                if (loading.isHydrating) {
+                    initialHydratingCaptured = true
+                }
+            }
+
+            return (
+                <div>
+                    <div data-testid="is-hydrating">{loading.isHydrating.toString()}</div>
+                    <div data-testid="is-engine-processing">{loading.isEngineProcessing.toString()}</div>
+                    <div data-testid="current-step">{state?.currentStep?.id || 'loading'}</div>
+                </div>
+            )
+        }
+
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <HydrationTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initialization to complete
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // After initialization, both should be false
+        expect(screen.getByTestId('is-hydrating').textContent).toBe('false')
+        expect(screen.getByTestId('is-engine-processing').textContent).toBe('false')
+    })
+
+    it('should set isEngineProcessing during navigation', async () => {
+        // Track loading states during navigation
+        const loadingStatesDuringNavigation: boolean[] = []
+
+        const NavigationLoadingTestConsumer: FC = () => {
+            const { loading, state, next } = useOnboarding()
+
+            // Capture engine processing state changes
+            if (loading.isEngineProcessing) {
+                loadingStatesDuringNavigation.push(true)
+            }
+
+            return (
+                <div>
+                    <div data-testid="is-engine-processing">{loading.isEngineProcessing.toString()}</div>
+                    <div data-testid="is-any-loading">{loading.isAnyLoading.toString()}</div>
+                    <div data-testid="current-step">{state?.currentStep?.id || 'loading'}</div>
+                    <button data-testid="next-btn" onClick={() => next()}>
+                        Next
+                    </button>
+                </div>
+            )
+        }
+
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <NavigationLoadingTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initial load
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // Verify initial state - not loading
+        expect(screen.getByTestId('is-engine-processing').textContent).toBe('false')
+
+        // Trigger navigation
+        await act(async () => {
+            screen.getByTestId('next-btn').click()
+        })
+
+        // Wait for navigation to complete
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step2')
+        })
+
+        // After navigation completes, loading should be false again
+        expect(screen.getByTestId('is-engine-processing').textContent).toBe('false')
+    })
+
+    it('should set isComponentProcessing when component reports loading', async () => {
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <LoadingStateTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initialization
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // Initially, component loading should be false
+        expect(screen.getByTestId('is-component-processing').textContent).toBe('false')
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('false')
+
+        // Set component loading to true
+        act(() => {
+            screen.getByTestId('set-component-loading-btn').click()
+        })
+
+        // Component processing should now be true
+        expect(screen.getByTestId('is-component-processing').textContent).toBe('true')
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('true')
+
+        // Clear component loading
+        act(() => {
+            screen.getByTestId('clear-component-loading-btn').click()
+        })
+
+        // Component processing should be false again
+        expect(screen.getByTestId('is-component-processing').textContent).toBe('false')
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('false')
+    })
+
+    it('should correctly compute isAnyLoading from individual states', async () => {
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <LoadingStateTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initialization
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // Initially, all loading states should be false
+        expect(screen.getByTestId('is-hydrating').textContent).toBe('false')
+        expect(screen.getByTestId('is-engine-processing').textContent).toBe('false')
+        expect(screen.getByTestId('is-component-processing').textContent).toBe('false')
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('false')
+
+        // When component loading is set, isAnyLoading should be true
+        act(() => {
+            screen.getByTestId('set-component-loading-btn').click()
+        })
+
+        expect(screen.getByTestId('is-component-processing').textContent).toBe('true')
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('true')
+
+        // Clear it
+        act(() => {
+            screen.getByTestId('clear-component-loading-btn').click()
+        })
+
+        expect(screen.getByTestId('is-any-loading').textContent).toBe('false')
+    })
+
+    it('should maintain backward compatibility with isLoading', async () => {
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <LoadingStateTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initialization
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // isLoading should equal isAnyLoading for backward compatibility
+        expect(screen.getByTestId('is-loading').textContent).toBe(screen.getByTestId('is-any-loading').textContent)
+
+        // When component loading is set
+        act(() => {
+            screen.getByTestId('set-component-loading-btn').click()
+        })
+
+        // isLoading should still equal isAnyLoading
+        expect(screen.getByTestId('is-loading').textContent).toBe('true')
+        expect(screen.getByTestId('is-loading').textContent).toBe(screen.getByTestId('is-any-loading').textContent)
+
+        // Clear it
+        act(() => {
+            screen.getByTestId('clear-component-loading-btn').click()
+        })
+
+        expect(screen.getByTestId('is-loading').textContent).toBe('false')
+        expect(screen.getByTestId('is-loading').textContent).toBe(screen.getByTestId('is-any-loading').textContent)
+    })
+
+    it('should expose loading object through context', async () => {
+        // Test that the loading object is properly exposed with all required properties
+        let capturedLoading: any = null
+
+        const LoadingObjectTestConsumer: FC = () => {
+            const { loading, state } = useOnboarding()
+            capturedLoading = loading
+
+            return <div data-testid="current-step">{state?.currentStep?.id || 'loading'}</div>
+        }
+
+        render(
+            <OnboardingProvider {...mockConfig}>
+                <LoadingObjectTestConsumer />
+            </OnboardingProvider>
+        )
+
+        // Wait for initialization
+        await waitFor(() => {
+            expect(screen.getByTestId('current-step').textContent).toContain('step1')
+        })
+
+        // Verify loading object structure
+        expect(capturedLoading).toBeDefined()
+        expect(typeof capturedLoading.isHydrating).toBe('boolean')
+        expect(typeof capturedLoading.isEngineProcessing).toBe('boolean')
+        expect(typeof capturedLoading.isComponentProcessing).toBe('boolean')
+        expect(typeof capturedLoading.isAnyLoading).toBe('boolean')
+    })
+})
