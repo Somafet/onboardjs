@@ -35,7 +35,7 @@ export class ChecklistNavigationService<TContext extends OnboardingContext = Onb
         private readonly _errorHandler: ErrorHandler<TContext>,
         logger?: Logger
     ) {
-        this._logger = logger ?? new Logger({ prefix: 'ChecklistNavigationService' })
+        this._logger = logger ?? Logger.getInstance({ prefix: 'ChecklistNavigationService' })
     }
 
     /**

@@ -21,7 +21,7 @@ export class StateManager<TContext extends OnboardingContext> {
         private _flowContext: FlowContext,
         debugMode?: boolean
     ) {
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode: debugMode ?? false,
             prefix: 'StateManager',
         })

@@ -42,9 +42,7 @@ const mockSteps: OnboardingStep[] = [
                 },
             ],
         },
-        onStepComplete: () => {
-            console.log('Dev tools selected')
-        },
+        onStepComplete: () => {},
     },
     {
         id: 'custom-comp',

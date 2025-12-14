@@ -2,7 +2,7 @@ import { OnboardingContext } from '../types'
 import { EventListenerMap, UnsubscribeFunction } from './types'
 import { Logger } from '../services'
 
-const logger = new Logger({ prefix: '[EventManager]' })
+const logger = Logger.getInstance({ prefix: '[EventManager]' })
 
 /**
  * Unified event listener handler with consistent error management

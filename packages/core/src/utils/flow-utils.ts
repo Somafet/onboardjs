@@ -9,7 +9,7 @@ import { Logger } from '../services'
  * Utility functions for working with multiple flows
  */
 export class FlowUtils {
-    private static _logger = new Logger({ prefix: '[FlowUtils]' })
+    private static _logger = Logger.getInstance({ prefix: '[FlowUtils]' })
 
     /**
      * Generate a namespaced persistence key based on flow identification

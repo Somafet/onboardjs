@@ -28,7 +28,7 @@ export class AhaTracker {
     private constructor(config: AhaTrackerConfig = {}) {
         this._config = this._buildConfig(config)
         this._customProviders = this._config.custom_providers
-        this._logger = new Logger({ debugMode: this._config.debug, prefix: 'AhaTracker' })
+        this._logger = Logger.getInstance({ debugMode: this._config.debug, prefix: 'AhaTracker' })
 
         // Initialize managers
         this._deduplicationManager = new DeduplicationManager(this._config)

@@ -11,7 +11,7 @@ export class ActivityTracker {
     private _idleThresholdMs: number = 300000 // 5 minutes default
 
     constructor(logger?: Logger, idleThresholdMs?: number) {
-        this._logger = logger || new Logger({ prefix: 'ActivityTracker' })
+        this._logger = logger || Logger.getInstance({ prefix: 'ActivityTracker' })
         if (idleThresholdMs) {
             this._idleThresholdMs = idleThresholdMs
         }

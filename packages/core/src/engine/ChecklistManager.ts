@@ -12,7 +12,7 @@ export class ChecklistManager<TContext extends OnboardingContext> {
         private _eventManager: EventManager<TContext>,
         private _errorHandler: ErrorHandler<TContext>
     ) {
-        this._logger = new Logger({ prefix: 'ChecklistManager' })
+        this._logger = Logger.getInstance({ prefix: 'ChecklistManager' })
     }
 
     /**

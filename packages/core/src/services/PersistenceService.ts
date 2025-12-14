@@ -54,7 +54,7 @@ export class PersistenceService<
         this._loadData = loadData
         this._persistData = persistData
         this._clearPersistedData = clearPersistedData
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode: debugMode ?? false,
             prefix: 'PersistenceService',
         })

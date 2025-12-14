@@ -19,7 +19,7 @@ export class SessionTracker {
 
     constructor(config: AnalyticsConfig = {}, logger?: Logger) {
         this._config = config
-        this._logger = logger || new Logger({ debugMode: config.debug, prefix: 'SessionTracker' })
+        this._logger = logger || Logger.getInstance({ debugMode: config.debug, prefix: 'SessionTracker' })
         this._sessionId = config.sessionId || `session_${Math.random().toString(36).slice(2)}`
     }
 

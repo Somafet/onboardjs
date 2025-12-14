@@ -21,7 +21,7 @@ export class PluginManagerImpl<
     ) {
         this._engine = engine
         this._eventManager = _eventManager
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode: debugMode ?? false,
             prefix: 'PluginManager',
         })

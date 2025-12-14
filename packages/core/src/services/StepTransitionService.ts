@@ -20,7 +20,7 @@ export class StepTransitionService<TContext extends OnboardingContext = Onboardi
         private readonly _steps: OnboardingStep<TContext>[],
         logger?: Logger
     ) {
-        this._logger = logger ?? new Logger({ prefix: 'StepTransitionService' })
+        this._logger = logger ?? Logger.getInstance({ prefix: 'StepTransitionService' })
     }
 
     /**

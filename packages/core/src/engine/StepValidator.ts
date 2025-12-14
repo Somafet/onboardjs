@@ -37,7 +37,7 @@ export class StepValidator<TContext extends OnboardingContext = OnboardingContex
 
     constructor(maxDepth: number = 100, debugMode: boolean = false) {
         this._maxDepth = maxDepth
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode,
             prefix: 'StepValidator',
         })

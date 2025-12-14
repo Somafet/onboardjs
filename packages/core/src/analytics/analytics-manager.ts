@@ -25,7 +25,7 @@ export class AnalyticsManager<TContext extends OnboardingContext = OnboardingCon
 
     constructor(config: AnalyticsConfig = {}, logger?: Logger) {
         this._config = config
-        this._logger = logger || new Logger({ debugMode: config.debug, prefix: 'AnalyticsManager' })
+        this._logger = logger || Logger.getInstance({ debugMode: config.debug, prefix: 'AnalyticsManager' })
         this._coordinator = new AnalyticsCoordinator(config, this._logger)
     }
 

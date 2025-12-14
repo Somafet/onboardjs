@@ -32,7 +32,7 @@ export class BeforeNavigationHandler<TContext extends OnboardingContext = Onboar
         private readonly _errorHandler: ErrorHandler<TContext>,
         logger?: Logger
     ) {
-        this._logger = logger ?? new Logger({ prefix: 'BeforeNavigationHandler' })
+        this._logger = logger ?? Logger.getInstance({ prefix: 'BeforeNavigationHandler' })
     }
 
     /**

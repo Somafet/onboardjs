@@ -43,7 +43,7 @@ export class NavigationService<
         private readonly _errorHandler: ErrorHandler<TContext>,
         logger?: Logger
     ) {
-        this._logger = logger ?? new Logger({ prefix: 'NavigationService' })
+        this._logger = logger ?? Logger.getInstance({ prefix: 'NavigationService' })
 
         // Delegate to orchestrator
         this._orchestrator = new NavigationOrchestrator(

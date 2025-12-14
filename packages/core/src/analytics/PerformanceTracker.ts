@@ -21,7 +21,7 @@ export class PerformanceTracker {
 
     constructor(config: AnalyticsConfig = {}, logger?: Logger) {
         this._config = config
-        this._logger = logger || new Logger({ debugMode: config.debug, prefix: 'PerformanceTracker' })
+        this._logger = logger || Logger.getInstance({ debugMode: config.debug, prefix: 'PerformanceTracker' })
         this._stepRenderTimes = new Map()
         this._navigationTimes = new Map()
         this._thresholds = {

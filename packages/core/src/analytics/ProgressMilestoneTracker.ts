@@ -11,7 +11,7 @@ export class ProgressMilestoneTracker {
 
     constructor(milestonePercentages: number[] = [25, 50, 75, 100], logger?: Logger) {
         this._milestonePercentages = milestonePercentages
-        this._logger = logger || new Logger({ prefix: 'ProgressMilestoneTracker' })
+        this._logger = logger || Logger.getInstance({ prefix: 'ProgressMilestoneTracker' })
     }
 
     calculateFlowProgress(completedSteps: number, totalSteps: number): number {

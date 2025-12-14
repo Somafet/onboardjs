@@ -26,7 +26,7 @@ export class ErrorHandler<TContext extends OnboardingContext> {
         private _eventManager: EventManager<TContext>,
         private _stateManager: StateManager<TContext>
     ) {
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             prefix: '[ErrorHandler]',
         })
     }

@@ -19,7 +19,7 @@ export class HttpProvider implements AnalyticsProvider {
     private _logger: Logger
 
     constructor(config: HttpProviderConfig) {
-        this._logger = new Logger({ prefix: '[HttpProvider]' })
+        this._logger = Logger.getInstance({ prefix: '[HttpProvider]' })
         this._config = {
             batchSize: 10,
             batchInterval: 2000,

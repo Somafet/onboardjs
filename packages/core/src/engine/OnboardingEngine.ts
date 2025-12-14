@@ -97,7 +97,7 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
             createdAt: Date.now(),
         }
 
-        this._logger = new Logger({
+        this._logger = Logger.getInstance({
             debugMode: config.debug,
             prefix: `OnboardingEngine[${this.flowContext.flowId || this.instanceId}]`,
         }) // Validate configuration

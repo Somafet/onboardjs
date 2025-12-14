@@ -34,7 +34,7 @@ export class AnalyticsCoordinator {
             ...config,
         }
 
-        this._logger = logger || new Logger({ debugMode: config.debug, prefix: 'AnalyticsCoordinator' })
+        this._logger = logger || Logger.getInstance({ debugMode: config.debug, prefix: 'AnalyticsCoordinator' })
 
         // Initialize specialized trackers
         this._sessionTracker = new SessionTracker(this._config, this._logger)

@@ -37,7 +37,7 @@ export class NavigationOrchestrator<TContext extends OnboardingContext = Onboard
         private readonly _errorHandler: ErrorHandler<TContext>,
         logger?: Logger
     ) {
-        this._logger = logger ?? new Logger({ prefix: 'NavigationOrchestrator' })
+        this._logger = logger ?? Logger.getInstance({ prefix: 'NavigationOrchestrator' })
 
         // Initialize delegated services
         this._stepTransitionService = new StepTransitionService(this._steps, this._logger)

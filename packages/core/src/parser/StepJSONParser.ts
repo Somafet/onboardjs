@@ -29,8 +29,8 @@ import {
 } from './types'
 
 export class StepJSONParser {
-    private static readonly VERSION = '1.0.0'
-    private static readonly DEFAULT_OPTIONS: StepJSONParserOptions = {
+    private static readonly _VERSION = '1.0.0'
+    private static readonly _DEFAULT_OPTIONS: StepJSONParserOptions = {
         functionHandling: 'serialize',
         includeMeta: true,
         validateSteps: true,
@@ -38,7 +38,7 @@ export class StepJSONParser {
         prettyPrint: false,
         includeValidationErrors: false,
     }
-    private static readonly logger = new Logger({
+    private static readonly _logger = Logger.getInstance({
         debugMode: false, // Default to false, could be made configurable
         prefix: 'StepJSONParser',
     })
@@ -50,14 +50,14 @@ export class StepJSONParser {
         steps: OnboardingStep<TContext>[],
         options: Partial<StepJSONParserOptions> = {}
     ): ParseResult<string> {
-        const opts = { ...this.DEFAULT_OPTIONS, ...options }
+        const opts = { ...this._DEFAULT_OPTIONS, ...options }
         const errors: string[] = []
         const warnings: string[] = []
 
         try {
             // Validate steps if requested
             if (opts.validateSteps) {
-                const validationResult = this.validateSteps(steps)
+                const validationResult = this._validateSteps(steps)
                 errors.push(...validationResult.errors)
                 warnings.push(...validationResult.warnings)
 
@@ -71,18 +71,18 @@ export class StepJSONParser {
             }
 
             // Serialize steps
-            const serializedSteps = steps.map((step, index) => this.serializeStep(step, index, opts, errors, warnings))
+            const serializedSteps = steps.map((step, index) => this._serializeStep(step, index, opts, errors, warnings))
 
             // Create schema
             const schema: StepJSONSchema = {
-                version: this.VERSION,
+                version: this._VERSION,
                 steps: serializedSteps,
                 metadata: {
                     exportedAt: new Date().toISOString(),
                     totalSteps: steps.length,
                     stepTypes: [...new Set(steps.map((s) => s.type || 'INFORMATION'))],
                     hasCustomComponents: steps.some((s) => s.type === 'CUSTOM_COMPONENT'),
-                    hasFunctions: this.hasAnyFunctions(steps),
+                    hasFunctions: this._hasAnyFunctions(steps),
                 },
             }
 
@@ -111,7 +111,7 @@ export class StepJSONParser {
         jsonString: string,
         options: Partial<StepJSONParserOptions> = {}
     ): ParseResult<OnboardingStep<TContext>[]> {
-        const opts = { ...this.DEFAULT_OPTIONS, ...options }
+        const opts = { ...this._DEFAULT_OPTIONS, ...options }
         const errors: string[] = []
         const warnings: string[] = []
 
@@ -120,7 +120,7 @@ export class StepJSONParser {
             const schema = JSON.parse(jsonString) as StepJSONSchema
 
             // Validate schema
-            const schemaValidation = this.validateSchema(schema)
+            const schemaValidation = this._validateSchema(schema)
             errors.push(...schemaValidation.errors)
             warnings.push(...schemaValidation.warnings)
 
@@ -135,13 +135,13 @@ export class StepJSONParser {
             // Deserialize steps
             const steps = schema.steps
                 .map((serializedStep, index) =>
-                    this.deserializeStep<TContext>(serializedStep, index, opts, errors, warnings)
+                    this._deserializeStep<TContext>(serializedStep, index, opts, errors, warnings)
                 )
                 .filter((step): step is OnboardingStep<TContext> => step !== null)
 
             // Validate deserialized steps if requested
             if (opts.validateSteps) {
-                const validationResult = this.validateSteps(steps)
+                const validationResult = this._validateSteps(steps)
                 errors.push(...validationResult.errors)
                 warnings.push(...validationResult.warnings)
             }
@@ -166,7 +166,7 @@ export class StepJSONParser {
     // STEP SERIALIZATION
     // =============================================================================
 
-    private static serializeStep<TContext extends OnboardingContext>(
+    private static _serializeStep<TContext extends OnboardingContext>(
         step: OnboardingStep<TContext>,
         index: number,
         options: StepJSONParserOptions,
@@ -184,14 +184,14 @@ export class StepJSONParser {
             }
 
             // Handle navigation properties
-            serialized.nextStep = this.serializeStepProperty(step.nextStep, 'nextStep', step.id, options)
-            serialized.previousStep = this.serializeStepProperty(step.previousStep, 'previousStep', step.id, options)
+            serialized.nextStep = this._serializeStepProperty(step.nextStep, 'nextStep', step.id, options)
+            serialized.previousStep = this._serializeStepProperty(step.previousStep, 'previousStep', step.id, options)
 
             // Handle skippable properties
             if (step.isSkippable !== undefined) {
                 serialized.isSkippable = step.isSkippable
                 if (step.isSkippable && (step as any).skipToStep !== undefined) {
-                    serialized.skipToStep = this.serializeStepProperty(
+                    serialized.skipToStep = this._serializeStepProperty(
                         (step as any).skipToStep,
                         'skipToStep',
                         step.id,
@@ -202,11 +202,11 @@ export class StepJSONParser {
 
             // Handle function properties
             if (step.onStepActive && options.functionHandling !== 'omit') {
-                serialized.onStepActive = this.serializeFunction(step.onStepActive, 'onStepActive', step.id, options)
+                serialized.onStepActive = this._serializeFunction(step.onStepActive, 'onStepActive', step.id, options)
             }
 
             if (step.onStepComplete && options.functionHandling !== 'omit') {
-                serialized.onStepComplete = this.serializeFunction(
+                serialized.onStepComplete = this._serializeFunction(
                     step.onStepComplete,
                     'onStepComplete',
                     step.id,
@@ -215,12 +215,12 @@ export class StepJSONParser {
             }
 
             if (step.condition && options.functionHandling !== 'omit') {
-                serialized.condition = this.serializeFunction(step.condition, 'condition', step.id, options)
+                serialized.condition = this._serializeFunction(step.condition, 'condition', step.id, options)
             }
 
             // Handle payload
             if (step.payload) {
-                serialized.payload = this.serializePayload(step, options, errors, warnings)
+                serialized.payload = this._serializePayload(step, options, errors, warnings)
             }
 
             // Handle metadata
@@ -231,7 +231,7 @@ export class StepJSONParser {
             // Handle type preservation
             if (options.preserveTypes) {
                 serialized.__type = step.type || 'INFORMATION'
-                serialized.__version = this.VERSION
+                serialized.__version = this._VERSION
             }
 
             return serialized
@@ -247,7 +247,7 @@ export class StepJSONParser {
         }
     }
 
-    private static serializeStepProperty(
+    private static _serializeStepProperty(
         property: any,
         propertyName: string,
         stepId: string | number,
@@ -260,12 +260,12 @@ export class StepJSONParser {
         }
         if (typeof property === 'function') {
             if (options.functionHandling === 'omit') return undefined
-            return this.serializeFunction(property, propertyName, stepId, options)
+            return this._serializeFunction(property, propertyName, stepId, options)
         }
         return property
     }
 
-    private static serializeFunction(
+    private static _serializeFunction(
         fn: Function,
         propertyName: string,
         stepId: string | number,
@@ -290,7 +290,7 @@ export class StepJSONParser {
 
         // Default serialization
         const functionString = fn.toString()
-        const parameters = this.extractFunctionParameters(functionString)
+        const parameters = this._extractFunctionParameters(functionString)
 
         return {
             __isFunction: true,
@@ -300,7 +300,7 @@ export class StepJSONParser {
         }
     }
 
-    private static serializePayload<TContext extends OnboardingContext>(
+    private static _serializePayload<TContext extends OnboardingContext>(
         step: OnboardingStep<TContext>,
         options: StepJSONParserOptions,
         errors: string[],
@@ -318,7 +318,7 @@ export class StepJSONParser {
                         __payloadType: 'INFORMATION',
                     } as SerializedInformationPayload
 
-                case 'MULTIPLE_CHOICE':
+                case 'MULTIPLE_CHOICE': {
                     const mcPayload = step.payload as MultipleChoiceStepPayload
                     return {
                         ...mcPayload,
@@ -329,8 +329,9 @@ export class StepJSONParser {
                                 value: opt.value,
                             })) || [],
                     } as SerializedMultipleChoicePayload
+                }
 
-                case 'SINGLE_CHOICE':
+                case 'SINGLE_CHOICE': {
                     const scPayload = step.payload as SingleChoiceStepPayload
                     return {
                         ...scPayload,
@@ -341,6 +342,7 @@ export class StepJSONParser {
                                 value: opt.value,
                             })) || [],
                     } as SerializedSingleChoicePayload
+                }
 
                 case 'CONFIRMATION':
                     return {
@@ -354,7 +356,7 @@ export class StepJSONParser {
                         __payloadType: 'CUSTOM_COMPONENT',
                     } as SerializedCustomComponentPayload
 
-                case 'CHECKLIST':
+                case 'CHECKLIST': {
                     const clPayload = step.payload as ChecklistStepPayload<TContext>
                     return {
                         ...clPayload,
@@ -367,11 +369,12 @@ export class StepJSONParser {
                                 isMandatory: item.isMandatory,
                                 condition:
                                     item.condition && options.functionHandling !== 'omit'
-                                        ? this.serializeFunction(item.condition, 'condition', step.id, options)
+                                        ? this._serializeFunction(item.condition, 'condition', step.id, options)
                                         : undefined,
                                 meta: item.meta,
                             })) || [],
                     } as SerializedChecklistPayload<TContext>
+                }
 
                 default:
                     warnings.push(`Unknown step type '${stepType}' for step ${step.id}`)
@@ -385,7 +388,7 @@ export class StepJSONParser {
         }
     }
 
-    private static deserializeStep<TContext extends OnboardingContext>(
+    private static _deserializeStep<TContext extends OnboardingContext>(
         serializedStep: SerializedStep,
         index: number,
         options: StepJSONParserOptions,
@@ -403,14 +406,14 @@ export class StepJSONParser {
             }
 
             // Handle navigation properties
-            step.nextStep = this.deserializeStepProperty(
+            step.nextStep = this._deserializeStepProperty(
                 serializedStep.nextStep,
                 'nextStep',
                 serializedStep.id,
                 options
             ) as any
 
-            step.previousStep = this.deserializeStepProperty(
+            step.previousStep = this._deserializeStepProperty(
                 serializedStep.previousStep,
                 'previousStep',
                 serializedStep.id,
@@ -421,7 +424,7 @@ export class StepJSONParser {
             if (serializedStep.isSkippable !== undefined) {
                 ;(step as any).isSkippable = serializedStep.isSkippable
                 if (serializedStep.isSkippable && serializedStep.skipToStep !== undefined) {
-                    ;(step as any).skipToStep = this.deserializeStepProperty(
+                    ;(step as any).skipToStep = this._deserializeStepProperty(
                         serializedStep.skipToStep,
                         'skipToStep',
                         serializedStep.id,
@@ -432,7 +435,7 @@ export class StepJSONParser {
 
             // Handle function properties
             if (serializedStep.onStepActive) {
-                step.onStepActive = this.deserializeFunction(
+                step.onStepActive = this._deserializeFunction(
                     serializedStep.onStepActive,
                     'onStepActive',
                     serializedStep.id,
@@ -441,7 +444,7 @@ export class StepJSONParser {
             }
 
             if (serializedStep.onStepComplete) {
-                step.onStepComplete = this.deserializeFunction(
+                step.onStepComplete = this._deserializeFunction(
                     serializedStep.onStepComplete,
                     'onStepComplete',
                     serializedStep.id,
@@ -450,7 +453,7 @@ export class StepJSONParser {
             }
 
             if (serializedStep.condition) {
-                step.condition = this.deserializeFunction(
+                step.condition = this._deserializeFunction(
                     serializedStep.condition,
                     'condition',
                     serializedStep.id,
@@ -460,7 +463,7 @@ export class StepJSONParser {
 
             // Handle payload
             if (serializedStep.payload) {
-                step.payload = this.deserializePayload<TContext>(
+                step.payload = this._deserializePayload(
                     serializedStep.payload,
                     serializedStep.type,
                     options,
@@ -483,7 +486,7 @@ export class StepJSONParser {
         }
     }
 
-    private static deserializeStepProperty(
+    private static _deserializeStepProperty(
         property: any,
         propertyName: string,
         stepId: string | number,
@@ -493,13 +496,13 @@ export class StepJSONParser {
         if (typeof property === 'string' || typeof property === 'number') {
             return property
         }
-        if (this.isSerializedFunction(property)) {
-            return this.deserializeFunction(property, propertyName, stepId, options)
+        if (this._isSerializedFunction(property)) {
+            return this._deserializeFunction(property, propertyName, stepId, options)
         }
         return property
     }
 
-    private static deserializeFunction(
+    private static _deserializeFunction(
         serializedFunction: SerializedFunction,
         propertyName: string,
         stepId: string | number,
@@ -514,30 +517,31 @@ export class StepJSONParser {
             // This is a security risk in production - consider alternatives
             return new Function(`return ${serializedFunction.__functionBody}`)()
         } catch (error) {
-            this.logger.warn(`Failed to deserialize function ${propertyName} for step ${stepId}:`, error)
+            this._logger.warn(`Failed to deserialize function ${propertyName} for step ${stepId}:`, error)
             // Return a no-op function as fallback
             return () => {}
         }
     }
 
-    private static deserializePayload<TContext extends OnboardingContext>(
+    private static _deserializePayload(
         serializedPayload: SerializedPayload,
         stepType?: OnboardingStepType,
         options?: StepJSONParserOptions,
         errors?: string[],
         warnings?: string[]
-    ): any {
+    ) {
         const payloadType = (serializedPayload as any).__payloadType || stepType || 'INFORMATION'
 
         try {
             switch (payloadType) {
-                case 'INFORMATION':
+                case 'INFORMATION': {
                     const infoPayload = { ...serializedPayload }
                     delete (infoPayload as any).__payloadType
                     return infoPayload
+                }
 
                 case 'MULTIPLE_CHOICE':
-                case 'SINGLE_CHOICE':
+                case 'SINGLE_CHOICE': {
                     const choicePayload = { ...serializedPayload } as any
                     delete choicePayload.__payloadType
                     if (choicePayload.options) {
@@ -547,18 +551,21 @@ export class StepJSONParser {
                         }))
                     }
                     return choicePayload
+                }
 
-                case 'CONFIRMATION':
+                case 'CONFIRMATION': {
                     const confirmPayload = { ...serializedPayload }
                     delete (confirmPayload as any).__payloadType
                     return confirmPayload
+                }
 
-                case 'CUSTOM_COMPONENT':
+                case 'CUSTOM_COMPONENT': {
                     const customPayload = { ...serializedPayload }
                     delete (customPayload as any).__payloadType
                     return customPayload
+                }
 
-                case 'CHECKLIST':
+                case 'CHECKLIST': {
                     const checklistPayload = { ...serializedPayload } as any
                     delete checklistPayload.__payloadType
                     if (checklistPayload.items) {
@@ -568,13 +575,14 @@ export class StepJSONParser {
                             description: item.description,
                             isMandatory: item.isMandatory,
                             condition:
-                                item.condition && this.isSerializedFunction(item.condition)
-                                    ? this.deserializeFunction(item.condition, 'condition', item.id, options!)
+                                item.condition && this._isSerializedFunction(item.condition)
+                                    ? this._deserializeFunction(item.condition, 'condition', item.id, options!)
                                     : undefined,
                             meta: item.meta,
                         }))
                     }
                     return checklistPayload
+                }
 
                 default:
                     warnings?.push(`Unknown payload type '${payloadType}'`)
@@ -588,11 +596,11 @@ export class StepJSONParser {
         }
     }
 
-    private static isSerializedFunction(obj: any): obj is SerializedFunction {
+    private static _isSerializedFunction(obj: any): obj is SerializedFunction {
         return obj && typeof obj === 'object' && obj.__isFunction === true
     }
 
-    private static extractFunctionParameters(functionString: string): string[] {
+    private static _extractFunctionParameters(functionString: string): string[] {
         try {
             const match = functionString.match(/\(([^)]*)\)/)
             if (!match || !match[1]) return []
@@ -606,7 +614,7 @@ export class StepJSONParser {
         }
     }
 
-    private static hasAnyFunctions<TContext extends OnboardingContext>(steps: OnboardingStep<TContext>[]): boolean {
+    private static _hasAnyFunctions<TContext extends OnboardingContext>(steps: OnboardingStep<TContext>[]): boolean {
         return steps.some(
             (step) =>
                 typeof step.nextStep === 'function' ||
@@ -622,7 +630,7 @@ export class StepJSONParser {
         )
     }
 
-    private static validateSteps<TContext extends OnboardingContext>(
+    private static _validateSteps<TContext extends OnboardingContext>(
         steps: OnboardingStep<TContext>[]
     ): { errors: string[]; warnings: string[] } {
         const errors: string[] = []
@@ -662,13 +670,13 @@ export class StepJSONParser {
             }
 
             // Validate payload based on type
-            this.validateStepPayload(step, errors, warnings)
+            this._validateStepPayload(step, errors, warnings)
         })
 
         return { errors, warnings }
     }
 
-    private static validateStepPayload<TContext extends OnboardingContext>(
+    private static _validateStepPayload<TContext extends OnboardingContext>(
         step: OnboardingStep<TContext>,
         errors: string[],
         warnings: string[]
@@ -682,7 +690,7 @@ export class StepJSONParser {
 
         switch (step.type) {
             case 'MULTIPLE_CHOICE':
-            case 'SINGLE_CHOICE':
+            case 'SINGLE_CHOICE': {
                 const choicePayload = step.payload as MultipleChoiceStepPayload | SingleChoiceStepPayload
                 if (
                     !choicePayload.options ||
@@ -692,8 +700,9 @@ export class StepJSONParser {
                     errors.push(`Step '${step.id}' of type '${step.type}' must have non-empty options array`)
                 }
                 break
+            }
 
-            case 'CHECKLIST':
+            case 'CHECKLIST': {
                 const checklistPayload = step.payload as ChecklistStepPayload<TContext>
                 if (
                     !checklistPayload.items ||
@@ -706,17 +715,19 @@ export class StepJSONParser {
                     errors.push(`Step '${step.id}' of type 'CHECKLIST' must have dataKey property`)
                 }
                 break
+            }
 
-            case 'CUSTOM_COMPONENT':
+            case 'CUSTOM_COMPONENT': {
                 const customPayload = step.payload as CustomComponentStepPayload
                 if (!customPayload.componentKey) {
                     warnings.push(`Step '${step.id}' of type 'CUSTOM_COMPONENT' should have componentKey`)
                 }
                 break
+            }
         }
     }
 
-    private static validateSchema(schema: any): {
+    private static _validateSchema(schema: any): {
         errors: string[]
         warnings: string[]
     } {
@@ -862,12 +873,12 @@ export namespace StepJSONParserUtils {
                 parsed.metadata?.hasFunctions ||
                 parsed.steps.some(
                     (step) =>
-                        StepJSONParser['isSerializedFunction'](step.nextStep) ||
-                        StepJSONParser['isSerializedFunction'](step.previousStep) ||
-                        StepJSONParser['isSerializedFunction'](step.skipToStep) ||
-                        StepJSONParser['isSerializedFunction'](step.onStepActive) ||
-                        StepJSONParser['isSerializedFunction'](step.onStepComplete) ||
-                        StepJSONParser['isSerializedFunction'](step.condition)
+                        StepJSONParser['_isSerializedFunction'](step.nextStep) ||
+                        StepJSONParser['_isSerializedFunction'](step.previousStep) ||
+                        StepJSONParser['_isSerializedFunction'](step.skipToStep) ||
+                        StepJSONParser['_isSerializedFunction'](step.onStepActive) ||
+                        StepJSONParser['_isSerializedFunction'](step.onStepComplete) ||
+                        StepJSONParser['_isSerializedFunction'](step.condition)
                 )
             )
         } catch {
