@@ -78,14 +78,14 @@ importers:
   apps/examples/nextjs-ab-posthog:
     dependencies:
       '@onboardjs/core':
-        specifier: ^0.3.5
-        version: 0.3.12
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1
       '@onboardjs/posthog-plugin':
-        specifier: ^1.0.1
-        version: 1.0.3(@onboardjs/core@0.3.12)(posthog-js@1.302.2)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^1.0.4
+        version: 1.0.4(@onboardjs/core@1.0.0-rc.1)(posthog-js@1.302.2)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@onboardjs/react':
-        specifier: ^0.4.3
-        version: 0.4.8(@onboardjs/core@0.3.12)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1(@onboardjs/core@1.0.0-rc.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@radix-ui/react-label':
         specifier: ^2.1.7
         version: 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -105,8 +105,8 @@ importers:
         specifier: ^0.525.0
         version: 0.525.0(react@19.2.1)
       next:
-        specifier: 15.4.8
-        version: 15.4.8(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 15.4.10
+        version: 15.4.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       posthog-js:
         specifier: ^1.257.0
         version: 1.302.2
@@ -160,11 +160,11 @@ importers:
   apps/examples/nextjs-basecoat:
     dependencies:
       '@onboardjs/core':
-        specifier: ^0.3.12
-        version: 0.3.12
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1
       '@onboardjs/react':
-        specifier: ^0.3.3
-        version: 0.3.3(@onboardjs/core@0.3.12)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1(@onboardjs/core@1.0.0-rc.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       basecoat-css:
         specifier: ^0.3.6
         version: 0.3.6
@@ -181,8 +181,8 @@ importers:
         specifier: ^0.523.0
         version: 0.523.0(react@19.2.1)
       next:
-        specifier: 15.4.8
-        version: 15.4.8(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 15.4.10
+        version: 15.4.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       react:
         specifier: ^19.2.1
         version: 19.2.1
@@ -284,8 +284,8 @@ importers:
         specifier: ^0.511.0
         version: 0.511.0(react@19.2.1)
       next:
-        specifier: 15.4.8
-        version: 15.4.8(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        specifier: 15.4.10
+        version: 15.4.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -385,22 +385,22 @@ importers:
         version: 2.1.1
       lucide-react:
         specifier: ^0.525.0
-        version: 0.525.0(react@19.2.1)
+        version: 0.525.0(react@19.2.3)
       posthog-js:
         specifier: ^1.257.0
         version: 1.302.2
       prism-react-renderer:
         specifier: ^2.4.1
-        version: 2.4.1(react@19.2.1)
+        version: 2.4.1(react@19.2.3)
       react:
-        specifier: ^19.0.1
-        version: 19.2.1
+        specifier: ^19.2.3
+        version: 19.2.3
       react-dom:
-        specifier: ^19.0.1
-        version: 19.2.1(react@19.2.1)
+        specifier: ^19.2.3
+        version: 19.2.3(react@19.2.3)
       recharts:
         specifier: ^3.1.0
-        version: 3.5.1(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react-is@18.3.1)(react@19.2.1)(redux@5.0.1)
+        version: 3.5.1(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react-is@18.3.1)(react@19.2.3)(redux@5.0.1)
       tailwindcss:
         specifier: ^4.1.11
         version: 4.1.17
@@ -1405,8 +1405,8 @@ packages:
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
 
-  '@next/env@15.4.8':
-    resolution: {integrity: sha512-LydLa2MDI1NMrOFSkO54mTc8iIHSttj6R6dthITky9ylXV2gCGi0bHQjVCtLGRshdRPjyh2kXbxJukDtBWQZtQ==}
+  '@next/env@15.4.10':
+    resolution: {integrity: sha512-knhmoJ0Vv7VRf6pZEPSnciUG1S4bIhWx+qTYBW/AjxEtlzsiNORPk8sFDCEvqLfmKuey56UB9FL1UdHEV3uBrg==}
 
   '@next/eslint-plugin-next@15.1.8':
     resolution: {integrity: sha512-1VC0ctUmwQjI9gZJRQgw2c8GKkr4+DTXVu2yLje3PpFfnxnuuZ8Mrv1Whn9tF+CYkMHiEgCaqyGvT44qYNLVcw==}
@@ -1495,17 +1495,25 @@ packages:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
-  '@onboardjs/react@0.3.3':
-    resolution: {integrity: sha512-FSTM9Gj4TQSck1KgXaKWtggGRnWciM+le2Wkz2vfgkBhD0hgzn3qSTUwsB/lN5AohNvABroXsbEJB4+cv+8UQg==}
+  '@onboardjs/posthog-plugin@1.0.4':
+    resolution: {integrity: sha512-PV7kffgQEVZG7ZtYcZqf06X5r+D+fFPitamastQHXumhVoQ3gyOCI0qZeXIfBMZpvRpH+xJyavGb1zlDkQ+Wcg==}
     peerDependencies:
-      '@onboardjs/core': '>=0.3.1'
-      react: ^19.0.0
-      react-dom: ^19.0.0
+      '@onboardjs/core': '>=1.0.0-rc.1'
+      posthog-js: '>=1.255.1'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@onboardjs/react@0.4.8':
     resolution: {integrity: sha512-11kv88mL58BY5wl66fLpfrh3iBZlxU5x7FzaKvqswUCE0/WZGDcM7T8xT60kV7lBAPiMA43lOKUsesqWifCrfA==}
     peerDependencies:
       '@onboardjs/core': '>=0.3.12'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+
+  '@onboardjs/react@1.0.0-rc.1':
+    resolution: {integrity: sha512-oLfUSAz7vCe5JUmbZz/x4ZbtRxe5TxyMmoBFuJz/nzFMdKTjXxjZWtgimI+blHoUC8I8VkBkIW4EvIXzJpW6gQ==}
+    peerDependencies:
+      '@onboardjs/core': '>=1.0.0-rc.1'
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
 
@@ -4148,8 +4156,8 @@ packages:
       react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
       react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
-  next@15.4.8:
-    resolution: {integrity: sha512-jwOXTz/bo0Pvlf20FSb6VXVeWRssA2vbvq9SdrOPEg9x8E1B27C2rQtvriAn600o9hH61kjrVRexEffv3JybuA==}
+  next@15.4.10:
+    resolution: {integrity: sha512-itVlc79QjpKMFMRhP+kbGKaSG/gZM6RCvwhEbwmCNF06CdDiNaoHcbeg0PqkEa2GOcn8KJ0nnc7+yL7EjoYLHQ==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
     peerDependencies:
@@ -4443,6 +4451,11 @@ packages:
     peerDependencies:
       react: ^19.2.1
 
+  react-dom@19.2.3:
+    resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
+    peerDependencies:
+      react: ^19.2.3
+
   react-hook-form@7.68.0:
     resolution: {integrity: sha512-oNN3fjrZ/Xo40SWlHf1yCjlMK417JxoSJVUXQjGdvdRCU07NTFei1i1f8ApUAts+IVh14e4EdakeLEA+BEAs/Q==}
     engines: {node: '>=18.0.0'}
@@ -4492,6 +4505,10 @@ packages:
 
   react@19.2.1:
     resolution: {integrity: sha512-DGrYcCWK7tvYMnWh79yrPHt+vdx9tY+1gPZa7nJQtO/p8bLTDaHp4dzwEhQB7pZ4Xe3ok4XKuEPrVuc+wlpkmw==}
+    engines: {node: '>=0.10.0'}
+
+  react@19.2.3:
+    resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
     engines: {node: '>=0.10.0'}
 
   reactflow@11.11.4:
@@ -6117,7 +6134,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.1
     optional: true
 
-  '@next/env@15.4.8': {}
+  '@next/env@15.4.10': {}
 
   '@next/eslint-plugin-next@15.1.8':
     dependencies:
@@ -6183,15 +6200,22 @@ snapshots:
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
-  '@onboardjs/react@0.3.3(@onboardjs/core@0.3.12)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@onboardjs/posthog-plugin@1.0.4(@onboardjs/core@1.0.0-rc.1)(posthog-js@1.302.2)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
-      '@onboardjs/core': 0.3.12
+      '@onboardjs/core': 1.0.0-rc.1
+      posthog-js: 1.302.2
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
   '@onboardjs/react@0.4.8(@onboardjs/core@0.3.12)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
     dependencies:
       '@onboardjs/core': 0.3.12
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
+
+  '@onboardjs/react@1.0.0-rc.1(@onboardjs/core@1.0.0-rc.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+    dependencies:
+      '@onboardjs/core': 1.0.0-rc.1
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
@@ -6419,7 +6443,7 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@reduxjs/toolkit@2.11.1(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1))(react@19.2.1)':
+  '@reduxjs/toolkit@2.11.1(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1))(react@19.2.3)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@standard-schema/utils': 0.3.0
@@ -6428,8 +6452,8 @@ snapshots:
       redux-thunk: 3.1.0(redux@5.0.1)
       reselect: 5.1.1
     optionalDependencies:
-      react: 19.2.1
-      react-redux: 9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1)
+      react: 19.2.3
+      react-redux: 9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1)
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -9272,6 +9296,10 @@ snapshots:
     dependencies:
       react: 19.2.1
 
+  lucide-react@0.525.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+
   lz-string@1.5.0: {}
 
   magic-string@0.30.21:
@@ -9365,9 +9393,9 @@ snapshots:
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
 
-  next@15.4.8(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+  next@15.4.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
-      '@next/env': 15.4.8
+      '@next/env': 15.4.10
       '@swc/helpers': 0.5.15
       caniuse-lite: 1.0.30001760
       postcss: 8.4.31
@@ -9609,11 +9637,11 @@ snapshots:
       ansi-styles: 5.2.0
       react-is: 17.0.2
 
-  prism-react-renderer@2.4.1(react@19.2.1):
+  prism-react-renderer@2.4.1(react@19.2.3):
     dependencies:
       '@types/prismjs': 1.26.5
       clsx: 2.1.1
-      react: 19.2.1
+      react: 19.2.3
 
   prop-types@15.8.1:
     dependencies:
@@ -9650,6 +9678,11 @@ snapshots:
       react: 19.2.1
       scheduler: 0.27.0
 
+  react-dom@19.2.3(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+      scheduler: 0.27.0
+
   react-hook-form@7.68.0(react@19.2.1):
     dependencies:
       react: 19.2.1
@@ -9660,11 +9693,11 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-redux@9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1):
+  react-redux@9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1):
     dependencies:
       '@types/use-sync-external-store': 0.0.6
-      react: 19.2.1
-      use-sync-external-store: 1.6.0(react@19.2.1)
+      react: 19.2.3
+      use-sync-external-store: 1.6.0(react@19.2.3)
     optionalDependencies:
       '@types/react': 19.2.7
       redux: 5.0.1
@@ -9691,6 +9724,8 @@ snapshots:
       react-dom: 19.2.1(react@19.2.1)
 
   react@19.2.1: {}
+
+  react@19.2.3: {}
 
   reactflow@11.11.4(@types/react@19.2.7)(immer@11.0.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
@@ -9730,21 +9765,21 @@ snapshots:
       tiny-invariant: 1.3.3
       victory-vendor: 36.9.2
 
-  recharts@3.5.1(@types/react@19.2.7)(react-dom@19.2.1(react@19.2.1))(react-is@18.3.1)(react@19.2.1)(redux@5.0.1):
+  recharts@3.5.1(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react-is@18.3.1)(react@19.2.3)(redux@5.0.1):
     dependencies:
-      '@reduxjs/toolkit': 2.11.1(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1))(react@19.2.1)
+      '@reduxjs/toolkit': 2.11.1(react-redux@9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1))(react@19.2.3)
       clsx: 2.1.1
       decimal.js-light: 2.5.1
       es-toolkit: 1.42.0
       eventemitter3: 5.0.1
       immer: 10.2.0
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
       react-is: 18.3.1
-      react-redux: 9.2.0(@types/react@19.2.7)(react@19.2.1)(redux@5.0.1)
+      react-redux: 9.2.0(@types/react@19.2.7)(react@19.2.3)(redux@5.0.1)
       reselect: 5.1.1
       tiny-invariant: 1.3.3
-      use-sync-external-store: 1.6.0(react@19.2.1)
+      use-sync-external-store: 1.6.0(react@19.2.3)
       victory-vendor: 37.3.6
     transitivePeerDependencies:
       - '@types/react'
@@ -10397,6 +10432,10 @@ snapshots:
   use-sync-external-store@1.6.0(react@19.2.1):
     dependencies:
       react: 19.2.1
+
+  use-sync-external-store@1.6.0(react@19.2.3):
+    dependencies:
+      react: 19.2.3
 
   utils-merge@1.0.1: {}
 

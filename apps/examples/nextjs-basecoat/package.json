@@ -9,14 +9,14 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "@onboardjs/core": "^0.3.12",
-        "@onboardjs/react": "^0.3.3",
+        "@onboardjs/core": "^1.0.0-rc.1",
+        "@onboardjs/react": "^1.0.0-rc.1",
         "basecoat-css": "^0.3.6",
         "canvas-confetti": "^1.9.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "lucide-react": "^0.523.0",
-        "next": "15.4.8",
+        "next": "15.4.10",
         "react": "^19.2.1",
         "react-dom": "^19.2.1",
         "recharts": "^2.15.4",
