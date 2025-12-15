@@ -19,8 +19,8 @@
         "lucide-react": "^0.525.0",
         "posthog-js": "^1.257.0",
         "prism-react-renderer": "^2.4.1",
-        "react": "^19.0.1",
-        "react-dom": "^19.0.1",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3",
         "recharts": "^3.1.0",
         "tailwindcss": "^4.1.11"
     },
