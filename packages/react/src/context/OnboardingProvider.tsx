@@ -7,6 +7,7 @@ import {
     EngineState,
     OnboardingEngineConfig,
     OnboardingContext as OnboardingContextType,
+    ConfigurationBuilder,
 } from '@onboardjs/core'
 import { OnboardingStep, StepComponentRegistry } from '../types'
 import {
@@ -18,6 +19,7 @@ import {
     type LocalStoragePersistenceOptions,
     type UsePersistenceConfig,
 } from '../hooks/internal'
+import { createLoadingState, type LoadingState } from '../utils/loadingState'
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<TContext extends OnboardingContextType = OnboardingContextType> {
@@ -33,7 +35,32 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
     engine: OnboardingEngine<TContext> | null
     engineInstanceId?: number | undefined
     state: EngineState<TContext> | null
+
+    /**
+     * Granular loading state breakdown for better UX control.
+     * Provides visibility into why the UI is blocked.
+     *
+     * @example
+     * ```tsx
+     * const { loading } = useOnboarding()
+     *
+     * if (loading.isHydrating) {
+     *   return <InitialLoadScreen />
+     * } else if (loading.isEngineProcessing) {
+     *   return <NavigationSpinner />
+     * } else if (loading.isComponentProcessing) {
+     *   return <ValidationSpinner />
+     * }
+     * ```
+     */
+    loading: LoadingState
+
+    /**
+     * @deprecated Use `loading.isAnyLoading` instead. Will be removed in v2.0.
+     * Convenience boolean that is true when any loading is occurring.
+     */
     isLoading: boolean
+
     setComponentLoading: (loading: boolean) => void
     // Expose currentStep directly for convenience, derived from state
     currentStep: OnboardingStep<TContext> | null | undefined
@@ -46,39 +73,6 @@ export interface OnboardingContextValue<TContext extends OnboardingContextType> 
      * This can be used by consumers to render the step UI.
      */
     renderStep: () => React.ReactNode
-
-    /**
-     * Analytics methods for tracking custom events
-     */
-    analytics: {
-        /**
-         * Track a custom event
-         * @param eventName The name of the event
-         * @param properties Additional properties to include
-         * @param options Optional configuration for the event
-         */
-        trackEvent: (
-            eventName: string,
-            properties?: Record<string, unknown>,
-            options?: {
-                includeStepContext?: boolean
-                includeFlowProgress?: boolean
-                includeContextData?: boolean
-                category?: string
-                priority?: 'low' | 'normal' | 'high' | 'critical'
-            }
-        ) => void
-
-        /**
-         * Flush all pending analytics events
-         */
-        flush: () => Promise<void>
-
-        /**
-         * Set the user ID for analytics tracking
-         */
-        setUserId: (userId: string) => void
-    }
 }
 
 /**
@@ -157,6 +151,34 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     analytics,
     userId,
 }: OnboardingProviderProps<TContext>) {
+    // ============================================================================
+    // CONFIGURATION VALIDATION (Fail Fast at Provider Level)
+    // ============================================================================
+    // Validate configuration immediately before any state initialization.
+    // This ensures errors surface during provider instantiation, not async.
+    const configValidation = useMemo(() => {
+        return ConfigurationBuilder.validateConfig({
+            steps,
+            initialStepId,
+            initialContext,
+            plugins,
+            debug,
+        })
+    }, [steps, initialStepId, initialContext, plugins, debug])
+
+    // Fail fast: throw error immediately if config is invalid
+    if (!configValidation.isValid) {
+        throw new Error(`[OnboardJS] Invalid Onboarding Configuration:\n${configValidation.errors.join('\n')}`)
+    }
+
+    // Log warnings only in debug mode
+    if (configValidation.warnings.length > 0 && debug) {
+        console.warn('[OnboardJS] Configuration warnings:', configValidation.warnings)
+    }
+
+    // ============================================================================
+    // STATE & PERSISTENCE SETUP
+    // ============================================================================
     // Component loading state
     const [componentLoading, setComponentLoading] = useState(false)
 
@@ -174,74 +196,62 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         customOnClearPersistedData,
     })
 
-    // Flow complete handler with persistence cleanup
-    const onFlowCompleteHandler = useCallback(
-        async (context: TContext) => {
-            try {
-                if (passedOnFlowComplete) {
-                    await passedOnFlowComplete(context)
-                }
-            } catch (error) {
-                console.error('[OnboardJS] Error in onFlowComplete callback:', error)
-            }
-
-            // Clear persisted data on completion
-            try {
-                await onClearPersistedData()
-            } catch (error) {
-                console.error('[OnboardJS] Error clearing persisted data on flow completion:', error)
-            }
-        },
-        [passedOnFlowComplete, onClearPersistedData]
-    )
-
-    // Build engine configuration
-    const engineConfig: OnboardingEngineConfig<TContext> = useMemo(
+    // ============================================================================
+    // THREE-TIER CONFIGURATION APPROACH
+    // ============================================================================
+    // Tier 1: Structural config (triggers engine re-creation on change)
+    // These are configuration changes that meaningfully affect the flow structure
+    const structuralConfig = useMemo(
         () => ({
             steps,
-            plugins: plugins || [],
             initialStepId,
             initialContext,
-            onFlowComplete: onFlowCompleteHandler,
+            debug,
+            plugins: plugins || [],
+        }),
+        [steps, initialStepId, initialContext, debug, plugins]
+    )
+
+    // Tier 2: Behavioral config (passed via callbacks, doesn't re-create engine)
+    // These are configuration changes that affect behavior but not flow structure.
+    // Includes callbacks like onFlowComplete, onStepChange, and persistence handlers.
+    const behavioralConfig = useMemo(
+        () => ({
+            onFlowComplete: passedOnFlowComplete,
             onStepChange,
             loadData: onDataLoad,
             persistData: onDataPersist,
             clearPersistedData: onClearPersistedData,
-            debug,
-            // Flow identification
+        }),
+        [passedOnFlowComplete, onStepChange, onDataLoad, onDataPersist, onClearPersistedData]
+    )
+
+    // Tier 3: Cloud/Analytics config (additional engine configuration)
+    // These are settings that don't affect core flow but enhance analytics and cloud features
+    const cloudConfig = useMemo(
+        () => ({
             flowId,
             flowName,
             flowVersion,
             flowMetadata,
-            // Cloud analytics
             publicKey,
             apiHost,
             cloudOptions,
             analytics,
-            // User + registry
             userId,
         }),
-        [
-            steps,
-            plugins,
-            initialStepId,
-            initialContext,
-            onFlowCompleteHandler,
-            onStepChange,
-            onDataLoad,
-            onDataPersist,
-            onClearPersistedData,
-            debug,
-            flowId,
-            flowName,
-            flowVersion,
-            flowMetadata,
-            publicKey,
-            apiHost,
-            cloudOptions,
-            analytics,
-            userId,
-        ]
+        [flowId, flowName, flowVersion, flowMetadata, publicKey, apiHost, cloudOptions, analytics, userId]
+    )
+
+    // Build engine configuration by merging all three tiers.
+    // This reduces dependency array complexity from 19 to just 3 dependencies.
+    const engineConfig: OnboardingEngineConfig<TContext> = useMemo(
+        () => ({
+            ...structuralConfig,
+            ...behavioralConfig,
+            ...cloudConfig,
+        }),
+        [structuralConfig, behavioralConfig, cloudConfig]
     )
 
     // Initialize and manage engine lifecycle
@@ -249,6 +259,9 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
 
     // Synchronize engine state to React state
     const engineState = useEngineState(engine, isReady)
+
+    // Engine processing state (navigation, persistence, etc.)
+    const [engineProcessing, setEngineProcessing] = useState(false)
 
     // Setup step rendering
     const handleDataChange = useCallback((data: unknown, isValid: boolean) => {
@@ -261,50 +274,26 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         onDataChange: handleDataChange,
     })
 
-    // Setup engine actions
+    // Setup engine actions with engine processing state callback
     const actions = useEngineActions<TContext>({
         engine,
         isEngineReady: isReady,
         stepData: stepSpecificData,
-        onLoadingChange: setComponentLoading,
+        onEngineProcessingChange: setEngineProcessing,
     })
 
-    // Compute loading state
-    const isLoading = componentLoading || (engineState?.isLoading ?? false) || (engineState?.isHydrating ?? false)
+    // Compute granular loading state
+    const isHydrating = engineState?.isHydrating ?? false
+    const isEngineProcessing = engineProcessing || (engineState?.isLoading ?? false)
+    const isComponentProcessing = componentLoading
 
-    // Setup analytics methods - simplified API that uses trackCustomEvent internally
-    const analyticsApi = useMemo(
-        () => ({
-            trackEvent: (
-                eventName: string,
-                properties: Record<string, unknown> = {},
-                options: {
-                    includeStepContext?: boolean
-                    includeFlowProgress?: boolean
-                    includeContextData?: boolean
-                    category?: string
-                    priority?: 'low' | 'normal' | 'high' | 'critical'
-                } = {}
-            ) => {
-                if (engine && isReady) {
-                    // Always use trackCustomEvent for unified API
-                    // The engine handles empty options internally
-                    engine.trackCustomEvent(eventName, properties, options)
-                }
-            },
-            flush: async () => {
-                if (engine && isReady) {
-                    await engine.flushAnalytics()
-                }
-            },
-            setUserId: (userId: string) => {
-                if (engine && isReady) {
-                    engine.setAnalyticsUserId(userId)
-                }
-            },
-        }),
-        [engine, isReady]
+    const loading = useMemo(
+        () => createLoadingState(isHydrating, isEngineProcessing, isComponentProcessing),
+        [isHydrating, isEngineProcessing, isComponentProcessing]
     )
+
+    // Deprecated: kept for backward compatibility, maps to loading.isAnyLoading
+    const isLoading = loading.isAnyLoading
 
     // Build context value
     const value = useMemo(
@@ -312,16 +301,16 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
             engine: isReady ? engine : null,
             engineInstanceId: isReady ? engine?.instanceId : undefined,
             state: isReady ? engineState : null,
+            loading,
             isLoading,
             setComponentLoading,
             currentStep: (engineState?.currentStep as OnboardingStep<TContext>) ?? null,
             isCompleted: engineState?.isCompleted,
             error: engineError ?? engineState?.error ?? null,
             renderStep,
-            analytics: analyticsApi,
             ...actions,
         }),
-        [engine, engineState, isLoading, isReady, engineError, actions, renderStep, analyticsApi]
+        [engine, engineState, loading, isLoading, isReady, engineError, actions, renderStep]
     )
 
     // Type assertion explanation:

@@ -5,14 +5,17 @@ import { useOnboarding } from './useOnboarding'
 import { AhaTracker, TrackAhaParams, aha, type OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 
 /**
- * Context and engine-aware version of aha moment tracking.
+ * Hook for accessing analytics operations in the onboarding flow.
  *
- * This hook automatically:
+ * This is the primary hook for tracking aha moments and custom analytics events.
+ * For general event tracking, use `engine.trackCustomEvent()` directly via the `useOnboarding()` hook.
+ *
+ * The hook automatically:
  * - Links the AhaTracker to the current OnboardingEngine for auto user_id detection
  * - Provides a wrapped `trackAha` function that includes engine context
  * - Handles initialization and cleanup
  *
- * Usage:
+ * Usage for aha moments:
  * ```tsx
  * const { trackAha } = useOnboardingAnalytics()
  *
@@ -24,7 +27,19 @@ import { AhaTracker, TrackAhaParams, aha, type OnboardingContext as OnboardingCo
  * }
  * ```
  *
+ * Usage for custom events:
+ * ```tsx
+ * const { engine } = useOnboarding()
+ *
+ * engine.trackCustomEvent('my_event', {
+ *   property_name: 'value',
+ *   includeStepContext: true,
+ *   includeFlowProgress: true
+ * })
+ * ```
+ *
  * @returns Object with `trackAha` function and direct `aha` export
+ * @see {@link https://docs.onboardjs.com/api/analytics} For full analytics API documentation
  */
 export function useOnboardingAnalytics<TContext extends OnboardingContextType = OnboardingContextType>() {
     const { engine } = useOnboarding<TContext>()

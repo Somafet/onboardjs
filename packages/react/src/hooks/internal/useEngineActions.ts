@@ -17,17 +17,26 @@ export interface UseEngineActionsConfig<TContext extends OnboardingContextType> 
     engine: OnboardingEngine<TContext> | null
     isEngineReady: boolean
     stepData: { data: unknown; isValid: boolean }
-    onLoadingChange: (loading: boolean) => void
+    /**
+     * Callback to update engine processing state.
+     * Called with `true` when an engine action starts, `false` when it completes.
+     */
+    onEngineProcessingChange: (processing: boolean) => void
 }
 
 /**
  * Wraps engine methods with loading state management.
- * Single responsibility: action execution with loading states.
+ * Single responsibility: action execution with engine processing state.
+ *
+ * Sets `isEngineProcessing` to true during async operations like:
+ * - Navigation (next, previous, skip, goToStep)
+ * - Context updates
+ * - Engine reset
  */
 export function useEngineActions<TContext extends OnboardingContextType>(
     config: UseEngineActionsConfig<TContext>
 ): EngineActions<TContext> {
-    const { engine, isEngineReady, stepData, onLoadingChange } = config
+    const { engine, isEngineReady, stepData, onEngineProcessingChange } = config
 
     const next = useCallback(
         async (overrideData?: Record<string, unknown>) => {
@@ -43,78 +52,78 @@ export function useEngineActions<TContext extends OnboardingContextType>(
                 return
             }
 
-            onLoadingChange(true)
+            onEngineProcessingChange(true)
             try {
                 await engine.next(dataToPass)
             } finally {
-                onLoadingChange(false)
+                onEngineProcessingChange(false)
             }
         },
-        [engine, isEngineReady, stepData, onLoadingChange]
+        [engine, isEngineReady, stepData, onEngineProcessingChange]
     )
 
     const previous = useCallback(async () => {
         if (!engine || !isEngineReady) return
 
-        onLoadingChange(true)
+        onEngineProcessingChange(true)
         try {
             await engine.previous()
         } finally {
-            onLoadingChange(false)
+            onEngineProcessingChange(false)
         }
-    }, [engine, isEngineReady, onLoadingChange])
+    }, [engine, isEngineReady, onEngineProcessingChange])
 
     const skip = useCallback(async () => {
         if (!engine || !isEngineReady) return
 
-        onLoadingChange(true)
+        onEngineProcessingChange(true)
         try {
             await engine.skip()
         } finally {
-            onLoadingChange(false)
+            onEngineProcessingChange(false)
         }
-    }, [engine, isEngineReady, onLoadingChange])
+    }, [engine, isEngineReady, onEngineProcessingChange])
 
     const goToStep = useCallback(
         async (stepId: string, data?: Record<string, unknown>) => {
             if (!engine || !isEngineReady) return
 
-            onLoadingChange(true)
+            onEngineProcessingChange(true)
             try {
                 await engine.goToStep(stepId, data)
             } finally {
-                onLoadingChange(false)
+                onEngineProcessingChange(false)
             }
         },
-        [engine, isEngineReady, onLoadingChange]
+        [engine, isEngineReady, onEngineProcessingChange]
     )
 
     const updateContext = useCallback(
         async (newContextData: Partial<TContext>) => {
             if (!engine || !isEngineReady) return
 
-            onLoadingChange(true)
+            onEngineProcessingChange(true)
             try {
                 await engine.updateContext(newContextData)
             } finally {
-                onLoadingChange(false)
+                onEngineProcessingChange(false)
             }
         },
-        [engine, isEngineReady, onLoadingChange]
+        [engine, isEngineReady, onEngineProcessingChange]
     )
 
     const reset = useCallback(
         async (newConfig?: Partial<OnboardingEngineConfig<TContext>>) => {
             if (!engine) return
 
-            onLoadingChange(true)
+            onEngineProcessingChange(true)
             try {
                 await engine.reset(newConfig)
             } finally {
-                onLoadingChange(false)
+                onEngineProcessingChange(false)
             }
         },
-        [engine, onLoadingChange]
+        [engine, onEngineProcessingChange]
     )
 
     return {
