@@ -100,5 +100,7 @@ runs:
               # Commit only if there are changes
               if ! git diff --cached --quiet; then
                   git commit -m "chore: remove consumed changesets for ${{ inputs.package_name }}@${{ inputs.package_version }}"
+                  # Pull latest changes before pushing to handle concurrent publishes
+                  git pull origin main --rebase
                   git push origin main
               fi
