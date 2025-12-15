@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/posthog-plugin",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "private": false,
     "description": "Official PostHog analytics plugin for OnboardJS.",
     "files": [
@@ -41,13 +41,13 @@
         "directory": "packages/plugins/posthog"
     },
     "peerDependencies": {
-        "@onboardjs/core": ">=0.3.12",
+        "@onboardjs/core": ">=1.0.0-rc.1",
         "posthog-js": ">=1.255.1",
         "react": "^18.0.0 || ^19.0.0",
         "react-dom": "^18.0.0 || ^19.0.0"
     },
     "devDependencies": {
-        "@onboardjs/core": "^0.3.12",
+        "@onboardjs/core": "^1.0.0-rc.1",
         "@types/node": "^24.3.0",
         "@types/react": "^19.1.12",
         "@types/react-dom": "^19.1.9",

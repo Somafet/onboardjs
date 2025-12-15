@@ -468,8 +468,8 @@ importers:
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: ^0.3.12
-        version: 0.3.12
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1
       '@types/node':
         specifier: ^24.3.0
         version: 24.10.2
@@ -496,8 +496,8 @@ importers:
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: ^0.3.12
-        version: 0.3.12
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1
       '@types/node':
         specifier: ^24.3.0
         version: 24.10.2
@@ -523,10 +523,10 @@ importers:
   packages/plugins/supabase:
     devDependencies:
       '@onboardjs/core':
-        specifier: '*'
-        version: 0.3.12
+        specifier: ^1.0.0-rc.1
+        version: 1.0.0-rc.1
       '@supabase/supabase-js':
-        specifier: ^2.50.0
+        specifier: ^2.87.1
         version: 2.87.1
       '@types/node':
         specifier: ^24.3.0

@@ -36,9 +36,9 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
     public readonly version = '1.0.0' // Should match package.json
 
     config: SupabasePersistencePluginConfig
-    private tableName: string
-    private userIdColumn: string
-    private stateDataColumn: string
+    private _tableName: string
+    private _userIdColumn: string
+    private _stateDataColumn: string
 
     constructor(config: SupabasePersistencePluginConfig) {
         super(config)
@@ -55,9 +55,9 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
         }
 
         this.config = config
-        this.tableName = config.tableName ?? 'onboarding_state'
-        this.userIdColumn = config.userIdColumn ?? 'user_id'
-        this.stateDataColumn = config.stateDataColumn ?? 'state_data'
+        this._tableName = config.tableName ?? 'onboarding_state'
+        this._userIdColumn = config.userIdColumn ?? 'user_id'
+        this._stateDataColumn = config.stateDataColumn ?? 'state_data'
     }
 
     /**
@@ -111,9 +111,9 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
             if (!userId) return null
 
             const { data: stateData, error } = await this.config.client
-                .from(this.tableName)
-                .select(this.stateDataColumn)
-                .eq(this.userIdColumn, userId)
+                .from(this._tableName)
+                .select(this._stateDataColumn)
+                .eq(this._userIdColumn, userId)
                 .maybeSingle()
 
             if (error) {
@@ -123,7 +123,7 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
 
             const loadedState =
                 (stateData && typeof stateData === 'object'
-                    ? ((stateData as Record<string, unknown>)[this.stateDataColumn] as LoadedData<TContext>)
+                    ? ((stateData as Record<string, unknown>)[this._stateDataColumn] as LoadedData<TContext>)
                     : ({} as LoadedData<TContext>)) || ({} as LoadedData<TContext>)
 
             // Add the user to the loaded state if using Supabase Auth.
@@ -144,12 +144,12 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
                 currentStepId, // Include the current step ID in the persisted state
             }
 
-            const { error } = await this.config.client.from(this.tableName).upsert(
+            const { error } = await this.config.client.from(this._tableName).upsert(
                 {
-                    [this.userIdColumn]: userId,
-                    [this.stateDataColumn]: stateToPersist,
+                    [this._userIdColumn]: userId,
+                    [this._stateDataColumn]: stateToPersist,
                 },
-                { onConflict: this.userIdColumn }
+                { onConflict: this._userIdColumn }
             )
 
             if (error) {
@@ -162,11 +162,11 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
             if (!userId) return
 
             const { error } = await this.config.client
-                .from(this.tableName)
+                .from(this._tableName)
                 .update({
-                    [this.stateDataColumn]: null,
+                    [this._stateDataColumn]: null,
                 })
-                .eq(this.userIdColumn, userId)
+                .eq(this._userIdColumn, userId)
 
             if (error) {
                 this._handleError(error, 'clear')

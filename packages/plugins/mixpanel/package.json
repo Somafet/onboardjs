@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/mixpanel-plugin",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "private": false,
     "description": "Official Mixpanel analytics plugin for OnboardJS.",
     "files": [
@@ -41,13 +41,13 @@
         "directory": "packages/plugins/mixpanel"
     },
     "peerDependencies": {
-        "@onboardjs/core": ">=0.3.12",
+        "@onboardjs/core": ">=1.0.0-rc.1",
         "mixpanel-browser": ">=2.55.0",
         "react": "^18.0.0 || ^19.0.0",
         "react-dom": "^18.0.0 || ^19.0.0"
     },
     "devDependencies": {
-        "@onboardjs/core": "^0.3.12",
+        "@onboardjs/core": "^1.0.0-rc.1",
         "@types/node": "^24.3.0",
         "@vitest/coverage-v8": "^3.1.4",
         "mixpanel-browser": "^2.55.0",

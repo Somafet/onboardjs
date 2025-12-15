@@ -92,9 +92,9 @@ describe('SupabasePersistencePlugin', () => {
                 client: mockSupabaseClient as unknown as SupabaseClient,
                 contextKeyForId: 'user.id',
             })
-            expect(plugin['tableName']).toBe('onboarding_state')
-            expect(plugin['userIdColumn']).toBe('user_id')
-            expect(plugin['stateDataColumn']).toBe('state_data')
+            expect(plugin['_tableName']).toBe('onboarding_state')
+            expect(plugin['_userIdColumn']).toBe('user_id')
+            expect(plugin['_stateDataColumn']).toBe('state_data')
         })
 
         it('should use custom table and column names when provided', () => {
@@ -105,9 +105,9 @@ describe('SupabasePersistencePlugin', () => {
                 userIdColumn: 'user_uuid',
                 stateDataColumn: 'flow_json',
             })
-            expect(plugin['tableName']).toBe('custom_table')
-            expect(plugin['userIdColumn']).toBe('user_uuid')
-            expect(plugin['stateDataColumn']).toBe('flow_json')
+            expect(plugin['_tableName']).toBe('custom_table')
+            expect(plugin['_userIdColumn']).toBe('user_uuid')
+            expect(plugin['_stateDataColumn']).toBe('flow_json')
         })
     })
 
