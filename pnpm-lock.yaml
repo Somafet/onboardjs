@@ -387,8 +387,8 @@ importers:
         specifier: ^0.525.0
         version: 0.525.0(react@19.2.3)
       posthog-js:
-        specifier: ^1.257.0
-        version: 1.302.2
+        specifier: ^1.314.0
+        version: 1.314.0
       prism-react-renderer:
         specifier: ^2.4.1
         version: 2.4.1(react@19.2.3)
@@ -468,8 +468,8 @@ importers:
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: ^1.0.0-rc.1
-        version: 1.0.0-rc.1
+        specifier: workspace:*
+        version: link:../../core
       '@types/node':
         specifier: ^24.3.0
         version: 24.10.2
@@ -477,8 +477,8 @@ importers:
         specifier: ^3.1.4
         version: 3.2.4(vitest@3.2.4(@types/node@24.10.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2))
       mixpanel-browser:
-        specifier: ^2.55.0
-        version: 2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.2)
+        specifier: ^2.73.0
+        version: 2.73.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.2)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -496,8 +496,8 @@ importers:
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@onboardjs/core':
-        specifier: ^1.0.0-rc.1
-        version: 1.0.0-rc.1
+        specifier: workspace:*
+        version: link:../../core
       '@types/node':
         specifier: ^24.3.0
         version: 24.10.2
@@ -511,8 +511,8 @@ importers:
         specifier: ^3.1.4
         version: 3.2.4(vitest@3.2.4(@types/node@24.10.2)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2))
       posthog-js:
-        specifier: ^1.255.1
-        version: 1.302.2
+        specifier: ^1.314.0
+        version: 1.314.0
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -544,8 +544,8 @@ importers:
   packages/react:
     devDependencies:
       '@onboardjs/core':
-        specifier: ^1.0.0-rc.1
-        version: 1.0.0-rc.1
+        specifier: workspace:^
+        version: link:../core
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.1
@@ -1539,6 +1539,9 @@ packages:
 
   '@posthog/core@1.7.1':
     resolution: {integrity: sha512-kjK0eFMIpKo9GXIbts8VtAknsoZ18oZorANdtuTj1CbgS28t4ZVq//HAWhnxEuXRTrtkd+SUJ6Ux3j2Af8NCuA==}
+
+  '@posthog/core@1.9.0':
+    resolution: {integrity: sha512-j7KSWxJTUtNyKynLt/p0hfip/3I46dWU2dk+pt7dKRoz2l5CYueHuHK4EO7Wlgno5yo1HO4sc4s30MXMTICHJw==}
 
   '@radix-ui/react-compose-refs@1.1.2':
     resolution: {integrity: sha512-z4eqJvfiNnFMHIIvXP3CY57y2WJs5g2v3X0zm9mEJkrkNv4rDxu+sg9Jh8EkXyeqBkB7SOcboo9dMVqhyrACIg==}
@@ -4116,8 +4119,8 @@ packages:
   mitt@3.0.1:
     resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
 
-  mixpanel-browser@2.72.0:
-    resolution: {integrity: sha512-Olc+1ebVBSVBjtR/Pp4t8Pc1wAI9AfA5e668B0MsI/gKJ43QcndzfQ/AT/TiP1Klup8O1C9vwykoWjvPqX+SRA==}
+  mixpanel-browser@2.73.0:
+    resolution: {integrity: sha512-Ny+6BVeWJozZoyrzB+5/6LTqBZ0gDY1pwcs7PQLQVGPKMTdL8qAz0yV4H8ykGQEA5KrW2Ky/KZ3uMEHGjE7oSA==}
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -4382,6 +4385,9 @@ packages:
 
   posthog-js@1.302.2:
     resolution: {integrity: sha512-4voih22zQe7yHA7DynlQ3B7kgzJOaKIjzV7K3jJ2Qf+UDXd1ZgO7xYmLWYVtuKEvD1OXHbKk/fPhUTZeHEWpBw==}
+
+  posthog-js@1.314.0:
+    resolution: {integrity: sha512-qW1T73UAFpA0g2Ln0blsOUJxRhv0Tn4DrPdhGyTpw+MupW+qvVjzEg/i9jWQ4Al+8AkrNcmZFafJcSWXxWsWqg==}
 
   posthog-node@5.17.2:
     resolution: {integrity: sha512-lz3YJOr0Nmiz0yHASaINEDHqoV+0bC3eD8aZAG+Ky292dAnVYul+ga/dMX8KCBXg8hHfKdxw0SztYD5j6dgUqQ==}
@@ -6266,6 +6272,10 @@ snapshots:
   '@pkgr/core@0.2.9': {}
 
   '@posthog/core@1.7.1':
+    dependencies:
+      cross-spawn: 7.0.6
+
+  '@posthog/core@1.9.0':
     dependencies:
       cross-spawn: 7.0.6
 
@@ -9365,7 +9375,7 @@ snapshots:
 
   mitt@3.0.1: {}
 
-  mixpanel-browser@2.72.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.2):
+  mixpanel-browser@2.73.0(@mixpanel/rrweb-utils@2.0.0-alpha.18.2):
     dependencies:
       '@mixpanel/rrweb': 2.0.0-alpha.18.2
       '@mixpanel/rrweb-plugin-console-record': 2.0.0-alpha.18.2(@mixpanel/rrweb-utils@2.0.0-alpha.18.2)(@mixpanel/rrweb@2.0.0-alpha.18.2)
@@ -9610,6 +9620,14 @@ snapshots:
   posthog-js@1.302.2:
     dependencies:
       '@posthog/core': 1.7.1
+      core-js: 3.47.0
+      fflate: 0.4.8
+      preact: 10.28.0
+      web-vitals: 4.2.4
+
+  posthog-js@1.314.0:
+    dependencies:
+      '@posthog/core': 1.9.0
       core-js: 3.47.0
       fflate: 0.4.8
       preact: 10.28.0

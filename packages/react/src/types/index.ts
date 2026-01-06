@@ -119,5 +119,7 @@ export type OnboardingStep<TContext extends OnboardingContext = OnboardingContex
      * It can be a component that accepts `StepComponentProps` to interact with the onboarding engine,
      * or a simple presentational component that takes no props.
      */
-    component?: StepComponent<unknown, TContext>
+    // Accept strongly-typed step components or any React component (e.g., Next.js dynamic())
+    // Using ComponentType<any> allows dynamically imported components with unknown props to be assigned.
+    component?: StepComponent<unknown, TContext> | React.ComponentType<any>
 }

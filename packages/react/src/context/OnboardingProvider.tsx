@@ -101,6 +101,40 @@ export { createOnboardingContext }
 // Re-export for external use
 export type { LocalStoragePersistenceOptions }
 
+/**
+ * Configuration props for OnboardingProvider component.
+ * Extends OnboardingEngineConfig to support all engine configuration options.
+ *
+ * @example
+ * ```tsx
+ * import { AnalyticsBeforeSendHook } from '@onboardjs/core'
+ *
+ * const beforeSend: AnalyticsBeforeSendHook = (event) => {
+ *   // Filter out sensitive events
+ *   if (event.type.includes('password')) {
+ *     return null
+ *   }
+ *   // Modify event
+ *   return {
+ *     ...event,
+ *     properties: {
+ *       ...event.properties,
+ *       customField: 'value'
+ *     }
+ *   }
+ * }
+ *
+ * <OnboardingProvider
+ *   steps={steps}
+ *   analytics={{
+ *     enabled: true,
+ *     before_send: beforeSend
+ *   }}
+ * >
+ *   <App />
+ * </OnboardingProvider>
+ * ```
+ */
 export interface OnboardingProviderProps<TContext extends OnboardingContextType> extends Omit<
     OnboardingEngineConfig<TContext>,
     'loadData' | 'persistData' | 'clearPersistedData' | 'onFlowComplete' | 'steps'

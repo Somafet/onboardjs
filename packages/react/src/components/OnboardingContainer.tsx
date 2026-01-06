@@ -30,6 +30,26 @@ const DefaultLoadingFallback: React.FC<ContainerLoadingProps> = ({ message = 'In
 
 /**
  * Props for OnboardingContainer component
+ *
+ * @example With analytics before_send hook
+ * ```tsx
+ * import { AnalyticsBeforeSendHook } from '@onboardjs/core'
+ *
+ * const beforeSend: AnalyticsBeforeSendHook = (event) => {
+ *   // Drop events with sensitive data
+ *   if (event.properties.includes_password) {
+ *     return null
+ *   }
+ *   return event
+ * }
+ *
+ * <OnboardingContainer
+ *   steps={steps}
+ *   analytics={{ enabled: true, before_send: beforeSend }}
+ * >
+ *   <YourComponent />
+ * </OnboardingContainer>
+ * ```
  */
 export interface OnboardingContainerProps<TContext extends OnboardingContextType> extends Omit<
     OnboardingProviderProps<TContext>,
