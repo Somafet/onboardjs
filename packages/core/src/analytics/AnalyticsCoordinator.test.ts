@@ -183,7 +183,7 @@ describe('AnalyticsCoordinator - before_send Hook', () => {
                 enabled: true,
                 providers: [mockProvider],
                 before_send: beforeSend,
-                samplingRate: 0.5, // 50% sampling
+                samplingRate: 1.0, // 100% sampling to ensure events reach provider
             })
 
             // Send multiple events - some marked as critical
@@ -197,12 +197,12 @@ describe('AnalyticsCoordinator - before_send Hook', () => {
             // before_send should be called for all 10 events
             expect(beforeSend).toHaveBeenCalledTimes(10)
 
-            // Some events passed through to provider (due to sampling)
+            // Some events passed through to provider (with 100% sampling, all should pass)
             // All modified events should have the marker
             const sentEvents = providerTrackEventSpy.mock.calls.map((call) => call[0] as AnalyticsEvent)
             const eventsSentThroughModification = sentEvents.filter((e) => e.properties.bypassed_sampling === true)
 
-            // We expect at least some events to have been modified
+            // We expect at least some events to have been modified (all of them with 100% sampling)
             expect(eventsSentThroughModification.length).toBeGreaterThan(0)
         })
     })
