@@ -47,8 +47,22 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
                 initialContext: config.initialContext,
                 debug: config.debug,
                 plugins: config.plugins,
+                analytics: config.analytics,
+                publicKey: config.publicKey,
+                apiHost: config.apiHost,
+                userId: config.userId,
             }),
-        [config.steps, config.initialStepId, config.initialContext, config.debug, config.plugins]
+        [
+            config.steps,
+            config.initialStepId,
+            config.initialContext,
+            config.debug,
+            config.plugins,
+            config.analytics,
+            config.publicKey,
+            config.apiHost,
+            config.userId,
+        ]
     )
 
     useEffect(() => {

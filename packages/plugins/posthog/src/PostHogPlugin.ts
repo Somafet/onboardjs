@@ -176,7 +176,7 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
         } else if (this.config.apiKey) {
             // Initialize PostHog if not provided
             if (typeof window !== 'undefined') {
-                const posthog = require('posthog-js')
+                const posthog: PostHog = require('posthog-js')
                 this._posthog = posthog.init(this.config.apiKey, {
                     api_host: this.config.host || 'https://app.posthog.com',
                 })

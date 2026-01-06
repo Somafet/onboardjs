@@ -160,6 +160,27 @@ export class AnalyticsCoordinator {
         }
 
         this._logger.debug(`[AnalyticsCoordinator] Event: "${eventType}"`, event)
+        this._logger.debug(`[AnalyticsCoordinator] before_send configured:`, !!this._config.before_send)
+
+        // Apply before_send hook if configured
+        let processedEvent: AnalyticsEvent | null = event
+        if (this._config.before_send) {
+            this._logger.debug(`[AnalyticsCoordinator] Calling before_send hook for event: "${eventType}"`)
+            try {
+                processedEvent = this._config.before_send(event)
+                this._logger.debug(`[AnalyticsCoordinator] before_send returned:`, processedEvent)
+
+                // If before_send returns null, drop the event
+                if (processedEvent === null) {
+                    this._logger.debug(`[AnalyticsCoordinator] Event "${eventType}" dropped by before_send hook.`)
+                    return
+                }
+            } catch (error) {
+                this._logger.error(`[AnalyticsCoordinator] Error in before_send hook:`, error)
+                // Continue with original event on error
+                processedEvent = event
+            }
+        }
 
         if (!this._config.enabled || this._providers.length === 0) {
             return
@@ -178,7 +199,7 @@ export class AnalyticsCoordinator {
         // Dispatch to providers
         for (const provider of this._providers) {
             try {
-                provider.trackEvent(event)
+                provider.trackEvent(processedEvent)
             } catch (error) {
                 this._logger.error(`[AnalyticsCoordinator] Error in analytics provider "${provider.name}":`, error)
             }

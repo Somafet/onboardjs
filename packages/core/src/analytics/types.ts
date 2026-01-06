@@ -35,6 +35,33 @@ export interface AnalyticsProvider {
     flush?(): void | Promise<void>
 }
 
+/**
+ * Hook function that runs before an analytics event is sent to providers.
+ * Can be used to filter, modify, or drop events.
+ *
+ * @param event The analytics event about to be sent
+ * @returns The modified event, or null to drop the event entirely
+ *
+ * @example
+ * ```typescript
+ * before_send: (event) => {
+ *   // Filter out sensitive events
+ *   if (event.type.includes('password')) {
+ *     return null
+ *   }
+ *   // Modify event
+ *   return {
+ *     ...event,
+ *     properties: {
+ *       ...event.properties,
+ *       customField: 'value'
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export type AnalyticsBeforeSendHook = (event: AnalyticsEvent) => AnalyticsEvent | null
+
 export interface AnalyticsConfig {
     enabled?: boolean
     providers?: AnalyticsProvider[]
@@ -77,4 +104,11 @@ export interface AnalyticsConfig {
 
     // Global properties
     globalProperties?: Record<string, any>
+
+    /**
+     * Hook function that runs before each analytics event is sent to providers.
+     * Can be used to filter, modify, or drop events.
+     * Return null to drop the event entirely.
+     */
+    before_send?: AnalyticsBeforeSendHook
 }

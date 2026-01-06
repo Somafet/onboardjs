@@ -3,7 +3,7 @@
 
 import React, { useCallback, createElement } from 'react'
 import { EngineState, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
-import { OnboardingStep, StepComponentProps, StepComponentRegistry, StepComponent } from '../../types'
+import { OnboardingStep, StepComponentProps, StepComponentRegistry } from '../../types'
 
 export interface UseStepRendererConfig<TContext extends OnboardingContextType> {
     engineState: EngineState<TContext> | null
@@ -24,7 +24,7 @@ export interface UseStepRendererConfig<TContext extends OnboardingContextType> {
 function resolveStepComponent<TContext extends OnboardingContextType>(
     step: OnboardingStep<TContext>,
     componentRegistry?: StepComponentRegistry<TContext>
-): StepComponent<unknown, TContext> | null {
+): React.ComponentType<any> | null {
     // Priority 1: Explicit step.component property
     const componentFromStep = (step as OnboardingStep<TContext>).component
     if (componentFromStep && isCallable(componentFromStep)) {

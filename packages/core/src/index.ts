@@ -19,7 +19,13 @@ export { SessionTracker } from './analytics/SessionTracker'
 export { PerformanceTracker } from './analytics/PerformanceTracker'
 export { ActivityTracker } from './analytics/ActivityTracker'
 export { ProgressMilestoneTracker } from './analytics/ProgressMilestoneTracker'
-export type { AnalyticsConfig, AnalyticsProvider, AnalyticsEvent, AnalyticsEventPayload } from './analytics/types'
+export type {
+    AnalyticsConfig,
+    AnalyticsProvider,
+    AnalyticsEvent,
+    AnalyticsEventPayload,
+    AnalyticsBeforeSendHook,
+} from './analytics/types'
 export { map, mapErr, andThen, safeSync, safeAsync, fromPromise } from './types/Result'
 
 // Export AsyncOperationQueue for advanced async operation management

@@ -1,7 +1,7 @@
 // @onboardjs/react/src/utils/configHash.ts
 'use client'
 
-import { OnboardingStep, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
+import { OnboardingStep, OnboardingContext as OnboardingContextType, AnalyticsConfig } from '@onboardjs/core'
 
 /**
  * Creates a stable hash for step configuration.
@@ -55,8 +55,12 @@ export function createConfigHash<TContext extends OnboardingContextType>(config:
     initialContext?: Partial<TContext>
     debug?: boolean
     plugins?: unknown[]
+    analytics?: AnalyticsConfig | boolean
+    publicKey?: string
+    apiHost?: string
+    userId?: string | null
 }): string {
-    const { steps, initialStepId, initialContext, debug, plugins } = config
+    const { steps, initialStepId, initialContext, debug, plugins, analytics, publicKey, apiHost, userId } = config
 
     const identity = {
         stepsHash: createStepsHash(steps),
@@ -68,6 +72,13 @@ export function createConfigHash<TContext extends OnboardingContextType>(config:
         debug: debug ?? false,
         // Count plugins and their types, not their instances
         pluginCount: plugins?.length ?? 0,
+        // Hash analytics config (before_send is a function, so we check for its presence)
+        analyticsHash: analytics
+            ? JSON.stringify(analytics, (_key, value) => (typeof value === 'function' ? '[function]' : value))
+            : null,
+        publicKey: publicKey ?? null,
+        apiHost: apiHost ?? null,
+        userId: userId ?? null,
     }
 
     return JSON.stringify(identity)

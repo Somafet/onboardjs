@@ -1238,8 +1238,13 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
             analyticsConfig.enabled &&
             (autoTrackSetting === true || (typeof autoTrackSetting === 'object' && autoTrackSetting.steps !== false))
 
+        this._logger.debug(`[Analytics Init] analyticsConfig.enabled: ${analyticsConfig.enabled}`)
+        this._logger.debug(`[Analytics Init] before_send present: ${!!analyticsConfig.before_send}`)
+        this._logger.debug(`[Analytics Init] shouldSetupListeners: ${shouldSetupListeners}`)
+
         // Set up event listeners for auto-tracking
         if (shouldSetupListeners) {
+            this._logger.debug(`[Analytics Init] Setting up analytics event listeners`)
             this._setupAnalyticsEventListeners(manager)
         } else {
             this._logger.debug('Auto-tracking analytics events is disabled or analytics is not enabled.')
