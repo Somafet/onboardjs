@@ -1,4 +1,4 @@
-# OnboardJS – Headless, Flexible User Onboarding for React/Next.js ✨
+# OnboardJS – Headless, Flexible User Onboarding for React/Next.js
 
 > **The open-source, headless onboarding engine for React/Next.js. Build custom, dynamic onboarding flows with full control—code-first or visually.**
 
@@ -25,7 +25,7 @@ Try out the [DEMO](https://demo.onboardjs.com)
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 To get started with OnboardJS, you can install the core library and the React bindings. This will allow you to use the headless onboarding engine in your React or Next.js applications.
 
@@ -79,14 +79,14 @@ export default function App() {
 
 - See [@onboardjs/core README](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md) and [@onboardjs/react README](https://github.com/Somafet/onboardjs/blob/main/packages/react/README.md) README for full API and advanced usage.
 
-## 💬 Join the Community
+## Join the Community
 
-- 💬 **[GitHub Discussions](https://github.com/Somafet/onboardjs/issues)** - For Q&A, ideas, and showcasing.
-- 🐛 **[GitHub Issues](https://github.com/Somafet/onboardjs/issues)** - For bug reports and feature requests for specific packages.
-- 🗣️ **[Discord Server](https://discord.gg/RnG5AdZjyR)** - Join our community for real-time chat!
-- 🐦 **Follow me on [BlueSky @somafet.bsky.social](https://bsky.app/profile/somafet.bsky.social)** for updates.
+- **[GitHub Discussions](https://github.com/Somafet/onboardjs/issues)** - For Q&A, ideas, and showcasing.
+- **[GitHub Issues](https://github.com/Somafet/onboardjs/issues)** - For bug reports and feature requests for specific packages.
+- **[Discord Server](https://discord.gg/RnG5AdZjyR)** - Join our community for real-time chat!
+- **Follow me on [BlueSky @somafet.bsky.social](https://bsky.app/profile/somafet.bsky.social)** for updates.
 
-## 📦 Packages in this Monorepo
+## Packages in this Monorepo
 
 This repository is a [Turborepo](https://turborepo.org/) monorepo containing the following key packages:
 
@@ -97,7 +97,7 @@ This repository is a [Turborepo](https://turborepo.org/) monorepo containing the
 
 ---
 
-## 🛠️ Getting Started (Development)
+## Getting Started (Development)
 
 1. **Clone & Install:**
     ```bash
@@ -122,7 +122,7 @@ See [CONTRIBUTING.md](https://github.com/Somafet/onboardjs/blob/main/CODE_OF_CON
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **[Main Documentation Site](https://docs.onboardjs.com)**
 - **[@onboardjs/core README](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md)**
@@ -130,7 +130,7 @@ See [CONTRIBUTING.md](https://github.com/Somafet/onboardjs/blob/main/CODE_OF_CON
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - **v1.0**: Stable, documented releases for core & react
 - **Next.js Starter Templates**: Beautiful, animated, production-ready with integration examples (e.g., Supabase, Neon, Resend, etc.)
@@ -141,7 +141,7 @@ See [CONTRIBUTING.md](https://github.com/Somafet/onboardjs/blob/main/CODE_OF_CON
 
 ---
 
-## 📝 License
+## License
 
 This monorepo and its packages (unless specified otherwise in individual package licenses) are licensed under the [MIT License](https://github.com/Somafet/onboardjs/blob/main/LICENSE.md).
 
