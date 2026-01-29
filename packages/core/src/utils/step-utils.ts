@@ -31,3 +31,23 @@ export function findStepById<TContext extends OnboardingContext = OnboardingCont
     if (stepId === null || stepId === undefined) return undefined // Handle null/undefined explicitly
     return steps.find((s) => s.id === stepId)
 }
+
+/**
+ * Gets the index of a step by its ID in an array of steps.
+ *
+ * @param steps - Array of onboarding steps
+ * @param stepId - The ID of the step to find
+ * @returns The 0-based index of the step, or -1 if not found
+ *
+ * @example
+ * const steps = [{ id: 'welcome' }, { id: 'profile' }, { id: 'complete' }]
+ * getStepIndex(steps, 'profile') // returns 1
+ * getStepIndex(steps, 'unknown') // returns -1
+ */
+export function getStepIndex<TContext extends OnboardingContext = OnboardingContext>(
+    steps: OnboardingStep<TContext>[],
+    stepId: string | number | null | undefined
+): number {
+    if (stepId === null || stepId === undefined) return -1
+    return steps.findIndex((s) => s.id === stepId)
+}
