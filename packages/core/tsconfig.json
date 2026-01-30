@@ -1,25 +1,18 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "NodeNext",
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": false,
-    "types": [
-      "node"
-    ]
-  },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "tests"
-  ]
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "NodeNext",
+        "declaration": true,
+        "declarationMap": false,
+        "outDir": "dist",
+        "rootDir": "src",
+        "moduleResolution": "NodeNext",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": false,
+        "types": ["node"]
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist", "tests", "src/**/*.test.ts", "src/**/*.spec.ts"]
 }

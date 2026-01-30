@@ -5,7 +5,38 @@ import { evaluateStepId, findStepById } from '../utils/step-utils'
 import { EventManager } from './EventManager'
 import { Logger } from '../services/Logger'
 import { EngineState, FlowContext } from './types'
-import deepEqual from 'fast-deep-equal'
+
+/**
+ * Lightweight deep equality check for context objects
+ * Only checks if values have actually changed (not reference equality)
+ */
+function isDeepEqual<T extends OnboardingContext>(a: T, b: T): boolean {
+    if (a === b) return true
+    if (!a || !b) return a === b
+
+    const aKeys = Object.keys(a)
+    const bKeys = Object.keys(b)
+
+    if (aKeys.length !== bKeys.length) return false
+
+    for (const key of aKeys) {
+        if (!(key in b)) return false
+
+        const aVal = a[key]
+        const bVal = b[key]
+
+        if (aVal === bVal) continue
+
+        // For objects, do shallow comparison
+        if (typeof aVal === 'object' && typeof bVal === 'object' && aVal !== null && bVal !== null) {
+            if (JSON.stringify(aVal) !== JSON.stringify(bVal)) return false
+        } else {
+            return false
+        }
+    }
+
+    return true
+}
 
 export class StateManager<TContext extends OnboardingContext> {
     private _isLoadingInternal = false
@@ -58,7 +89,7 @@ export class StateManager<TContext extends OnboardingContext> {
             stateChanged = true
         }
         if (changes.context) {
-            if (!deepEqual(context, changes.context)) {
+            if (!isDeepEqual(context, changes.context)) {
                 Object.assign(context, changes.context)
                 contextChanged = true
                 stateChanged = true
