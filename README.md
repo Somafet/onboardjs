@@ -1,150 +1,136 @@
-# OnboardJS – Headless, Flexible User Onboarding for React/Next.js
+# OnboardJS
 
-> **The open-source, headless onboarding engine for React/Next.js. Build custom, dynamic onboarding flows with full control—code-first or visually.**
+Headless onboarding engine for React and Next.js. Define multi-step flows as data, bring your own UI.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord](https://img.shields.io/discord/1380449826663301182?label=discord)](https://discord.gg/RnG5AdZjyR)
-
 [![Documentation](https://img.shields.io/badge/docs-onboardjs.com-blue)](https://docs.onboardjs.com)
 
----
+[![skills.sh skill](https://img.shields.io/badge/skills.sh%20skill-onboardjs--skill-blueviolet)](https://skills.sh/onboardjs/onboardjs-skills/onboardjs-react)
 
 ![OnboardJS Demo](./assets/demo.gif)
 
-Try out the [DEMO](https://demo.onboardjs.com)
+[Live Demo](https://vite.onboardjs.com)
 
----
+## Features
 
-## Why OnboardJS?
+- Headless: full control over UI and styling
+- Declarative step definitions with conditional navigation
+- Persistence hooks for localStorage, databases, or custom storage
+- Built-in analytics and progress tracking
+- Plugin system for extensibility
+- TypeScript with strict typing
+- Works with Next.js App Router and Pages Router
 
-- **Headless-first:** Maximum UI/UX flexibility—bring your own design.
-- **React/Next.js Native:** Seamless integration with hooks and context.
-- **Declarative & Extensible:** Define flows as data, add custom logic, and persist anywhere.
-- **Production-Ready:** TypeScript, high test coverage, and robust error handling.
-- **Community-Driven:** Open-source, transparent roadmap, and welcoming to contributors.
+## Installation
 
----
-
-## Quickstart
-
-To get started with OnboardJS, you can install the core library and the React bindings. This will allow you to use the headless onboarding engine in your React or Next.js applications.
-
-### 1. Install
+```bash
+npm install @onboardjs/core @onboardjs/react
+```
 
 ```bash
 pnpm add @onboardjs/core @onboardjs/react
-```
-
-```bash
-yarn add @onboardjs/core @onboardjs/react
 # or
-bun add @onboardjs/core @onboardjs/react
+yarn add @onboardjs/core @onboardjs/react
 ```
 
-### 2. Minimal Example
+## Quick Start
 
-```typescript jsx
-import { OnboardingProvider, useOnboarding } from '@onboardjs/react';
+```tsx
+'use client'
 
-const steps = [
-  { type: 'INFORMATION', payload: { title: 'Welcome!' } },
-  { type: 'CUSTOM_COMPONENT', payload: { componentKey: 'ProfileForm' } },
-];
+import { OnboardingProvider, useOnboarding } from '@onboardjs/react'
 
-const componentRegistry = {
-  INFORMATION: InformationTypeStep,
-  ProfileForm: ProfileFormComponent,
+function WelcomeStep() {
+    return (
+        <div>
+            <h1>Welcome</h1>
+            <p>Let's get you set up.</p>
+        </div>
+    )
 }
 
-function OnboardingUI() {
-  const { state, next, renderStep } = useOnboarding();
+function NameStep() {
+    const { updateContext, state } = useOnboarding()
 
-  return (
-    <div>
-      <h2>{state.currentStep?.payload.title}</h2>
-      {renderStep()}
-      <button onClick={() => next()}>Next</button>
-    </div>
-  );
+    return (
+        <input
+            placeholder="Your name"
+            value={state.context.flowData.userName || ''}
+            onChange={(e) => updateContext({ flowData: { userName: e.target.value } })}
+        />
+    )
+}
+
+const steps = [
+    { id: 'welcome', component: WelcomeStep, nextStep: 'name' },
+    { id: 'name', component: NameStep, nextStep: null },
+]
+
+function OnboardingUI() {
+    const { state, next, previous, loading, renderStep } = useOnboarding()
+
+    if (!state?.currentStep) return <p>Loading...</p>
+    if (state.isCompleted) return <p>Done</p>
+
+    return (
+        <div>
+            {renderStep()}
+            <button onClick={() => previous()} disabled={!state.canGoPrevious}>
+                Back
+            </button>
+            <button onClick={() => next()} disabled={!state.canGoNext || loading.isAnyLoading}>
+                Next
+            </button>
+        </div>
+    )
 }
 
 export default function App() {
-  return (
-    <OnboardingProvider steps={steps} componentRegistry={componentRegistry}>
-      <OnboardingUI />
-    </OnboardingProvider>
-  );
+    return (
+        <OnboardingProvider steps={steps} localStoragePersistence={{ key: 'onboarding' }}>
+            <OnboardingUI />
+        </OnboardingProvider>
+    )
 }
 ```
 
-- See [@onboardjs/core README](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md) and [@onboardjs/react README](https://github.com/Somafet/onboardjs/blob/main/packages/react/README.md) README for full API and advanced usage.
+See the package READMEs for full API documentation:
 
-## Join the Community
+- [@onboardjs/core](./packages/core/README.md) - Headless engine
+- [@onboardjs/react](./packages/react/README.md) - React bindings
 
-- **[GitHub Discussions](https://github.com/Somafet/onboardjs/issues)** - For Q&A, ideas, and showcasing.
-- **[GitHub Issues](https://github.com/Somafet/onboardjs/issues)** - For bug reports and feature requests for specific packages.
-- **[Discord Server](https://discord.gg/RnG5AdZjyR)** - Join our community for real-time chat!
-- **Follow me on [BlueSky @somafet.bsky.social](https://bsky.app/profile/somafet.bsky.social)** for updates.
+## Packages
 
-## Packages in this Monorepo
+This monorepo contains:
 
-This repository is a [Turborepo](https://turborepo.org/) monorepo containing the following key packages:
+| Package                                        | Description                         |
+| ---------------------------------------------- | ----------------------------------- |
+| [@onboardjs/core](./packages/core)             | Headless, framework-agnostic engine |
+| [@onboardjs/react](./packages/react)           | React hooks and provider            |
+| [@onboardjs/visualizer](./packages/visualizer) | Visual flow builder component       |
+| [apps/examples](./apps/examples)               | Example applications                |
 
-- **[@onboardjs/core](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md)**: Headless, framework-agnostic onboarding engine.
-- **[@onboardjs/react](https://github.com/Somafet/onboardjs/blob/main/packages/react/README.md)**: React bindings for seamless UI integration.
-- **Examples ([apps/examples](https://github.com/Somafet/onboardjs/tree/main/apps/examples))**: Examples and recipes for using OnboardJS in various scenarios.
-- **Internal**: Shared ESLint/TS configs for consistency.
+## Development
 
----
+```bash
+git clone https://github.com/Somafet/onboardjs.git
+cd onboardjs
+pnpm install
+pnpm build
+pnpm test
+```
 
-## Getting Started (Development)
+## Community
 
-1. **Clone & Install:**
-    ```bash
-    git clone https://github.com/Somafet/onboardjs.git
-    cd onboardjs
-    pnpm install
-    ```
-2. **Build All Packages:**
-    ```bash
-    turbo run build
-    ```
-3. **Run Tests:**
-    ```bash
-    turbo run test
-    ```
-
----
+- [GitHub Issues](https://github.com/Somafet/onboardjs/issues) - Bug reports and feature requests
+- [Discord](https://discord.gg/RnG5AdZjyR) - Chat and support
+- [Documentation](https://docs.onboardjs.com) - Guides and API reference
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/Somafet/onboardjs/blob/main/CODE_OF_CONDUCT.md) for more details.
-
----
-
-## Documentation
-
-- **[Main Documentation Site](https://docs.onboardjs.com)**
-- **[@onboardjs/core README](https://github.com/Somafet/onboardjs/blob/main/packages/core/README.md)**
-- **[@onboardjs/react README](https://github.com/Somafet/onboardjs/blob/main/packages/react/README.md)**
-
----
-
-## Roadmap
-
-- **v1.0**: Stable, documented releases for core & react
-- **Next.js Starter Templates**: Beautiful, animated, production-ready with integration examples (e.g., Supabase, Neon, Resend, etc.)
-- **Helper Packages**: (e.g., Supabase persistence)
-- **Builder App MVP**: Visual drag-and-drop onboarding builder
-- **Premium Builder Features**: Code export, hosted flows, analytics
-- **Community Growth**: Tutorials, examples, active support
-
----
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions and guidelines.
 
 ## License
 
-This monorepo and its packages (unless specified otherwise in individual package licenses) are licensed under the [MIT License](https://github.com/Somafet/onboardjs/blob/main/LICENSE.md).
-
----
-
-We're thrilled to have you Onboard 😉. Let's make building amazing onboarding experiences easier for everyone!
+MIT - see [LICENSE.md](./LICENSE.md)
