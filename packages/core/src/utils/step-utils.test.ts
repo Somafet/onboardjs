@@ -1,8 +1,6 @@
-import { evaluateStepId } from './step-utils'
-import type { OnboardingContext } from '../types'
+import { evaluateStepId, findStepById, getStepIndex } from './step-utils'
+import type { OnboardingContext, OnboardingStep } from '../types'
 import { describe, expect, it } from 'vitest'
-import { findStepById } from './step-utils'
-import type { OnboardingStep } from '../types'
 
 describe('evaluateStepId', () => {
     const mockContext: OnboardingContext = {} as OnboardingContext
@@ -12,7 +10,7 @@ describe('evaluateStepId', () => {
     })
 
     it('returns the result of the function when given a function', () => {
-        const fn = (ctx: OnboardingContext) => 'dynamic-step'
+        const fn = () => 'dynamic-step'
         expect(evaluateStepId(fn, mockContext)).toBe('dynamic-step')
     })
 
@@ -25,12 +23,12 @@ describe('evaluateStepId', () => {
     })
 
     it('returns null if the function returns null', () => {
-        const fn = (ctx: OnboardingContext) => null
+        const fn = () => null
         expect(evaluateStepId(fn, mockContext)).toBeNull()
     })
 
     it('returns undefined if the function returns undefined', () => {
-        const fn = (ctx: OnboardingContext) => undefined
+        const fn = () => undefined
         expect(evaluateStepId(fn, mockContext)).toBeUndefined()
     })
 })
@@ -74,5 +72,47 @@ describe('findStepById', () => {
     it('returns the first matching step if there are duplicates', () => {
         const dupSteps: OnboardingStep[] = [{ id: 'dup' } as OnboardingStep, { id: 'dup' } as OnboardingStep]
         expect(findStepById(dupSteps, 'dup')).toBe(dupSteps[0])
+    })
+})
+
+describe('getStepIndex', () => {
+    const steps: OnboardingStep[] = [
+        { id: 'step-1' } as OnboardingStep,
+        { id: 'step-2' } as OnboardingStep,
+        { id: 'step-3' } as OnboardingStep,
+    ]
+
+    it('should return correct index for existing step', () => {
+        expect(getStepIndex(steps, 'step-2')).toBe(1)
+    })
+
+    it('should return -1 for non-existent step', () => {
+        expect(getStepIndex(steps, 'unknown')).toBe(-1)
+    })
+
+    it('should return -1 for null stepId', () => {
+        expect(getStepIndex(steps, null)).toBe(-1)
+    })
+
+    it('should return -1 for undefined stepId', () => {
+        expect(getStepIndex(steps, undefined)).toBe(-1)
+    })
+
+    it('should work with numeric IDs', () => {
+        const numericSteps: OnboardingStep[] = [
+            { id: 1 } as OnboardingStep,
+            { id: 2 } as OnboardingStep,
+            { id: 3 } as OnboardingStep,
+        ]
+        expect(getStepIndex(numericSteps, 2)).toBe(1)
+    })
+
+    it('should return -1 for empty steps array', () => {
+        expect(getStepIndex([], 'step-1')).toBe(-1)
+    })
+
+    it('should return index of first match if there are duplicates', () => {
+        const dupSteps: OnboardingStep[] = [{ id: 'dup' } as OnboardingStep, { id: 'dup' } as OnboardingStep]
+        expect(getStepIndex(dupSteps, 'dup')).toBe(0)
     })
 })
