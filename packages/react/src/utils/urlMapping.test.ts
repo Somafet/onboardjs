@@ -1,6 +1,6 @@
 // @onboardjs/react/src/utils/urlMapping.test.ts
 import { describe, it, expect } from 'vitest'
-import { toUrlSlug, fromUrlSlug, createUrlMapper, canAccessStep } from './urlMapping'
+import { toUrlSlug, createUrlMapper, canAccessStep } from './urlMapping'
 import type { OnboardingStep } from '../types'
 import type { NavigatorConfig } from '../types/navigator'
 import type { OnboardingContext } from '@onboardjs/core'
@@ -37,13 +37,6 @@ describe('urlMapping utilities', () => {
         it('should handle simple strings', () => {
             expect(toUrlSlug('welcome')).toBe('welcome')
             expect(toUrlSlug('intro')).toBe('intro')
-        })
-    })
-
-    describe('fromUrlSlug', () => {
-        it('should return the slug as-is', () => {
-            expect(fromUrlSlug('user-details')).toBe('user-details')
-            expect(fromUrlSlug('select-plan')).toBe('select-plan')
         })
     })
 

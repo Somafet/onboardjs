@@ -118,9 +118,19 @@ export function useUrlStepSync<TContext extends OnboardingContextType = Onboardi
             }
 
             // Check if user can access this step
-            const completedSteps = new Set<string | number>(
-                Object.keys(state.context.flowData?._internal?.completedSteps || {})
-            )
+            // Build completed steps set, preserving both string and numeric forms
+            // to handle type coercion from Object.keys() which always returns strings
+            const completedStepsRaw = state.context.flowData?._internal?.completedSteps || {}
+            const completedSteps = new Set<string | number>()
+            for (const key of Object.keys(completedStepsRaw)) {
+                // Always add the string key
+                completedSteps.add(key)
+                // If the key is numeric-like, also add its numeric form to avoid type mismatches
+                const numericKey = Number(key)
+                if (!Number.isNaN(numericKey)) {
+                    completedSteps.add(numericKey)
+                }
+            }
 
             const canAccess = canAccessStep(stepId, currentStepId ?? null, completedSteps, steps)
 
@@ -136,6 +146,9 @@ export function useUrlStepSync<TContext extends OnboardingContextType = Onboardi
             // Navigate engine to the requested step
             isSyncingRef.current = true
             try {
+                // Convert to string to match engine.goToStep's expected type.
+                // The engine internally uses findStepById which handles both string
+                // and number IDs via loose comparison, so this conversion is safe.
                 await engine.goToStep(String(stepId))
                 lastSyncedStepRef.current = stepId
             } finally {

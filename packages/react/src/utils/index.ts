@@ -9,4 +9,4 @@ export {
     type LoadingState,
     type LoadingReason,
 } from './loadingState'
-export { createUrlMapper, toUrlSlug, fromUrlSlug, canAccessStep, type UrlMapper } from './urlMapping'
+export { createUrlMapper, toUrlSlug, canAccessStep, type UrlMapper } from './urlMapping'
