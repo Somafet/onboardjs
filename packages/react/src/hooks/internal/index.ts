@@ -12,3 +12,4 @@ export {
 export { useEngineActions, type EngineActions, type UseEngineActionsConfig } from './useEngineActions'
 export { useStepRenderer, type UseStepRendererConfig } from './useStepRenderer'
 export { useSuspenseEngine, clearSuspenseCache, type UseSuspenseEngineResult } from './useSuspenseEngine'
+export { useUrlStepSync, type UseUrlStepSyncConfig, type UseUrlStepSyncResult } from './useUrlStepSync'
