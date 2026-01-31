@@ -35,11 +35,31 @@ export {
 export { createStepsHash, createConfigHash, areStepsEqual, getLoadingReason, createLoadingState } from './utils'
 export type { LoadingState, LoadingReason } from './utils'
 
+// Export URL mapping utilities
+export { createUrlMapper, toUrlSlug, canAccessStep, type UrlMapper } from './utils/urlMapping'
+
 // Export Suspense-related utilities
 export { useSuspenseEngine, clearSuspenseCache, type UseSuspenseEngineResult } from './hooks/internal/useSuspenseEngine'
 
+// Export navigator adapters
+export { createNextNavigator, type NextAppRouter } from './adapters/next'
+export {
+    createReactRouterNavigator,
+    type ReactRouterNavigateFunction,
+    type ReactRouterLocation,
+} from './adapters/react-router'
+
 // Export types
-export type { StepComponentProps, StepComponentRegistry, OnboardingStep, StepComponent } from './types'
+export type {
+    StepComponentProps,
+    StepComponentRegistry,
+    OnboardingStep,
+    StepComponent,
+    OnboardingNavigator,
+    NavigatorOptions,
+    NavigatorConfig,
+    UrlMappingFunction,
+} from './types'
 export type { UseOnboardingOptions, UseOnboardingReturn } from './hooks/useOnboarding.types'
 export type {
     OnboardingContextValue,

@@ -10,12 +10,14 @@ import {
     ConfigurationBuilder,
 } from '@onboardjs/core'
 import { OnboardingStep, StepComponentRegistry } from '../types'
+import type { NavigatorConfig } from '../types/navigator'
 import {
     useEngineLifecycle,
     useEngineState,
     usePersistence,
     useEngineActions,
     useStepRenderer,
+    useUrlStepSync,
     type LocalStoragePersistenceOptions,
     type UsePersistenceConfig,
 } from '../hooks/internal'
@@ -158,6 +160,41 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
      * The array of steps to initialize the onboarding flow.
      */
     steps: OnboardingStep<TContext>[]
+
+    /**
+     * Configuration for URL-based navigation.
+     * When provided, step changes will be synchronized with the browser URL,
+     * enabling deep linking and browser back/forward navigation.
+     *
+     * @example
+     * ```tsx
+     * import { useRouter, usePathname } from 'next/navigation'
+     * import { createNextNavigator } from '@onboardjs/react'
+     *
+     * function OnboardingLayout({ children }) {
+     *   const router = useRouter()
+     *   const pathname = usePathname()
+     *   const navigator = useMemo(
+     *     () => createNextNavigator(router, pathname),
+     *     [router, pathname]
+     *   )
+     *
+     *   return (
+     *     <OnboardingProvider
+     *       steps={steps}
+     *       navigator={{
+     *         navigator,
+     *         basePath: '/onboarding',
+     *         urlMapping: 'auto' // or custom mapping
+     *       }}
+     *     >
+     *       {children}
+     *     </OnboardingProvider>
+     *   )
+     * }
+     * ```
+     */
+    navigator?: NavigatorConfig<TContext>
 }
 
 export function OnboardingProvider<TContext extends OnboardingContextType = OnboardingContextType>({
@@ -174,6 +211,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     plugins,
     componentRegistry,
     debug,
+    navigator: navigatorConfig,
     // Forwarded engine config fields (not previously passed through)
     flowId,
     flowName,
@@ -296,6 +334,14 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
 
     // Engine processing state (navigation, persistence, etc.)
     const [engineProcessing, setEngineProcessing] = useState(false)
+
+    // Setup URL synchronization if navigator is configured
+    useUrlStepSync({
+        navigatorConfig,
+        engine,
+        isEngineReady: isReady,
+        steps,
+    })
 
     // Setup step rendering
     const handleDataChange = useCallback((data: unknown, isValid: boolean) => {
