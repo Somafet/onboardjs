@@ -28,19 +28,6 @@ export function toUrlSlug(stepId: string | number): string {
         .toLowerCase()
 }
 
-/**
- * Convert a URL slug back to a potential step ID.
- * This is a reverse operation of toUrlSlug, but note that
- * the original casing cannot be recovered.
- *
- * @param slug The URL slug to convert
- * @returns The slug as-is (kebab-case)
- */
-export function fromUrlSlug(slug: string): string {
-    // We return the slug as-is; matching to step IDs is done by the mapper
-    return slug
-}
-
 export interface UrlMapper<TContext extends OnboardingContext = OnboardingContext> {
     /**
      * Convert a step ID to a full URL path.
@@ -85,7 +72,18 @@ export function createUrlMapper<TContext extends OnboardingContext = OnboardingC
     const { basePath, urlMapping = 'auto' } = config
 
     // Normalize basePath: ensure it starts with / and doesn't end with /
-    const normalizedBasePath = '/' + basePath.replace(/^\/+|\/+$/g, '')
+    // Using trim operations instead of regex to avoid polynomial complexity
+    let normalizedBasePath = basePath
+    // Remove leading slashes
+    while (normalizedBasePath.startsWith('/')) {
+        normalizedBasePath = normalizedBasePath.slice(1)
+    }
+    // Remove trailing slashes
+    while (normalizedBasePath.endsWith('/')) {
+        normalizedBasePath = normalizedBasePath.slice(0, -1)
+    }
+    // Ensure leading slash
+    normalizedBasePath = '/' + normalizedBasePath
 
     // Build lookup tables for efficient bidirectional mapping
     // stepId -> slug
