@@ -37,6 +37,10 @@ runs:
           shell: bash
           run: npm install -g npm@11.6.4
 
+        - name: Remove auth token from .npmrc (use OIDC instead)
+          shell: bash
+          run: sed -i '/:_authToken/d' "$NPM_CONFIG_USERCONFIG"
+
         - name: Install dependencies
           shell: bash
           run: pnpm install --frozen-lockfile
@@ -53,7 +57,12 @@ runs:
         - name: Publish package to NPM
           working-directory: ${{ inputs.package_path }}
           shell: bash
-          run: npm publish --access public
+          run: |
+              if echo "${{ inputs.package_version }}" | grep -qE '[-]'; then
+                  npm publish --access public --tag next
+              else
+                  npm publish --access public
+              fi
 
         - name: Push tag to GitHub
           shell: bash
