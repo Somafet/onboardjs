@@ -30,7 +30,12 @@ runs:
         - name: Setup Node.js
           uses: actions/setup-node@v4
           with:
-              node-version: '22'
+              node-version: '24'
+              registry-url: https://registry.npmjs.org
+
+        - name: Ensure modern npm (OIDC support)
+          shell: bash
+          run: npm install -g npm@11.6.4
 
         - name: Install dependencies
           shell: bash
@@ -49,6 +54,8 @@ runs:
           shell: bash
           run: |
               pnpm publish --filter=${{ inputs.package_name }} --access public --no-git-checks
+          env:
+              NPM_CONFIG_PROVENANCE: true
 
         - name: Push tag to GitHub
           shell: bash
