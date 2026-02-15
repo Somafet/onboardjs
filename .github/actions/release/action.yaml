@@ -31,15 +31,25 @@ runs:
           uses: actions/setup-node@v4
           with:
               node-version: '24'
-              registry-url: https://registry.npmjs.org
 
         - name: Ensure modern npm (OIDC support)
           shell: bash
           run: npm install -g npm@11.6.4
 
-        - name: Remove auth token from .npmrc (use OIDC instead)
+        - name: Verify OIDC environment
           shell: bash
-          run: sed -i '/:_authToken/d' "$NPM_CONFIG_USERCONFIG"
+          run: |
+              echo "npm version: $(npm --version)"
+              if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
+                echo "OIDC environment detected"
+              else
+                echo "WARNING: OIDC environment NOT detected - ACTIONS_ID_TOKEN_REQUEST_URL is not set"
+              fi
+              echo "NPM_CONFIG_USERCONFIG: ${NPM_CONFIG_USERCONFIG:-not set}"
+              echo "--- .npmrc content (if any) ---"
+              cat "$HOME/.npmrc" 2>/dev/null || echo "No ~/.npmrc"
+              echo "---"
+              cat "${NPM_CONFIG_USERCONFIG}" 2>/dev/null || echo "No userconfig file"
 
         - name: Install dependencies
           shell: bash
