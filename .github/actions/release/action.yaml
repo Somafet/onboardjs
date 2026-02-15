@@ -51,11 +51,9 @@ runs:
               git tag -a "${{ inputs.package_name }}@${{ inputs.package_version }}" -m "${{ inputs.package_name }}@${{ inputs.package_version }}"
 
         - name: Publish package to NPM
+          working-directory: ${{ inputs.package_path }}
           shell: bash
-          run: |
-              pnpm publish --filter=${{ inputs.package_name }} --access public --no-git-checks
-          env:
-              NPM_CONFIG_PROVENANCE: true
+          run: npm publish --access public
 
         - name: Push tag to GitHub
           shell: bash
