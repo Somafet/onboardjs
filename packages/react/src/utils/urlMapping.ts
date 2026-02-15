@@ -139,7 +139,8 @@ export function createUrlMapper<TContext extends OnboardingContext = OnboardingC
                 slug = mapping
             }
 
-            return `${normalizedBasePath}/${slug}`
+            const separator = normalizedBasePath.endsWith('/') ? '' : '/'
+            return `${normalizedBasePath}${separator}${slug}`
         },
 
         urlToStepId(path: string): string | number | null {

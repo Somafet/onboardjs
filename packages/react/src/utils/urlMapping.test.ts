@@ -153,6 +153,21 @@ describe('urlMapping utilities', () => {
                 expect(mapper.stepIdToUrl('welcome', context)).toBe('/setup/welcome')
             })
 
+            it('should handle root basePath without producing double slashes', () => {
+                const steps = createTestSteps()
+                const config: NavigatorConfig = {
+                    navigator: { navigate: () => {}, getCurrentPath: () => '/' },
+                    basePath: '/',
+                }
+                const mapper = createUrlMapper(config, steps)
+                const context = createTestContext()
+
+                expect(mapper.stepIdToUrl('welcome', context)).toBe('/welcome')
+                expect(mapper.stepIdToUrl('user_details', context)).toBe('/user-details')
+                expect(mapper.urlToStepId('/welcome')).toBe('welcome')
+                expect(mapper.urlToStepId('/user-details')).toBe('user_details')
+            })
+
             it('should normalize basePath with trailing slash', () => {
                 const steps = createTestSteps()
                 const config: NavigatorConfig = {

@@ -1,0 +1,8 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(pnpm --filter=@onboardjs/posthog-plugin build:*)",
+            "Bash(pnpm --filter=@onboardjs/supabase-plugin build:*)"
+        ]
+    }
+}

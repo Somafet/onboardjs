@@ -2,13 +2,14 @@
 'use client'
 
 import { createClient } from '@/lib/supabase'
-import { OnboardingProvider } from '@onboardjs/react'
+import { createNextNavigator, OnboardingProvider } from '@onboardjs/react'
 import { createSupabasePlugin } from '@onboardjs/supabase-plugin'
 import { createPostHogPlugin, saasConfig } from '@onboardjs/posthog-plugin'
 import { AppOnboardingContext, commonFlowSteps, commonRegistry } from './common-flow-config'
 import { type User } from '@supabase/auth-js'
 import posthog from 'posthog-js'
-import { ReactNode } from 'react'
+import { ReactNode, useMemo } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 
 export default function OnboardingProviderWrapper({
     user,
@@ -17,6 +18,8 @@ export default function OnboardingProviderWrapper({
     user: User | null
     children: ReactNode
 }>) {
+    const router = useRouter()
+    const pathname = usePathname()
     const client = createClient()
 
     const supabasePlugin = createSupabasePlugin<AppOnboardingContext>({
@@ -40,6 +43,12 @@ export default function OnboardingProviderWrapper({
         enableConsoleLogging: process.env.NODE_ENV === 'development',
     })
 
+    const isNavigatorRoute = pathname.startsWith('/onboarding')
+    const navigator = useMemo(
+        () => (isNavigatorRoute ? createNextNavigator(router, pathname) : undefined),
+        [router, pathname, isNavigatorRoute]
+    )
+
     console.log('[OnboardingProviderWrapper] Initializing OnboardingProvider with user:', user)
 
     return (
@@ -53,6 +62,7 @@ export default function OnboardingProviderWrapper({
             steps={commonFlowSteps}
             plugins={[supabasePlugin, basicPostHogPlugin]}
             componentRegistry={commonRegistry}
+            {...(navigator ? { navigator: { navigator, basePath: '/onboarding' } } : {})}
         >
             {children}
         </OnboardingProvider>

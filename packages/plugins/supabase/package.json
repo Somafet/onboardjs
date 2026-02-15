@@ -40,11 +40,11 @@
         "directory": "packages/plugins/supabase"
     },
     "peerDependencies": {
-        "@onboardjs/core": ">=1.0.0-rc.1",
+        "@onboardjs/core": ">=1.0.0-rc.3",
         "@supabase/supabase-js": ">=2.87.1"
     },
     "devDependencies": {
-        "@onboardjs/core": "^1.0.0-rc.1",
+        "@onboardjs/core": "workspace:*",
         "@supabase/supabase-js": "^2.87.1",
         "@types/node": "^24.3.0",
         "@vitest/coverage-v8": "^3.1.4",

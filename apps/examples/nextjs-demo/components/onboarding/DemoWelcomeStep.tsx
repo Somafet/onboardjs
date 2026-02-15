@@ -5,10 +5,12 @@ import { StepComponentProps, useOnboarding } from '@onboardjs/react' // Assuming
 import { Button } from '../ui/button'
 import { Radio, RadioGroup } from '../ui/radio'
 import { twMerge } from 'tailwind-merge'
-import { DatabaseIcon, GraduationCapIcon, MergeIcon, SplitIcon } from 'lucide-react'
+import { DatabaseIcon, GraduationCapIcon, MergeIcon, NavigationIcon, SplitIcon } from 'lucide-react'
+import Link from 'next/link'
 import { Label } from '../ui/label'
 import { Field } from '@headlessui/react'
 import { AppOnboardingContext } from './common-flow-config'
+import { usePathname } from 'next/navigation'
 
 export interface DemoWelcomeStepPayload {
     mainText?: string
@@ -32,6 +34,7 @@ const DemoWelcomeStep: FC<StepComponentProps<DemoWelcomeStepPayload, AppOnboardi
     payload,
     coreContext,
 }) => {
+    const pathname = usePathname()
     const { next, updateContext } = useOnboarding<AppOnboardingContext>()
     const [selectedOption, setSelectedOption] = useState<string>(coreContext.flowData.selectedOption ?? 'simple-flow')
 
@@ -43,6 +46,7 @@ const DemoWelcomeStep: FC<StepComponentProps<DemoWelcomeStepPayload, AppOnboardi
             },
         })
     }
+    const isNavigatorRoute = pathname.startsWith('/onboarding')
 
     return (
         <div className="text-center">
@@ -124,6 +128,16 @@ const DemoWelcomeStep: FC<StepComponentProps<DemoWelcomeStepPayload, AppOnboardi
             <Button className="animate-jump-in animate-delay-1000 px-6 py-3 text-lg mt-8" onClick={() => next()}>
                 {payload.ctaLabel ?? "Let's Go!"}
             </Button>
+
+            <div className="animate-fade-up animate-delay-1000 mt-4">
+                <Link
+                    href={isNavigatorRoute ? '/' : '/onboarding/welcome'}
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <NavigationIcon className="size-3.5" />
+                    Or try {isNavigatorRoute ? 'without' : 'with'} URL navigation
+                </Link>
+            </div>
         </div>
     )
 }

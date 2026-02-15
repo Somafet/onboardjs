@@ -28,8 +28,7 @@ import {
     FlowInfo,
     AhaTracker,
 } from '@onboardjs/core'
-import { PostHog } from 'posthog-js'
-import { ChurnRiskFactors, EventNameMapping, PostHogPluginConfig } from './types'
+import { ChurnRiskFactors, EventNameMapping, PostHogPluginConfig, PostHogInstance } from './types'
 import { EventDataBuilder } from './utils/eventBuilder'
 import { ChurnDetectionManager } from './utils/churnDetection'
 import { PerformanceTracker } from './utils/performanceMetrics'
@@ -39,7 +38,7 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
     readonly version = '1.0.3'
     readonly description = 'Official PostHog analytics plugin for OnboardJS'
 
-    private _posthog!: PostHog
+    private _posthog!: PostHogInstance
     private _eventBuilder!: EventDataBuilder<TContext>
     private _churnDetection!: ChurnDetectionManager<TContext>
     private _performanceTracker!: PerformanceTracker
@@ -176,10 +175,12 @@ export class PostHogPlugin<TContext extends OnboardingContext> extends BasePlugi
         } else if (this.config.apiKey) {
             // Initialize PostHog if not provided
             if (typeof window !== 'undefined') {
-                const posthog: PostHog = require('posthog-js')
-                this._posthog = posthog.init(this.config.apiKey, {
+                const posthog = require('posthog-js')
+                const initialized = posthog.init(this.config.apiKey, {
                     api_host: this.config.host || 'https://app.posthog.com',
                 })
+                // Cast to PostHogInstance since we only care about the interface methods
+                this._posthog = initialized as PostHogInstance
             } else {
                 throw new Error('PostHog instance or API key required')
             }

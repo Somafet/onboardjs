@@ -10,15 +10,15 @@ import { simpleFlowRegistry, simpleFlowSteps } from './simple-flow/simple-flow-c
 import { User } from '@supabase/supabase-js'
 import { conditionalFlowRegistry, conditionalFlowSteps } from './conditional-flow/conditional-flow-config'
 import { persistenceFlowSteps, persistenceRegistry } from './peristence-flow/persistence-flow-config'
+import { OnboardingContext } from '@onboardjs/core'
 
-export type AppOnboardingContext = {
-    flowData: {
+export type AppOnboardingContext = OnboardingContext<User> & {
+    flowData: OnboardingContext<User>['flowData'] & {
         selectedOption?: string // Store the selected option from the welcome step
         userType?: string
         userName?: string
         orgName?: string
     }
-    currentUser?: User
 }
 
 export const commonFlowSteps: OnboardingStep<AppOnboardingContext>[] = [
