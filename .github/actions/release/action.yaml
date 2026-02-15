@@ -49,7 +49,7 @@ runs:
         - name: Publish package to NPM
           shell: bash
           run: |
-              pnpm publish --filter=${{ inputs.package_name }} --access public --provenance
+              pnpm publish --filter=${{ inputs.package_name }} --access public --provenance --no-git-checks
 
         - name: Push tag to GitHub
           shell: bash
