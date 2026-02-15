@@ -65,14 +65,24 @@ runs:
               git tag -a "${{ inputs.package_name }}@${{ inputs.package_version }}" -m "${{ inputs.package_name }}@${{ inputs.package_version }}"
 
         - name: Publish package to NPM
+          id: publish
+          continue-on-error: true
           working-directory: ${{ inputs.package_path }}
           shell: bash
           run: |
               if echo "${{ inputs.package_version }}" | grep -qE '[-]'; then
-                  npm publish --access public --tag next
+                  npm publish --access public --tag next --loglevel verbose
               else
-                  npm publish --access public
+                  npm publish --access public --loglevel verbose
               fi
+
+        - name: Show npm debug log on publish failure
+          if: steps.publish.outcome == 'failure'
+          shell: bash
+          run: |
+              echo "=== npm debug log ==="
+              cat /home/runner/.npm/_logs/*-debug-0.log 2>/dev/null || echo "No debug log found"
+              exit 1
 
         - name: Push tag to GitHub
           shell: bash
