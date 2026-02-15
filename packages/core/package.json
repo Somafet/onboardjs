@@ -3,6 +3,11 @@
     "version": "1.0.0-rc.3",
     "description": "Headless core logic for dynamic onboarding flows.",
     "private": false,
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Somafet/onboardjs.git",
+        "directory": "packages/core"
+    },
     "author": {
         "name": "Soma Somorjai",
         "email": "soma@onboardjs.com",

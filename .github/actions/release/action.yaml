@@ -36,21 +36,6 @@ runs:
           shell: bash
           run: npm install -g npm@11.6.4
 
-        - name: Verify OIDC environment
-          shell: bash
-          run: |
-              echo "npm version: $(npm --version)"
-              if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then
-                echo "OIDC environment detected"
-              else
-                echo "WARNING: OIDC environment NOT detected - ACTIONS_ID_TOKEN_REQUEST_URL is not set"
-              fi
-              echo "NPM_CONFIG_USERCONFIG: ${NPM_CONFIG_USERCONFIG:-not set}"
-              echo "--- .npmrc content (if any) ---"
-              cat "$HOME/.npmrc" 2>/dev/null || echo "No ~/.npmrc"
-              echo "---"
-              cat "${NPM_CONFIG_USERCONFIG}" 2>/dev/null || echo "No userconfig file"
-
         - name: Install dependencies
           shell: bash
           run: pnpm install --frozen-lockfile
@@ -65,24 +50,14 @@ runs:
               git tag -a "${{ inputs.package_name }}@${{ inputs.package_version }}" -m "${{ inputs.package_name }}@${{ inputs.package_version }}"
 
         - name: Publish package to NPM
-          id: publish
-          continue-on-error: true
           working-directory: ${{ inputs.package_path }}
           shell: bash
           run: |
               if echo "${{ inputs.package_version }}" | grep -qE '[-]'; then
-                  npm publish --access public --tag next --loglevel verbose
+                  npm publish --access public --tag next
               else
-                  npm publish --access public --loglevel verbose
+                  npm publish --access public
               fi
-
-        - name: Show npm debug log on publish failure
-          if: steps.publish.outcome == 'failure'
-          shell: bash
-          run: |
-              echo "=== npm debug log ==="
-              cat /home/runner/.npm/_logs/*-debug-0.log 2>/dev/null || echo "No debug log found"
-              exit 1
 
         - name: Push tag to GitHub
           shell: bash
