@@ -65,8 +65,8 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
      * @param engine The OnboardingEngine instance to install the plugin into.
      * @returns A cleanup function to remove the plugin's handlers.
      */
-    async install(engine: OnboardingEngine<TContext>) {
-        super.install(engine) // Call base install
+    async install(engine: OnboardingEngine<TContext>): Promise<() => Promise<void>> {
+        await super.install(engine) // Call base install
 
         const getUserIdFromContext = (): string | undefined => {
             const context = engine.getState().context

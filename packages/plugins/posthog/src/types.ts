@@ -1,11 +1,20 @@
 import { PluginConfig } from '@onboardjs/core'
-import { PostHog } from 'posthog-js'
+
+/**
+ * Minimal PostHog interface to avoid version incompatibilities.
+ * This interface only includes the methods actually used by the plugin,
+ * allowing it to work with any reasonably recent PostHog version.
+ */
+export interface PostHogInstance {
+    capture: (event: string, properties?: Record<string, any>) => void
+    getFeatureFlag: (flag: string) => string | boolean | null | undefined
+}
 
 export interface PostHogPluginConfig extends PluginConfig {
     // PostHog instance configuration
     apiKey?: string
     host?: string
-    posthogInstance?: PostHog
+    posthogInstance?: PostHogInstance
 
     // Event naming and customization
     eventPrefix?: string

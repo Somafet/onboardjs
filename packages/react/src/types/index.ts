@@ -12,6 +12,9 @@ import {
     ChecklistStepPayload,
 } from '@onboardjs/core'
 
+// Re-export navigator types
+export type { OnboardingNavigator, NavigatorOptions, NavigatorConfig, UrlMappingFunction } from './navigator'
+
 /**
  * Props that will be passed to every registered step component.
  * @template P The type of the step's payload.

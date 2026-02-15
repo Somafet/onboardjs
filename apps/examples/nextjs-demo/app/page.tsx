@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { useOnboarding } from '@onboardjs/react'
 import OnboardingUIManager from '@/components/onboarding/OnboardingUIManager'
 import { toast } from 'sonner'
