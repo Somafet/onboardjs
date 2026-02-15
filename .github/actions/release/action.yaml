@@ -31,7 +31,6 @@ runs:
           uses: actions/setup-node@v4
           with:
               node-version: '22'
-              registry-url: https://registry.npmjs.org
 
         - name: Install dependencies
           shell: bash
@@ -49,7 +48,7 @@ runs:
         - name: Publish package to NPM
           shell: bash
           run: |
-              pnpm publish --filter=${{ inputs.package_name }} --access public --provenance --no-git-checks
+              pnpm publish --filter=${{ inputs.package_name }} --access public --no-git-checks
 
         - name: Push tag to GitHub
           shell: bash
