@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/supabase-plugin",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "private": false,
     "description": "Official Supabase persistence plugin for OnboardJS.",
     "files": [
