@@ -2,4 +2,7 @@
 
 # OnboardJS + React + Vite Example
 
-This template provides a minimal setup to get OnboardJS working with React working in Vite with HMR and some ESLint rules.
+## Description
+
+This demo showcases how to integrate **OnboardJS** with a React application using Vite.  
+It demonstrates how to build multi-step onboarding flows using the OnboardJS engine and React bindings
