@@ -97,6 +97,6 @@ Once you've got the demo running, here are a few ways to experiment with it:
 
 ## Resources
 
-- [OnboardJS Documentation](https://github.com/Somafet/onboardjs)
+[OnboardJS Documentation](https://docs.onboardjs.com)
 - [React Bindings Package — `@onboardjs/react`](https://github.com/Somafet/onboardjs/tree/main/packages/react)
 - [Other Examples](https://github.com/Somafet/onboardjs/tree/main/apps/examples)
