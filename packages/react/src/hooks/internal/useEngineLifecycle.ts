@@ -1,7 +1,7 @@
 // @onboardjs/react/src/hooks/internal/useEngineLifecycle.ts
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { OnboardingEngine, OnboardingEngineConfig, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 import { createConfigHash } from '../../utils/configHash'
 
@@ -27,9 +27,6 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
     const [engine, setEngine] = useState<OnboardingEngine<TContext> | null>(null)
     const [isReady, setIsReady] = useState(false)
     const [error, setError] = useState<Error | null>(null)
-
-    // Track if component is mounted to prevent state updates after unmount
-    const isMountedRef = useRef(true)
 
     // Keep a ref to the latest config so we can access it in the effect
     // without adding config to the dependency array (which would cause
@@ -66,7 +63,11 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
     )
 
     useEffect(() => {
-        isMountedRef.current = true
+        // Use effect-scoped flag instead of useRef to prevent race conditions
+        // in React 18 Strict Mode. Each effect invocation gets its own flag,
+        // ensuring orphaned promises from previous effect runs cannot update state.
+        let isEffectActive = true
+
         setIsReady(false)
         setEngine(null)
         setError(null)
@@ -82,34 +83,39 @@ export function useEngineLifecycle<TContext extends OnboardingContextType>(
         try {
             currentEngine = new OnboardingEngine<TContext>(currentConfig)
 
-            if (isMountedRef.current) {
+            if (isEffectActive) {
                 setEngine(currentEngine)
             }
 
             currentEngine
                 .ready()
                 .then(() => {
-                    if (isMountedRef.current && currentEngine) {
+                    // Only update state if THIS specific effect is still active.
+                    // This prevents race conditions in React 18 Strict Mode where
+                    // Engine 1's promise could resolve after Engine 2 is created.
+                    if (isEffectActive && currentEngine) {
                         setIsReady(true)
                         setError(null)
                     }
                 })
                 .catch((initError) => {
                     console.error('[OnboardJS] Engine initialization failed:', initError)
-                    if (isMountedRef.current) {
+                    if (isEffectActive) {
                         setError(initError instanceof Error ? initError : new Error(String(initError)))
                         setIsReady(false)
                     }
                 })
         } catch (engineError) {
             console.error('[OnboardJS] Error creating engine:', engineError)
-            if (isMountedRef.current) {
+            if (isEffectActive) {
                 setError(engineError instanceof Error ? engineError : new Error(String(engineError)))
             }
         }
 
         return () => {
-            isMountedRef.current = false
+            // Mark this effect instance as inactive. Any pending promises
+            // from this effect will see isEffectActive as false and skip state updates.
+            isEffectActive = false
             // Engine cleanup is handled by the engine itself
         }
         // Only re-run when the configuration hash changes (meaningful structural changes)
