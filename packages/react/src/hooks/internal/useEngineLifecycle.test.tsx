@@ -15,6 +15,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
+import React from 'react'
 import { useEngineLifecycle } from './useEngineLifecycle'
 import type { OnboardingStep, OnboardingContext } from '@onboardjs/core'
 
@@ -438,6 +439,77 @@ describe('useEngineLifecycle', () => {
             // Engine should NOT have been recreated despite 10 callback changes
             expect(result.current.engine?.instanceId).toBe(initialInstanceId)
             expect(callbackCount).toBe(11) // Initial + 10 updates
+        })
+    })
+
+    describe('React 18 Strict Mode', () => {
+        /**
+         * This test verifies the fix for the race condition that occurs in React 18 Strict Mode.
+         *
+         * The issue: In Strict Mode, React double-mounts components. The old implementation
+         * used a shared `useRef` to track mount state, which caused a race condition:
+         * 1. Mount 1: Engine 1 created, ready() starts
+         * 2. Unmount 1: isMountedRef.current = false
+         * 3. Mount 2: isMountedRef.current = true, Engine 2 created
+         * 4. Engine 1's ready() resolves, sees isMountedRef.current is true (from Mount 2),
+         *    calls setIsReady(true) for the wrong engine
+         *
+         * The fix uses an effect-scoped `let isEffectActive` flag instead, ensuring each
+         * effect invocation has its own flag that cannot be polluted by subsequent invocations.
+         */
+        it('should not have race condition when double-mounted in StrictMode', async () => {
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <React.StrictMode>{children}</React.StrictMode>
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useEngineLifecycle({
+                        steps: [
+                            { id: 'step1', type: 'CUSTOM_COMPONENT', payload: { componentKey: 'Test' } },
+                            { id: 'step2', type: 'CUSTOM_COMPONENT', payload: { componentKey: 'Test' } },
+                        ],
+                    }),
+                { wrapper }
+            )
+
+            // Wait for the engine to be ready
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true)
+            })
+
+            // Verify the engine exists and is properly initialized
+            expect(result.current.engine).not.toBeNull()
+            expect(result.current.error).toBeNull()
+
+            // Critical: The engine should NOT be stuck in hydrating state
+            const state = result.current.engine?.getState()
+            expect(state?.isHydrating).toBe(false)
+        })
+
+        it('should have correct engine state after StrictMode double-mount', async () => {
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <React.StrictMode>{children}</React.StrictMode>
+            )
+
+            const steps = [
+                { id: 'welcome', type: 'CUSTOM_COMPONENT' as const, payload: { componentKey: 'Welcome' } },
+                { id: 'profile', type: 'CUSTOM_COMPONENT' as const, payload: { componentKey: 'Profile' } },
+            ]
+
+            const { result } = renderHook(() => useEngineLifecycle({ steps, initialStepId: 'welcome' }), { wrapper })
+
+            await waitFor(() => {
+                expect(result.current.isReady).toBe(true)
+            })
+
+            const state = result.current.engine?.getState()
+
+            // Verify complete initialization
+            expect(state).toBeDefined()
+            expect(state?.isHydrating).toBe(false)
+            expect(state?.isLoading).toBe(false)
+            expect(state?.currentStep?.id).toBe('welcome')
         })
     })
 })

@@ -292,6 +292,14 @@ export class OnboardingEngine<TContext extends OnboardingContext = OnboardingCon
             } finally {
                 this._coreEngineService.setHydrating(false)
                 this._updateLoadingState()
+                // Notify listeners that hydration is complete. This ensures React
+                // and other subscribers are informed of the final initialization state,
+                // even if hydration completed while they were subscribing.
+                this._coreEngineService.notifyStateChange(
+                    this._currentStepInternal,
+                    this._contextInternal,
+                    this._history
+                )
             }
         })
     }
