@@ -96,6 +96,49 @@ describe('OnboardingEngine', () => {
             expect(state.context.flowData.existingData).toBe('test')
             expect(state.context.currentUser.name).toBe('John')
         })
+
+        it('should emit stateChange event with isHydrating: false when initialization completes', async () => {
+            const stateChangeSpy = vi.fn()
+
+            engine = new OnboardingEngine(basicConfig)
+            engine.addEventListener('stateChange', stateChangeSpy)
+
+            await engine.ready()
+
+            // At least one stateChange event should have been emitted
+            expect(stateChangeSpy).toHaveBeenCalled()
+
+            // The final state should have isHydrating: false
+            const lastCall = stateChangeSpy.mock.calls[stateChangeSpy.mock.calls.length - 1]
+            expect(lastCall[0].state.isHydrating).toBe(false)
+
+            // Also verify the engine state directly
+            const state = engine.getState()
+            expect(state.isHydrating).toBe(false)
+        })
+
+        it('should notify listeners of hydration completion even if subscribed during initialization', async () => {
+            // This test ensures that listeners added while the engine is still initializing
+            // will receive the final state with isHydrating: false
+            const stateChangeSpy = vi.fn()
+
+            engine = new OnboardingEngine(basicConfig)
+
+            // Subscribe immediately after construction (while engine is still hydrating)
+            engine.addEventListener('stateChange', stateChangeSpy)
+
+            // The engine should be hydrating right now
+            const initialState = engine.getState()
+            expect(initialState.isHydrating).toBe(true)
+
+            await engine.ready()
+
+            // After ready(), a stateChange with isHydrating: false should have been emitted
+            const statesWithHydratingFalse = stateChangeSpy.mock.calls.filter(
+                (call) => call[0].state.isHydrating === false
+            )
+            expect(statesWithHydratingFalse.length).toBeGreaterThan(0)
+        })
     })
 
     describe('Data Loading and Persistence', () => {
