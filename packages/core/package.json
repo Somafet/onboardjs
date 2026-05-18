@@ -1,6 +1,6 @@
 {
     "name": "@onboardjs/core",
-    "version": "1.0.0-rc.3",
+    "version": "1.0.0-rc.4",
     "description": "Headless core logic for dynamic onboarding flows.",
     "private": false,
     "repository": {
