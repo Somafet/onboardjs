@@ -54,7 +54,10 @@ runs:
           shell: bash
           run: |
               if echo "${{ inputs.package_version }}" | grep -qE '[-]'; then
+                  # Pre-release: publish under `next` and also promote to `latest`
+                  # so `pnpm/npm add ${{ inputs.package_name }}` installs the newest RC.
                   npm publish --access public --tag next
+                  npm dist-tag add "${{ inputs.package_name }}@${{ inputs.package_version }}" latest
               else
                   npm publish --access public
               fi
