@@ -39,6 +39,17 @@ export { getStatusText, type PersistenceMode } from './persistence/persistenceMo
 // Step rendering fallback contract (platform packages supply concrete UI)
 export type { StepNotFoundInfo } from './hooks/internal/useStepRenderer'
 
+// Error boundary model (platform packages supply the boundary component + default UI)
+export {
+    classifyError,
+    isRecoverable,
+    createOnboardingError,
+    type OnboardingErrorType,
+    type OnboardingError,
+    type OnboardingErrorBoundaryProps,
+    type OnboardingErrorBoundaryFallbackProps,
+} from './errors/onboardingError'
+
 // Types
 export type {
     StepComponentProps,

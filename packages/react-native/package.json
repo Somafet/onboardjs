@@ -1,0 +1,64 @@
+{
+    "name": "@onboardjs/react-native",
+    "version": "1.0.0-rc.5",
+    "description": "Official React Native bindings for OnboardJS.",
+    "keywords": [
+        "onboarding",
+        "react-native",
+        "expo",
+        "hooks",
+        "typescript",
+        "onboardjs"
+    ],
+    "private": false,
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Somafet/onboardjs.git",
+        "directory": "packages/react-native"
+    },
+    "author": {
+        "name": "Soma Somorjai",
+        "email": "soma@onboardjs.com",
+        "url": "https://somafet.com"
+    },
+    "license": "MIT",
+    "files": [
+        "dist"
+    ],
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.es.js",
+            "require": "./dist/index.cjs.js"
+        }
+    },
+    "scripts": {
+        "lint": "eslint . --max-warnings 0",
+        "build": "vite build && tsc --emitDeclarationOnly true",
+        "check-types": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@onboardjs/core": "workspace:^",
+        "@react-native-async-storage/async-storage": "^2.1.0",
+        "@types/react": "^19.1.1",
+        "@vitejs/plugin-react": "^5.1.2",
+        "eslint": "^9.27.0",
+        "react": "^19.1.1",
+        "react-native": "^0.81.0",
+        "rollup-plugin-preserve-use-client": "^3.0.1",
+        "typescript": "^5.8.2",
+        "vite": "^7.0.0"
+    },
+    "dependencies": {
+        "@onboardjs/react-core": "workspace:*"
+    },
+    "peerDependencies": {
+        "@onboardjs/core": ">=1.0.0-rc.1",
+        "@react-native-async-storage/async-storage": ">=1.17.0",
+        "react": "^18.0.0 || ^19.0.0",
+        "react-native": ">=0.70.0"
+    }
+}
