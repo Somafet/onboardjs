@@ -1,8 +1,14 @@
-export { OnboardingProvider } from './context/OnboardingProvider'
-export { useOnboarding } from './hooks/useOnboarding'
-export { useOnboardingAnalytics } from './hooks/useOnboardingAnalytics'
+// @onboardjs/react — web React bindings for OnboardJS.
+// Headless logic is re-exported from @onboardjs/react-core; this package adds the
+// web platform layer (DOM components, localStorage persistence, web router adapters).
 
-// Re-export plugin system from core for convenience
+// Web onboarding provider (wraps the core provider with web defaults)
+export { OnboardingProvider, type OnboardingProviderProps } from './context/OnboardingProvider'
+
+// Headless surface re-exported from react-core
+export { useOnboarding } from '@onboardjs/react-core'
+export { useOnboardingAnalytics } from '@onboardjs/react-core'
+
 export {
     BasePlugin,
     PluginManagerImpl,
@@ -13,11 +19,10 @@ export {
     type PluginCleanup,
 } from '@onboardjs/core'
 
-// Export React-specific plugin utilities
-export { ReactPlugin } from './plugins/ReactPlugin'
-export type { ReactPluginConfig, ReactPluginHooks } from './plugins/ReactPlugin'
+export { ReactPlugin } from '@onboardjs/react-core'
+export type { ReactPluginConfig, ReactPluginHooks } from '@onboardjs/react-core'
 
-// Export components
+// Web components
 export {
     OnboardingErrorBoundary,
     OnboardingContainer,
@@ -31,23 +36,31 @@ export {
     type PersistenceMode,
 } from './components'
 
-// Export utilities
-export { createStepsHash, createConfigHash, areStepsEqual, getLoadingReason, createLoadingState } from './utils'
-export type { LoadingState, LoadingReason } from './utils'
+// Utilities (from react-core)
+export {
+    createStepsHash,
+    createConfigHash,
+    areStepsEqual,
+    getLoadingReason,
+    createLoadingState,
+} from '@onboardjs/react-core'
+export type { LoadingState, LoadingReason } from '@onboardjs/react-core'
 
-// Export URL mapping utilities
-export { createUrlMapper, toUrlSlug, canAccessStep, type UrlMapper } from './utils/urlMapping'
+export { createUrlMapper, toUrlSlug, canAccessStep, type UrlMapper } from '@onboardjs/react-core'
 
-// Export Suspense-related utilities
-export { useSuspenseEngine, clearSuspenseCache, type UseSuspenseEngineResult } from './hooks/internal/useSuspenseEngine'
+export { useSuspenseEngine, clearSuspenseCache, type UseSuspenseEngineResult } from '@onboardjs/react-core'
 
-// Export navigator adapters
+// Web router adapters
 export { createNextNavigator, type NextAppRouter } from './adapters/next'
 export {
     createReactRouterNavigator,
     type ReactRouterNavigateFunction,
     type ReactRouterLocation,
 } from './adapters/react-router'
+
+// Storage adapter contract (web ships a localStorage adapter as the default)
+export type { OnboardingStorageAdapter } from '@onboardjs/react-core'
+export { localStorageAdapter } from './persistence/localStorageAdapter'
 
 // Export types
 export type {
@@ -59,11 +72,6 @@ export type {
     NavigatorOptions,
     NavigatorConfig,
     UrlMappingFunction,
-} from './types'
-export type { UseOnboardingOptions, UseOnboardingReturn } from './hooks/useOnboarding.types'
-export type {
-    OnboardingContextValue,
-    OnboardingActions,
-    LocalStoragePersistenceOptions,
-    OnboardingProviderProps,
-} from './context/OnboardingProvider'
+} from '@onboardjs/react-core'
+export type { UseOnboardingOptions, UseOnboardingReturn } from '@onboardjs/react-core'
+export type { OnboardingContextValue, OnboardingActions, LocalStoragePersistenceOptions } from '@onboardjs/react-core'

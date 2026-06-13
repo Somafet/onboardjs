@@ -3,7 +3,7 @@
 // Guards SSR/non-DOM environments by no-opping when window is unavailable,
 // preserving the original usePersistence behavior.
 
-import type { OnboardingStorageAdapter } from './storageAdapter'
+import type { OnboardingStorageAdapter } from '@onboardjs/react-core'
 
 export const localStorageAdapter: OnboardingStorageAdapter = {
     load: (key) => (typeof window === 'undefined' ? null : window.localStorage.getItem(key)),

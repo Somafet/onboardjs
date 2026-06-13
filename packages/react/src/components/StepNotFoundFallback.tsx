@@ -2,7 +2,7 @@
 'use client'
 
 import React from 'react'
-import type { StepNotFoundInfo } from '../hooks/internal/useStepRenderer'
+import type { StepNotFoundInfo } from '@onboardjs/react-core'
 
 export type { StepNotFoundInfo }
 

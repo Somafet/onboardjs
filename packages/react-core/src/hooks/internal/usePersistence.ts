@@ -3,7 +3,7 @@
 
 import { useCallback, useState, useRef } from 'react'
 import { DataLoadFn, DataPersistFn, LoadedData, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
-import { PersistenceMode } from '../../components/PersistenceStatus'
+import { PersistenceMode } from '../../persistence/persistenceMode'
 import type { OnboardingStorageAdapter } from '../../persistence/storageAdapter'
 
 export interface LocalStoragePersistenceOptions {

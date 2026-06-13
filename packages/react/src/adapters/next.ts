@@ -1,7 +1,7 @@
 // @onboardjs/react/src/adapters/next.ts
 'use client'
 
-import type { OnboardingNavigator, NavigatorOptions } from '../types/navigator'
+import type { OnboardingNavigator, NavigatorOptions } from '@onboardjs/react-core'
 
 /**
  * Type for the Next.js App Router's useRouter hook result.

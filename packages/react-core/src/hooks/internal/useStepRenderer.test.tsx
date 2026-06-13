@@ -12,10 +12,15 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, render } from '@testing-library/react'
 import React from 'react'
-import { useStepRenderer, UseStepRendererConfig } from './useStepRenderer'
-import { StepNotFoundFallback } from '../../components/StepNotFoundFallback'
+import { useStepRenderer, UseStepRendererConfig, type StepNotFoundInfo } from './useStepRenderer'
 import type { OnboardingContext, EngineState } from '@onboardjs/core'
 import type { StepComponentRegistry, StepComponentProps, OnboardingStep } from '../../types'
+
+// Minimal DOM fallback used to verify the injected renderStepNotFound path.
+// The headless hook itself returns null; web/native packages supply real UI.
+function StepNotFoundFallback({ stepId }: StepNotFoundInfo): React.ReactElement {
+    return <div style={{ color: '#d32f2f' }}>Component Not Found for Step: &quot;{stepId}&quot;</div>
+}
 
 /**
  * Creates a mock EngineState with the given current step

@@ -1,8 +1,20 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
     plugins: [react()],
+    resolve: {
+        alias: {
+            // Resolve the headless core to source in tests so React (and the
+            // OnboardingContext singleton) are shared with the test runtime,
+            // rather than loading a separately-bundled copy from dist.
+            '@onboardjs/react-core': path.resolve(__dirname, '../react-core/src/index.ts'),
+        },
+        // Force a single React instance — the aliased core source would otherwise
+        // resolve react from react-core's own node_modules, yielding a null dispatcher.
+        dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+    },
     test: {
         environment: 'jsdom',
         globals: true,

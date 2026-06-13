@@ -15,7 +15,14 @@ export default defineConfig({
         },
         rollupOptions: {
             // Externalize peer deps (like react, react-dom)
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', '@onboardjs/core'],
+            external: [
+                'react',
+                'react-dom',
+                'react/jsx-runtime',
+                'react/jsx-dev-runtime',
+                '@onboardjs/core',
+                '@onboardjs/react-core',
+            ],
             treeshake: {
                 moduleSideEffects: false,
                 propertyReadSideEffects: false,
