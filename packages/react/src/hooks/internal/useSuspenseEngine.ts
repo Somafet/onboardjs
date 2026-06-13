@@ -43,6 +43,15 @@ export interface UseSuspenseEngineResult<TContext extends OnboardingContextType>
     error: null
 }
 
+export interface UseSuspenseEngineOptions {
+    /**
+     * Whether the hook is running in a server environment (no DOM).
+     * Defaults to `typeof window === 'undefined'`. Web keeps the SSR throw;
+     * React Native (no DOM but a valid client runtime) passes `false`.
+     */
+    isServer?: boolean
+}
+
 /**
  * Suspense-enabled hook for engine initialization.
  * Throws a Promise during initialization to trigger React Suspense.
@@ -69,7 +78,8 @@ export interface UseSuspenseEngineResult<TContext extends OnboardingContextType>
  * ```
  */
 export function useSuspenseEngine<TContext extends OnboardingContextType>(
-    config: OnboardingEngineConfig<TContext>
+    config: OnboardingEngineConfig<TContext>,
+    options?: UseSuspenseEngineOptions
 ): UseSuspenseEngineResult<TContext> {
     // Track the engine instance for cleanup
     const engineRef = useRef<OnboardingEngine<TContext> | null>(null)
@@ -87,8 +97,10 @@ export function useSuspenseEngine<TContext extends OnboardingContextType>(
         [config.steps, config.initialStepId, config.initialContext, config.debug, config.plugins]
     )
 
-    // Check for SSR environment - don't throw Promise on server
-    if (typeof window === 'undefined') {
+    // Check for SSR environment - don't throw Promise on server.
+    // Platform packages override `isServer` (React Native has no DOM but is a valid client).
+    const isServer = options?.isServer ?? typeof window === 'undefined'
+    if (isServer) {
         throw new Error(
             '[OnboardJS] useSuspenseEngine cannot be used during server-side rendering. ' +
                 'Wrap your component in a client-side boundary or use the regular useEngineLifecycle hook.'

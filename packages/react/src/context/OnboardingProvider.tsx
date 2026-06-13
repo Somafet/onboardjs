@@ -22,6 +22,10 @@ import {
     type UsePersistenceConfig,
 } from '../hooks/internal'
 import { createLoadingState, type LoadingState } from '../utils/loadingState'
+import type { OnboardingStorageAdapter } from '../persistence/storageAdapter'
+import { localStorageAdapter } from '../persistence/localStorageAdapter'
+import { StepNotFoundFallback } from '../components/StepNotFoundFallback'
+import type { StepNotFoundInfo } from '../hooks/internal/useStepRenderer'
 
 // Define the actions type based on OnboardingEngine methods
 export interface OnboardingActions<TContext extends OnboardingContextType = OnboardingContextType> {
@@ -143,6 +147,17 @@ export interface OnboardingProviderProps<TContext extends OnboardingContextType>
 > {
     children: ReactNode
     localStoragePersistence?: LocalStoragePersistenceOptions
+    /**
+     * Platform storage adapter backing `localStoragePersistence`.
+     * Defaults to a `window.localStorage` adapter on web. React Native supplies
+     * an AsyncStorage-backed adapter via its own provider wrapper.
+     */
+    storageAdapter?: OnboardingStorageAdapter
+    /**
+     * Platform fallback rendered when no component resolves for the active step.
+     * Defaults to a DOM fallback on web. React Native supplies its own.
+     */
+    renderStepNotFound?: (info: StepNotFoundInfo) => ReactNode
     customOnDataLoad?: UsePersistenceConfig<TContext>['customOnDataLoad']
     customOnDataPersist?: UsePersistenceConfig<TContext>['customOnDataPersist']
     customOnClearPersistedData?: UsePersistenceConfig<TContext>['customOnClearPersistedData']
@@ -205,6 +220,8 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     onFlowComplete: passedOnFlowComplete,
     onStepChange,
     localStoragePersistence,
+    storageAdapter = localStorageAdapter,
+    renderStepNotFound = StepNotFoundFallback,
     customOnDataLoad,
     customOnDataPersist,
     customOnClearPersistedData,
@@ -263,6 +280,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
     // Setup persistence handlers - memoize config to prevent unnecessary re-initialization
     const { onDataLoad, onDataPersist, onClearPersistedData } = usePersistence({
         localStoragePersistence,
+        storageAdapter,
         customOnDataLoad,
         customOnDataPersist,
         customOnClearPersistedData,
@@ -352,6 +370,7 @@ export function OnboardingProvider<TContext extends OnboardingContextType = Onbo
         engineState,
         componentRegistry,
         onDataChange: handleDataChange,
+        renderStepNotFound,
     })
 
     // Setup engine actions with engine processing state callback

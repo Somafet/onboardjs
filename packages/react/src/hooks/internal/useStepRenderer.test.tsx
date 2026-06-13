@@ -13,6 +13,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, render } from '@testing-library/react'
 import React from 'react'
 import { useStepRenderer, UseStepRendererConfig } from './useStepRenderer'
+import { StepNotFoundFallback } from '../../components/StepNotFoundFallback'
 import type { OnboardingContext, EngineState } from '@onboardjs/core'
 import type { StepComponentRegistry, StepComponentProps, OnboardingStep } from '../../types'
 
@@ -191,10 +192,19 @@ describe('useStepRenderer', () => {
                 // Empty registry - nothing matches
             }
 
-            const config: UseStepRendererConfig<OnboardingContext> = {
+            // Without an injected fallback the headless renderer returns null
+            const headlessConfig: UseStepRendererConfig<OnboardingContext> = {
                 engineState: createMockEngineState(step),
                 componentRegistry: registry,
                 onDataChange: mockOnDataChange,
+            }
+            const { result: headless } = renderHook(() => useStepRenderer(headlessConfig))
+            expect(headless.current()).toBeNull()
+
+            // With the web fallback injected, it renders the error div
+            const config: UseStepRendererConfig<OnboardingContext> = {
+                ...headlessConfig,
+                renderStepNotFound: StepNotFoundFallback,
             }
 
             const { result } = renderHook(() => useStepRenderer(config))
@@ -211,24 +221,25 @@ describe('useStepRenderer', () => {
             expect(element.props.style?.color).toBe('#d32f2f')
         })
 
-        it('should include attempted resolution paths in error message', () => {
+        it('should pass attempted resolution paths to the fallback', () => {
             const step = createStep('my-step-id', 'CUSTOM_COMPONENT', { componentKey: 'MyComponentKey' })
+            const renderStepNotFound = vi.fn(() => null)
 
             const config: UseStepRendererConfig<OnboardingContext> = {
                 engineState: createMockEngineState(step),
                 componentRegistry: {},
                 onDataChange: mockOnDataChange,
+                renderStepNotFound,
             }
 
             const { result } = renderHook(() => useStepRenderer(config))
-            const rendered = result.current()
+            result.current()
 
-            // Convert to string to check for resolution paths
-            const element = rendered as React.ReactElement<{ children?: React.ReactNode }>
-
-            // The error message should include the step ID and componentKey
-            // Children contain nested elements with the error info
-            expect(element.props.children).toBeDefined()
+            // The fallback receives the step ID and the attempted registry keys
+            expect(renderStepNotFound).toHaveBeenCalledWith({
+                stepId: 'my-step-id',
+                attemptedKeys: ['my-step-id', 'MyComponentKey'],
+            })
         })
 
         it('should validate resolved component is callable (skip non-functions)', () => {
@@ -243,6 +254,7 @@ describe('useStepRenderer', () => {
                 engineState: createMockEngineState(step),
                 componentRegistry: registry as StepComponentRegistry,
                 onDataChange: mockOnDataChange,
+                renderStepNotFound: StepNotFoundFallback,
             }
 
             const { result } = renderHook(() => useStepRenderer(config))
@@ -407,6 +419,7 @@ describe('useStepRenderer', () => {
                 engineState: createMockEngineState(step),
                 componentRegistry: {}, // Empty
                 onDataChange: mockOnDataChange,
+                renderStepNotFound: StepNotFoundFallback,
             }
 
             const { result } = renderHook(() => useStepRenderer(config))
@@ -424,6 +437,7 @@ describe('useStepRenderer', () => {
                 engineState: createMockEngineState(step),
                 componentRegistry: undefined,
                 onDataChange: mockOnDataChange,
+                renderStepNotFound: StepNotFoundFallback,
             }
 
             const { result } = renderHook(() => useStepRenderer(config))

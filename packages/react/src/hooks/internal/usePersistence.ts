@@ -4,6 +4,7 @@
 import { useCallback, useState, useRef } from 'react'
 import { DataLoadFn, DataPersistFn, LoadedData, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 import { PersistenceMode } from '../../components/PersistenceStatus'
+import type { OnboardingStorageAdapter } from '../../persistence/storageAdapter'
 
 export interface LocalStoragePersistenceOptions {
     key: string
@@ -12,6 +13,12 @@ export interface LocalStoragePersistenceOptions {
 
 export interface UsePersistenceConfig<TContext extends OnboardingContextType> {
     localStoragePersistence?: LocalStoragePersistenceOptions
+    /**
+     * Platform storage adapter used together with `localStoragePersistence`.
+     * Web supplies a localStorage-backed adapter; React Native an AsyncStorage one.
+     * When absent, the `localStoragePersistence` key path is inert (loads null, persist no-ops).
+     */
+    storageAdapter?: OnboardingStorageAdapter
     customOnDataLoad?: DataLoadFn<TContext>
     customOnDataPersist?: DataPersistFn<TContext>
     customOnClearPersistedData?: () => Promise<unknown> | unknown
@@ -35,7 +42,7 @@ export interface UsePersistenceResult<TContext extends OnboardingContextType> {
      */
     persistenceError: Error | null
     /**
-     * Switch to memory-only mode (fallback when localStorage fails).
+     * Switch to memory-only mode (fallback when storage fails).
      */
     switchToMemoryMode: () => void
 }
@@ -44,14 +51,20 @@ export interface UsePersistenceResult<TContext extends OnboardingContextType> {
 const memoryStorage = new Map<string, string>()
 
 /**
- * Handles localStorage operations with proper error recovery.
- * Provides fallback mechanisms for quota and privacy errors.
+ * Handles persistence operations through a platform storage adapter with proper
+ * error recovery. Provides fallback mechanisms for quota and privacy errors.
+ *
+ * Resolution priority (unchanged across platforms):
+ * 1. customOnDataLoad / customOnDataPersist (user-provided)
+ * 2. storageAdapter + localStoragePersistence
+ * 3. in-memory fallback
  */
 export function usePersistence<TContext extends OnboardingContextType>(
     config: UsePersistenceConfig<TContext>
 ): UsePersistenceResult<TContext> {
     const {
         localStoragePersistence,
+        storageAdapter,
         customOnDataLoad,
         customOnDataPersist,
         customOnClearPersistedData,
@@ -115,15 +128,15 @@ export function usePersistence<TContext extends OnboardingContextType>(
             }
         }
 
-        // Fallback to localStorage
-        if (!localStoragePersistence || typeof window === 'undefined') {
+        // Fallback to the storage adapter
+        if (!localStoragePersistence || !storageAdapter) {
             return null
         }
 
         const { key, ttl } = localStoragePersistence
 
         try {
-            const savedStateRaw = window.localStorage.getItem(key)
+            const savedStateRaw = await storageAdapter.load(key)
             if (!savedStateRaw) {
                 return null
             }
@@ -135,25 +148,25 @@ export function usePersistence<TContext extends OnboardingContextType>(
 
             // Check TTL expiration
             if (ttl && savedState.timestamp && Date.now() - savedState.timestamp > ttl) {
-                window.localStorage.removeItem(key)
+                await storageAdapter.remove(key)
                 return null
             }
 
             return savedState.data
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error))
-            console.error(`[OnboardJS] Error loading from localStorage (key: "${key}"):`, err)
+            console.error(`[OnboardJS] Error loading from storage (key: "${key}"):`, err)
             handlePersistenceError(err)
 
             // Clear corrupted data
             try {
-                window.localStorage.removeItem(key)
+                await storageAdapter.remove(key)
             } catch {
                 // Ignore cleanup errors
             }
             return null
         }
-    }, [localStoragePersistence, customOnDataLoad, handlePersistenceError])
+    }, [localStoragePersistence, storageAdapter, customOnDataLoad, handlePersistenceError])
 
     const onDataPersist = useCallback(
         async (context: TContext, currentStepId: string | number | null): Promise<void> => {
@@ -170,8 +183,8 @@ export function usePersistence<TContext extends OnboardingContextType>(
                 return
             }
 
-            // Fallback to localStorage or memory
-            if (!localStoragePersistence || typeof window === 'undefined') {
+            // Fallback to the storage adapter or memory
+            if (!localStoragePersistence || !storageAdapter) {
                 return
             }
 
@@ -198,24 +211,24 @@ export function usePersistence<TContext extends OnboardingContextType>(
             }
 
             try {
-                window.localStorage.setItem(key, serialized)
+                await storageAdapter.save(key, serialized)
             } catch (error) {
                 // Handle QuotaExceededError gracefully - switch to memory mode
                 if (error instanceof Error && error.name === 'QuotaExceededError') {
-                    console.warn('[OnboardJS] localStorage quota exceeded. Switching to memory-only persistence.')
+                    console.warn('[OnboardJS] storage quota exceeded. Switching to memory-only persistence.')
                     handlePersistenceError(error)
                     switchToMemoryMode()
                     // Save to memory instead
                     memoryStorage.set(key, serialized)
                 } else {
                     const err = error instanceof Error ? error : new Error(String(error))
-                    console.error(`[OnboardJS] Error persisting to localStorage (key: "${key}"):`, err)
+                    console.error(`[OnboardJS] Error persisting to storage (key: "${key}"):`, err)
                     handlePersistenceError(err)
                 }
                 // Don't throw - allow flow to continue
             }
         },
-        [localStoragePersistence, customOnDataPersist, handlePersistenceError, switchToMemoryMode]
+        [localStoragePersistence, storageAdapter, customOnDataPersist, handlePersistenceError, switchToMemoryMode]
     )
 
     const onClearPersistedData = useCallback(async (): Promise<void> => {
@@ -231,8 +244,8 @@ export function usePersistence<TContext extends OnboardingContextType>(
             return
         }
 
-        // Fallback to localStorage or memory
-        if (!localStoragePersistence || typeof window === 'undefined') {
+        // Fallback to the storage adapter or memory
+        if (!localStoragePersistence || !storageAdapter) {
             return
         }
 
@@ -241,17 +254,17 @@ export function usePersistence<TContext extends OnboardingContextType>(
         // Clear from memory storage
         memoryStorage.delete(key)
 
-        // Clear from localStorage if not in memory-only mode
+        // Clear from the storage adapter if not in memory-only mode
         if (!useMemoryModeRef.current) {
             try {
-                window.localStorage.removeItem(key)
+                await storageAdapter.remove(key)
             } catch (error) {
                 const err = error instanceof Error ? error : new Error(String(error))
-                console.error(`[OnboardJS] Error clearing localStorage (key: "${key}"):`, err)
+                console.error(`[OnboardJS] Error clearing storage (key: "${key}"):`, err)
                 handlePersistenceError(err)
             }
         }
-    }, [localStoragePersistence, customOnClearPersistedData, handlePersistenceError])
+    }, [localStoragePersistence, storageAdapter, customOnClearPersistedData, handlePersistenceError])
 
     return {
         onDataLoad,
