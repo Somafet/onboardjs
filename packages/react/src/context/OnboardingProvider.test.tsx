@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, act, waitFor } from '@testing-library/react'
 import { OnboardingProvider } from './OnboardingProvider'
-import { useOnboarding } from '../hooks/useOnboarding'
+import { useOnboarding } from '@onboardjs/react-core'
 import { OnboardingEngineConfig } from '@onboardjs/core'
 import { mockStepComponents, mockSteps, mockStepsWithoutCriteria } from '../test-utils'
-import type { StepComponentRegistry } from '../types'
+import type { StepComponentRegistry } from '@onboardjs/react-core'
 import type { FC } from 'react'
 
 // Test component that uses the context

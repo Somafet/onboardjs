@@ -5,10 +5,21 @@ import React, { useCallback, createElement } from 'react'
 import { EngineState, OnboardingContext as OnboardingContextType } from '@onboardjs/core'
 import { OnboardingStep, StepComponentProps, StepComponentRegistry } from '../../types'
 
+/** Information passed to the step-not-found fallback renderer. */
+export interface StepNotFoundInfo {
+    stepId: string | number
+    attemptedKeys: string[]
+}
+
 export interface UseStepRendererConfig<TContext extends OnboardingContextType> {
     engineState: EngineState<TContext> | null
     componentRegistry?: StepComponentRegistry<TContext>
     onDataChange: (data: unknown, isValid: boolean) => void
+    /**
+     * Platform fallback rendered when no component resolves for the active step.
+     * Headless by default (returns null); web/native packages inject their own UI.
+     */
+    renderStepNotFound?: (info: StepNotFoundInfo) => React.ReactNode
 }
 
 /**
@@ -65,7 +76,7 @@ function isCallable(value: unknown): value is React.ComponentType<any> {
 export function useStepRenderer<TContext extends OnboardingContextType>(
     config: UseStepRendererConfig<TContext>
 ): () => React.ReactNode {
-    const { engineState, componentRegistry, onDataChange } = config
+    const { engineState, componentRegistry, onDataChange, renderStepNotFound } = config
 
     const renderStep = useCallback((): React.ReactNode => {
         if (!engineState?.currentStep) {
@@ -78,31 +89,15 @@ export function useStepRenderer<TContext extends OnboardingContextType>(
         const resolvedComponent = resolveStepComponent(currentStep, componentRegistry)
 
         if (!resolvedComponent) {
-            // Build helpful error message with resolution attempts
+            // Build helpful resolution attempts and delegate to the injected fallback.
+            // Core stays UI-agnostic (returns null when no fallback is provided).
             const typeKey =
                 currentStep.type === 'CUSTOM_COMPONENT'
                     ? (currentStep.payload as Record<string, unknown>)?.componentKey
                     : currentStep.type
 
-            const attemptedKeys = [currentStep.id, String(typeKey)]
-            return (
-                <div style={{ padding: '16px', color: '#d32f2f', backgroundColor: '#ffebee', borderRadius: '4px' }}>
-                    <strong>❌ Component Not Found for Step: &quot;{currentStep.id}&quot;</strong>
-                    <p style={{ marginTop: '8px', marginBottom: '0', fontSize: '14px' }}>
-                        OnboardJS tried to resolve a component from the registry but none of the following keys matched:
-                    </p>
-                    <ul style={{ marginTop: '4px', paddingLeft: '20px', marginBottom: '0' }}>
-                        {attemptedKeys.map((key) => (
-                            <li key={key}>registry[&quot;{key}&quot;]</li>
-                        ))}
-                        <li>step.component property</li>
-                    </ul>
-                    <p style={{ marginTop: '8px', marginBottom: '0', fontSize: '13px' }}>
-                        Make sure the component is registered in the <code>componentRegistry</code> prop or defined
-                        directly in the step&apos;s <code>component</code> property.
-                    </p>
-                </div>
-            )
+            const attemptedKeys = [String(currentStep.id), String(typeKey)]
+            return renderStepNotFound ? renderStepNotFound({ stepId: currentStep.id, attemptedKeys }) : null
         }
 
         // Find initial data if dataKey is present
@@ -120,7 +115,7 @@ export function useStepRenderer<TContext extends OnboardingContextType>(
 
         // Use createElement for component instantiation
         return createElement(resolvedComponent, props)
-    }, [engineState, componentRegistry, onDataChange])
+    }, [engineState, componentRegistry, onDataChange, renderStepNotFound])
 
     return renderStep
 }

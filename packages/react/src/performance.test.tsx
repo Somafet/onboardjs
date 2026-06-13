@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
-import { useOnboarding } from './hooks/useOnboarding'
+import { useOnboarding } from '@onboardjs/react-core'
 import { OnboardingProvider } from './context/OnboardingProvider'
 import type { OnboardingEngineConfig, OnboardingContext } from '@onboardjs/core'
 

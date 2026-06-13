@@ -9,20 +9,13 @@ export default defineConfig({
         minify: 'esbuild',
         lib: {
             entry: path.resolve(__dirname, 'src/index.ts'),
-            name: 'OnboardJSReact',
+            name: 'OnboardJSReactCore',
             fileName: (format) => `index.${format}.js`,
             formats: ['es', 'cjs'],
         },
         rollupOptions: {
             // Externalize peer deps (like react, react-dom)
-            external: [
-                'react',
-                'react-dom',
-                'react/jsx-runtime',
-                'react/jsx-dev-runtime',
-                '@onboardjs/core',
-                '@onboardjs/react-core',
-            ],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', '@onboardjs/core'],
             treeshake: {
                 moduleSideEffects: false,
                 propertyReadSideEffects: false,

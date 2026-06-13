@@ -2,145 +2,20 @@
 'use client'
 
 import { Component, ErrorInfo, ReactNode } from 'react'
+import {
+    createOnboardingError,
+    type OnboardingError,
+    type OnboardingErrorType,
+    type OnboardingErrorBoundaryProps,
+    type OnboardingErrorBoundaryFallbackProps,
+} from '@onboardjs/react-core'
 
-/**
- * Classification of errors that can occur during onboarding.
- */
-export type OnboardingErrorType =
-    | 'INITIALIZATION_ERROR'
-    | 'PERSISTENCE_ERROR'
-    | 'ENGINE_ERROR'
-    | 'COMPONENT_ERROR'
-    | 'UNKNOWN'
-
-/**
- * Extended error information for onboarding errors.
- */
-export interface OnboardingError {
-    type: OnboardingErrorType
-    originalError: Error
-    message: string
-    recoverable: boolean
-}
-
-/**
- * Props for the Error Boundary component.
- */
-export interface OnboardingErrorBoundaryProps {
-    children: ReactNode
-
-    /**
-     * Custom fallback UI to render when an error occurs.
-     * If not provided, a default error UI will be rendered.
-     */
-    fallback?: ReactNode | ((props: OnboardingErrorBoundaryFallbackProps) => ReactNode)
-
-    /**
-     * Callback fired when an error is caught.
-     * Useful for error logging/reporting services.
-     */
-    onError?: (error: OnboardingError, errorInfo: ErrorInfo) => void
-
-    /**
-     * Callback fired when the user attempts to reset/retry.
-     */
-    onReset?: () => void
-
-    /**
-     * Callback fired when the user chooses to continue without persistence.
-     */
-    onContinueWithoutPersistence?: () => void
-}
-
-/**
- * Props passed to the fallback render function.
- */
-export interface OnboardingErrorBoundaryFallbackProps {
-    error: OnboardingError
-    resetError: () => void
-    continueWithoutPersistence?: () => void
-}
+// Re-export the shared error model so existing '@onboardjs/react' imports keep working.
+export type { OnboardingError, OnboardingErrorType, OnboardingErrorBoundaryProps, OnboardingErrorBoundaryFallbackProps }
 
 interface OnboardingErrorBoundaryState {
     hasError: boolean
     error: OnboardingError | null
-}
-
-/**
- * Classifies an error into an OnboardingErrorType.
- */
-function classifyError(error: Error): OnboardingErrorType {
-    const message = error.message.toLowerCase()
-    const name = error.name.toLowerCase()
-
-    // Check for initialization errors
-    if (
-        message.includes('initialization') ||
-        message.includes('invalid onboarding configuration') ||
-        message.includes('engine creation')
-    ) {
-        return 'INITIALIZATION_ERROR'
-    }
-
-    // Check for persistence/localStorage errors
-    if (
-        name === 'quotaexceedederror' ||
-        message.includes('localstorage') ||
-        message.includes('quota') ||
-        message.includes('persist') ||
-        message.includes('storage')
-    ) {
-        return 'PERSISTENCE_ERROR'
-    }
-
-    // Check for engine errors
-    if (message.includes('engine') || message.includes('step') || message.includes('navigation')) {
-        return 'ENGINE_ERROR'
-    }
-
-    // Check for component rendering errors
-    if (message.includes('render') || message.includes('component') || message.includes('react')) {
-        return 'COMPONENT_ERROR'
-    }
-
-    return 'UNKNOWN'
-}
-
-/**
- * Determines if an error is recoverable.
- */
-function isRecoverable(errorType: OnboardingErrorType): boolean {
-    switch (errorType) {
-        case 'PERSISTENCE_ERROR':
-            // Can continue without persistence
-            return true
-        case 'COMPONENT_ERROR':
-            // Can retry rendering
-            return true
-        case 'INITIALIZATION_ERROR':
-            // May be recoverable with retry
-            return true
-        case 'ENGINE_ERROR':
-            // Usually recoverable with reset
-            return true
-        case 'UNKNOWN':
-        default:
-            // Unknown errors are potentially recoverable
-            return true
-    }
-}
-
-/**
- * Creates an OnboardingError from a standard Error.
- */
-function createOnboardingError(error: Error): OnboardingError {
-    const type = classifyError(error)
-    return {
-        type,
-        originalError: error,
-        message: error.message,
-        recoverable: isRecoverable(type),
-    }
 }
 
 /**

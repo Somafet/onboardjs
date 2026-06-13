@@ -9,17 +9,17 @@ export default defineConfig({
         minify: 'esbuild',
         lib: {
             entry: path.resolve(__dirname, 'src/index.ts'),
-            name: 'OnboardJSReact',
+            name: 'OnboardJSReactNative',
             fileName: (format) => `index.${format}.js`,
             formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            // Externalize peer deps (like react, react-dom)
             external: [
                 'react',
-                'react-dom',
                 'react/jsx-runtime',
                 'react/jsx-dev-runtime',
+                'react-native',
+                '@react-native-async-storage/async-storage',
                 '@onboardjs/core',
                 '@onboardjs/react-core',
             ],
@@ -30,10 +30,6 @@ export default defineConfig({
             },
             output: {
                 exports: 'named',
-                globals: {
-                    react: 'React',
-                    'react-dom': 'ReactDOM',
-                },
             },
         },
     },

@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act, waitFor, render } from '@testing-library/react'
 import React from 'react'
-import { useOnboarding } from './useOnboarding'
+import { useOnboarding, type UseOnboardingOptions, type StepComponentRegistry } from '@onboardjs/react-core'
 import { OnboardingProvider } from '../context/OnboardingProvider'
 import { OnboardingEngineConfig } from '@onboardjs/core'
 import { mockSteps, mockStepComponents } from '../test-utils'
-import { UseOnboardingOptions } from './useOnboarding.types'
-import { StepComponentRegistry } from '../types'
 
 describe('useOnboarding', () => {
     const defaultConfig: OnboardingEngineConfig & {

@@ -1,7 +1,7 @@
 // @onboardjs/react/src/adapters/react-router.ts
 'use client'
 
-import type { OnboardingNavigator, NavigatorOptions } from '../types/navigator'
+import type { OnboardingNavigator, NavigatorOptions } from '@onboardjs/react-core'
 
 /**
  * Type for React Router's navigate function from useNavigate().

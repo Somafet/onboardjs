@@ -2,11 +2,9 @@
 'use client'
 
 import React, { ReactNode, CSSProperties } from 'react'
+import { getStatusText, type PersistenceMode } from '@onboardjs/react-core'
 
-/**
- * The current persistence mode of the onboarding flow.
- */
-export type PersistenceMode = 'localStorage' | 'memory' | 'custom' | 'none'
+export type { PersistenceMode }
 
 /**
  * Props for the PersistenceStatus component.
@@ -37,26 +35,6 @@ export interface PersistenceStatusProps {
      * Custom class name for styling.
      */
     className?: string
-}
-
-/**
- * Gets a human-readable status text for the persistence mode.
- */
-function getStatusText(mode: PersistenceMode, hasError: boolean): string {
-    if (hasError) {
-        return 'Progress not saved'
-    }
-
-    switch (mode) {
-        case 'localStorage':
-            return 'Progress saved locally'
-        case 'memory':
-            return 'Progress saved in memory'
-        case 'custom':
-            return 'Progress saved'
-        case 'none':
-            return 'Progress not being saved'
-    }
 }
 
 /**

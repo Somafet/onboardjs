@@ -12,7 +12,7 @@ import {
     CustomComponentStepPayload,
 } from '@onboardjs/core'
 import { OnboardingProvider } from './context/OnboardingProvider'
-import { StepComponentRegistry, StepComponentProps } from './types'
+import { StepComponentRegistry, StepComponentProps } from '@onboardjs/react-core'
 
 // Helper function to create mock step components
 export const createMockStepComponent = (name: string) => {

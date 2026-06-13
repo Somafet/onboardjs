@@ -19,7 +19,9 @@ jobs:
             matrix:
                 package:
                     - name: '@onboardjs/core'
+                    - name: '@onboardjs/react-core'
                     - name: '@onboardjs/react'
+                    - name: '@onboardjs/react-native'
                     - name: '@onboardjs/supabase-plugin'
                     - name: '@onboardjs/posthog-plugin'
                     - name: '@onboardjs/mixpanel-plugin'
