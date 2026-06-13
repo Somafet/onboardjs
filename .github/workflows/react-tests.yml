@@ -4,10 +4,14 @@ on:
     push:
         paths:
             - 'packages/react/**'
+            - 'packages/react-core/**'
+            - 'packages/react-native/**'
             - '.github/workflows/react-tests.yml'
     pull_request:
         paths:
             - 'packages/react/**'
+            - 'packages/react-core/**'
+            - 'packages/react-native/**'
             - '.github/workflows/react-tests.yml'
 
 jobs:
@@ -35,8 +39,17 @@ jobs:
             - name: Build core package
               run: pnpm --filter=@onboardjs/core build
 
+            - name: Build react-core package
+              run: pnpm --filter=@onboardjs/react-core build
+
             - name: Build react package
               run: pnpm --filter=@onboardjs/react build
+
+            - name: Run react-core tests
+              run: pnpm --filter=@onboardjs/react-core test:run
+
+            - name: Type-check react-native package
+              run: pnpm --filter=@onboardjs/react-native check-types
 
             - name: Run Vitest with coverage
               run: pnpm test:coverage
