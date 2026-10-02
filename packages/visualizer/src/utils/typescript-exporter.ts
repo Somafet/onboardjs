@@ -599,7 +599,12 @@ export class TypeScriptExporter {
         if (value === null) return 'null'
         if (value === undefined) return 'undefined'
         if (typeof value === 'string') {
-            return `'${value.replace(/'/g, "\\'")}'`
+            const escaped = value
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+            return `'${escaped}'`
         }
         if (typeof value === 'number' || typeof value === 'boolean') return String(value)
         if (typeof value === 'object') return this._formatObject(value, indent)

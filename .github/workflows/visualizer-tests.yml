@@ -10,6 +10,9 @@ on:
             - 'packages/visualizer/**'
             - '.github/workflows/visualizer-tests.yml'
 
+permissions:
+    contents: read
+
 jobs:
     test-visualizer:
         runs-on: ubuntu-latest

@@ -1,5 +1,11 @@
 # @onboardjs/core
 
+## 1.0.0-rc.5
+
+### Patch Changes
+
+- Security: `StepJSONParser` no longer uses a regular expression with polynomial backtracking to read function parameters (CodeQL `js/polynomial-redos`).
+
 ## 1.0.0-rc.4
 
 ### Patch Changes

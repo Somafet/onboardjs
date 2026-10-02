@@ -5,6 +5,42 @@ import { CodeGenerator } from './generators'
 import { parseCache } from './utils/cache'
 import { FunctionExtractor } from './extractors/function-extractor'
 
+/**
+ * Finds the first `if (...) { ... return X; ... }` block and returns the raw
+ * returned expression plus the index just past the block's first `}`.
+ * Scans in linear time; the regex it replaces backtracked polynomially.
+ */
+export function findIfReturn(src: string): { thenRaw: string; end: number } | null {
+    const ifHead = /if\s*\(/g
+
+    while (ifHead.exec(src)) {
+        const close = src.indexOf(')', ifHead.lastIndex)
+        if (close === -1) return null
+
+        let bodyStart = close + 1
+        while (/\s/.test(src.charAt(bodyStart))) bodyStart++
+        if (src.charAt(bodyStart) !== '{') {
+            // Not a block `if`: resume after what was scanned so no character is read twice
+            ifHead.lastIndex = bodyStart
+            continue
+        }
+
+        const returnKeyword = /return\s+/g
+        returnKeyword.lastIndex = bodyStart + 1
+        if (!returnKeyword.exec(src)) return null
+
+        const valueStart = returnKeyword.lastIndex
+        const semicolon = src.indexOf(';', valueStart)
+        const brace = src.indexOf('}', valueStart)
+        if (brace === -1) return null
+
+        const valueEnd = semicolon !== -1 && semicolon < brace ? semicolon : brace
+        return { thenRaw: src.slice(valueStart, valueEnd), end: brace + 1 }
+    }
+
+    return null
+}
+
 export class ConditionParser {
     private _validator = new CompositeInputValidator()
     private _strategies = [new FunctionParseStrategy(), new StringParseStrategy()]
@@ -73,15 +109,13 @@ export class ConditionParser {
                                 return undefined
                             }
 
-                            const ifMatch = fnStr.match(/if\s*\([^)]*\)\s*{[\s\S]*?return\s+([^;]+);?[\s\S]*?}/m)
+                            const ifMatch = findIfReturn(fnStr)
                             if (ifMatch) {
-                                const thenRaw = ifMatch[1]
-                                const parsedThen = parseRawTarget(thenRaw)
+                                const parsedThen = parseRawTarget(ifMatch.thenRaw)
                                 if (parsedThen !== undefined) thenTarget = parsedThen
 
                                 // Look for a return after the if block
-                                const afterIfIndex = fnStr.indexOf(ifMatch[0]) + ifMatch[0].length
-                                const afterStr = fnStr.slice(afterIfIndex)
+                                const afterStr = fnStr.slice(ifMatch.end)
                                 const returnAfter = afterStr.match(/return\s+([^;]+);?/)
                                 if (returnAfter) {
                                     const parsedElse = parseRawTarget(returnAfter[1])

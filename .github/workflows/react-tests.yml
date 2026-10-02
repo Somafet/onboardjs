@@ -10,6 +10,9 @@ on:
             - 'packages/react/**'
             - '.github/workflows/react-tests.yml'
 
+permissions:
+    contents: read
+
 jobs:
     test-react:
         runs-on: ubuntu-latest

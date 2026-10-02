@@ -602,10 +602,13 @@ export class StepJSONParser {
 
     private static _extractFunctionParameters(functionString: string): string[] {
         try {
-            const match = functionString.match(/\(([^)]*)\)/)
-            if (!match || !match[1]) return []
+            // indexOf instead of /\(([^)]*)\)/, which backtracks polynomially on many '('
+            const open = functionString.indexOf('(')
+            const close = open === -1 ? -1 : functionString.indexOf(')', open + 1)
+            if (close === -1) return []
 
-            return match[1]
+            return functionString
+                .slice(open + 1, close)
                 .split(',')
                 .map((param) => param.trim())
                 .filter((param) => param.length > 0)

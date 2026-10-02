@@ -8,7 +8,8 @@ import { EngineState, FlowContext } from './types'
 // vi.mock is hoisted, so it's correctly applied before imports are evaluated.
 vi.mock('./EventManager', () => {
     return {
-        EventManager: vi.fn().mockImplementation(() => {
+        // A regular function: vitest 4 calls the implementation with `new`, which arrows do not support.
+        EventManager: vi.fn().mockImplementation(function () {
             return {
                 notifyListeners: vi.fn(),
             }
