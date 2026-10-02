@@ -251,13 +251,16 @@ export class FunctionExtractor {
     }
 
     private _stringFallback(fnStr: string): Expression | null {
-        // Simple regex fallback for basic patterns
-        const firstIfPattern = /if\s*\(\s*([^)]+)\s*\)/
-        const match = fnStr.match(firstIfPattern)
+        // Simple fallback for basic patterns: the text between `if (` and the next `)`.
+        // indexOf keeps this linear; a single regex here backtracks polynomially.
+        const ifHead = /if\s*\(/.exec(fnStr)
+        const start = ifHead ? ifHead.index + ifHead[0].length : -1
+        const end = start === -1 ? -1 : fnStr.indexOf(')', start)
+        const condition = end === -1 ? '' : fnStr.slice(start, end).trim()
 
-        if (match) {
+        if (condition) {
             try {
-                const ast = parse(`(${match[1].trim()})`, {
+                const ast = parse(`(${condition})`, {
                     sourceType: 'script',
                     ecmaVersion: 'latest',
                 })

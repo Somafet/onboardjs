@@ -144,13 +144,15 @@ export class SupabasePersistencePlugin<TContext extends OnboardingContext<User>>
                 currentStepId, // Include the current step ID in the persisted state
             }
 
-            const { error } = await this.config.client.from(this._tableName).upsert(
-                {
-                    [this._userIdColumn]: userId,
-                    [this._stateDataColumn]: stateToPersist,
-                },
-                { onConflict: this._userIdColumn }
-            )
+            // Column names are configurable, so the row cannot be checked against a table type.
+            const row: Record<string, unknown> = {
+                [this._userIdColumn]: userId,
+                [this._stateDataColumn]: stateToPersist,
+            }
+
+            const { error } = await this.config.client
+                .from(this._tableName)
+                .upsert(row, { onConflict: this._userIdColumn })
 
             if (error) {
                 this._handleError(error, 'persist')

@@ -1,5 +1,11 @@
 # @onboardjs/posthog-plugin
 
+## 1.0.6
+
+### Patch Changes
+
+- Security: session IDs are now generated with `crypto.getRandomValues` instead of `Math.random` (CodeQL `js/insecure-randomness`).
+
 ## 1.0.5
 
 ### Patch Changes

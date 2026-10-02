@@ -2,6 +2,7 @@ import express from 'express'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import cors from 'cors'
+import { rateLimit } from 'express-rate-limit'
 import { readFileSync, existsSync } from 'fs'
 import { OnboardingStep } from '@onboardjs/core'
 
@@ -20,8 +21,8 @@ const sampleSteps: OnboardingStep[] = [
         type: 'SINGLE_CHOICE',
         payload: { options: [{ id: 'a', label: 'A', value: 'a' }] },
         nextStep: 'end',
-        condition(context) {
-            return true === true // Always true for testing
+        condition() {
+            return true // Always true for testing
         },
     },
     { id: 'end', type: 'CONFIRMATION', payload: { title: 'Finished' } },
@@ -39,6 +40,7 @@ export async function startServer(options: ServerOptions) {
 
     // Middleware
     app.use(cors())
+    app.use(rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: true, legacyHeaders: false }))
     app.use(express.json({ limit: '50mb' }))
 
     // Serve static files from the built client
@@ -64,7 +66,7 @@ export async function startServer(options: ServerOptions) {
     app.post('/api/save', (req, res) => {
         const { steps, format } = req.body
         // For now just log, could implement file saving later
-        console.log(`💾 Save requested (${format}):`, steps.length, 'steps')
+        console.info('💾 Save requested (%s): %d steps', format, steps.length)
         res.json({ success: true })
     })
 

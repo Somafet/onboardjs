@@ -2,7 +2,7 @@ import { OnboardingStep, OnboardingContext, FlowInfo } from '@onboardjs/core'
 import { PostHogPluginConfig, PerformanceMetrics } from '../types'
 
 export class EventDataBuilder<TContext extends OnboardingContext> {
-    constructor(private config: PostHogPluginConfig) {}
+    constructor(private _config: PostHogPluginConfig) {}
 
     buildEventData(
         eventType: string,
@@ -19,43 +19,43 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         eventData.event_type = eventType
 
         // Add global properties
-        if (this.config.globalProperties) {
-            eventData = { ...eventData, ...this.config.globalProperties }
+        if (this._config.globalProperties) {
+            eventData = { ...eventData, ...this._config.globalProperties }
         }
 
         // Add flow information
-        if (this.config.includeFlowInfo && flowInfo) {
-            eventData.flow_info = this.buildFlowInfo(flowInfo)
+        if (this._config.includeFlowInfo && flowInfo) {
+            eventData.flow_info = this._buildFlowInfo(flowInfo)
         }
 
         // Add user properties
-        if (this.config.includeUserProperties && context?.currentUser) {
-            eventData.user_properties = this.buildUserProperties(context.currentUser)
+        if (this._config.includeUserProperties && context?.currentUser) {
+            eventData.user_properties = this._buildUserProperties(context.currentUser)
         }
 
         // Add flow data
-        if (this.config.includeFlowData && context?.flowData) {
-            eventData.flow_data = this.sanitizeFlowData(context.flowData)
+        if (this._config.includeFlowData && context?.flowData) {
+            eventData.flow_data = this._sanitizeFlowData(context.flowData)
         }
 
         // Add step metadata
-        if (this.config.includeStepMetadata && step) {
-            eventData.step_metadata = this.buildStepMetadata(step)
+        if (this._config.includeStepMetadata && step) {
+            eventData.step_metadata = this._buildStepMetadata(step)
         }
 
         // Add session data
-        if (this.config.includeSessionData) {
-            eventData.session_data = this.buildSessionData()
+        if (this._config.includeSessionData) {
+            eventData.session_data = this._buildSessionData()
         }
 
         // Add performance metrics
-        if (this.config.includePerformanceMetrics && performanceMetrics) {
+        if (this._config.includePerformanceMetrics && performanceMetrics) {
             eventData.performance = performanceMetrics
         }
 
         // Apply step-specific enrichment
-        if (step && this.config.stepPropertyEnrichers) {
-            const enricher = this.config.stepPropertyEnrichers[step.type ?? 'INFORMATION']
+        if (step && this._config.stepPropertyEnrichers) {
+            const enricher = this._config.stepPropertyEnrichers[step.type ?? 'INFORMATION']
             if (enricher) {
                 const enrichedData = enricher(step, context)
                 eventData = { ...eventData, ...enrichedData }
@@ -63,21 +63,21 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         }
 
         // Apply custom sanitization
-        if (this.config.sanitizeData) {
-            eventData = this.config.sanitizeData(eventData)
+        if (this._config.sanitizeData) {
+            eventData = this._config.sanitizeData(eventData)
         }
 
         // Remove excluded personal data
-        if (this.config.excludePersonalData) {
-            eventData = this.removePersonalData(eventData)
+        if (this._config.excludePersonalData) {
+            eventData = this._removePersonalData(eventData)
         }
 
         return eventData
     }
 
-    private buildUserProperties(user: any): Record<string, any> {
-        if (this.config.userPropertyMapper) {
-            return this.config.userPropertyMapper(user)
+    private _buildUserProperties(user: any): Record<string, any> {
+        if (this._config.userPropertyMapper) {
+            return this._config.userPropertyMapper(user)
         }
 
         // Default user property mapping
@@ -91,12 +91,12 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         }
     }
 
-    private sanitizeFlowData(flowData: Record<string, any>): Record<string, any> {
+    private _sanitizeFlowData(flowData: Record<string, any>): Record<string, any> {
         const sanitized = { ...flowData }
 
         // Remove excluded keys
-        if (this.config.excludeFlowDataKeys) {
-            this.config.excludeFlowDataKeys.forEach((key) => {
+        if (this._config.excludeFlowDataKeys) {
+            this._config.excludeFlowDataKeys.forEach((key) => {
                 delete sanitized[key]
             })
         }
@@ -107,7 +107,7 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         return sanitized
     }
 
-    private buildFlowInfo(flowInfo: FlowInfo): Record<string, any> {
+    private _buildFlowInfo(flowInfo: FlowInfo): Record<string, any> {
         return {
             flow_id: flowInfo.flowId,
             flow_name: flowInfo.flowName,
@@ -118,21 +118,21 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         }
     }
 
-    private buildStepMetadata(step: OnboardingStep<TContext>): Record<string, any> {
+    private _buildStepMetadata(step: OnboardingStep<TContext>): Record<string, any> {
         return {
             step_id: step.id,
             step_type: step.type,
             has_condition: !!step.condition,
             is_skippable: !!step.isSkippable,
-            has_validation: this.hasValidation(step),
+            has_validation: this._hasValidation(step),
             payload_keys: Object.keys(step.payload || {}),
             payload_size: JSON.stringify(step.payload || {}).length,
         }
     }
 
-    private buildSessionData(): Record<string, any> {
+    private _buildSessionData(): Record<string, any> {
         return {
-            session_id: this.getSessionId(),
+            session_id: this._getSessionId(),
             page_url: typeof window !== 'undefined' ? window.location.href : undefined,
             user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
             screen_resolution: typeof screen !== 'undefined' ? `${screen.width}x${screen.height}` : undefined,
@@ -140,7 +140,7 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         }
     }
 
-    private hasValidation(step: OnboardingStep<TContext>): boolean {
+    private _hasValidation(step: OnboardingStep<TContext>): boolean {
         // Check if step has validation logic
         return !!(
             step.payload &&
@@ -151,7 +151,7 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         )
     }
 
-    private removePersonalData(data: Record<string, any>): Record<string, any> {
+    private _removePersonalData(data: Record<string, any>): Record<string, any> {
         const sensitiveKeys = [
             'email',
             'phone',
@@ -188,12 +188,15 @@ export class EventDataBuilder<TContext extends OnboardingContext> {
         return removeSensitiveData(cleaned)
     }
 
-    private getSessionId(): string {
+    private _getSessionId(): string {
         // Simple session ID generation
         if (typeof window !== 'undefined') {
             let sessionId = sessionStorage.getItem('onboardjs_session_id')
             if (!sessionId) {
-                sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                const random = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) =>
+                    b.toString(16).padStart(2, '0')
+                ).join('')
+                sessionId = `session_${Date.now()}_${random}`
                 sessionStorage.setItem('onboardjs_session_id', sessionId)
             }
             return sessionId
