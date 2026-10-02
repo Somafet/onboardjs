@@ -408,7 +408,7 @@ export class MixpanelPlugin<TContext extends OnboardingContext> extends BasePlug
 
         // Set user properties if user exists
         if (context.currentUser && this.config.includeUserProperties) {
-            const userProperties = this._eventBuilder['buildUserProperties'](context.currentUser)
+            const userProperties = this._eventBuilder['_buildUserProperties'](context.currentUser)
             this._mixpanel.people.set(userProperties)
         }
     }
@@ -794,7 +794,7 @@ export class MixpanelPlugin<TContext extends OnboardingContext> extends BasePlug
             // Check if the user object has changed by comparing old and new
             JSON.stringify(event.oldContext.currentUser) !== JSON.stringify(event.newContext.currentUser)
         ) {
-            const userProperties = this._eventBuilder['buildUserProperties'](event.newContext.currentUser)
+            const userProperties = this._eventBuilder['_buildUserProperties'](event.newContext.currentUser)
             this._mixpanel.people.set(userProperties)
         }
     }
