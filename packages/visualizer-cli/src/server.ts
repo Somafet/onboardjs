@@ -40,8 +40,8 @@ export async function startServer(options: ServerOptions) {
 
     // Middleware
     app.use(cors())
-    app.use(express.json({ limit: '50mb' }))
     app.use(rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: true, legacyHeaders: false }))
+    app.use(express.json({ limit: '50mb' }))
 
     // Serve static files from the built client
     app.use(express.static(clientDir))
